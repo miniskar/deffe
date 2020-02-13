@@ -1,66 +1,114 @@
 {
     "python_path" : ["$CUSTOM_APP"],
-    "knobs" : [
-        { "name" : "l1d_ways",
+    "knobs" : 
+        [
+        { 
+            "name" : "l1d_ways",
             "values" : "1, 2, 4, 8"
         },
-        { "name" : "l1i_ways",
+        { 
+            "name" : "l1i_ways",
             "values" : "1, 2, 4, 8"
         },
-        { "name" : "l2_ways",
+        { 
+            "name" : "l2_ways",
             "values" : "2, 4, 8"
         },
-        { "name" : "l1d_size",
+        { 
+            "name" : "l1d_size",
             "values" : "1, 2, 4, 8, 16, 32"
         },
-        { "name" : "l1i_size",
+        { 
+            "name" : "l1i_size",
             "values" : "1, 2, 4, 8"
         },
-        { "name" : "l2_size",
+        { 
+            "name" : "l2_size",
             "values" : "2, 4, 8, 16, 32, 64, 128, 256"
-        }
-        { "name" : "cache_line_size",
+        },
+        { 
+            "name" : "cache_line_size",
             "values" : "16, 32, 64"
         }
-    ]
-    "scenarios" : [
-        { "name" : "options",
-          "values" : "16, 32, 64, 128, 256"
+    ],
+    "workloads" : 
+        [
+        {
+            "name" : "matmul",
+            "parameters" : 
+                [
+                { 
+                    "name" : "options",
+                    "values" : "16, 32, 64, 128, 256"
+                }
+                ],
+                "knobs" : 
+                    [
+                    { 
+                        "name" : "tile_type",
+                        "values" : "16, 32, 64, 128, 256"
+                    },
+                    ]
+        },
+        {
+            "name" : "kmeans",
+            "parameters" : 
+                [
+                { 
+                    "name" : "objects",
+                    "values" : "[10-1000000]"
+                },
+                { 
+                    "name" : "clusters",
+                    "values" : "[10-10000]"
+                },
+                { 
+                    "name" : "attributes",
+                    "values" : "[10-100]"
+                }
+                ]
+        },
+        {
+            "name" : "nw",
+            "parameters" : 
+                [
+                { 
+                    "name" : "rows",
+                    "values" : "[16-1024]"
+                },
+                { 
+                    "name" : "cols",
+                    "values" : "[16-1024]"
+                }
+                ]
         }
-    ]
-    "costs" : [
-        { "name" : "cpu_cycles",
-        }
-        { "name" : "energy",
-        }
-        { "name" : "area",
-        }
-    ]
+    ],
+    "costs" : [ "cpu_cycles", "energy", "area" ],
     "wc" : {
         "script" : "custom_network.py",
         "arguments" : "3, 256",
         "output" : "network.log"
-    }
+    },
     "exploration" : {
         "script" : "custom_dse.py",
         "arguments" : "2, 567",
         "output" : "exploration.log"
-    }
+    },
     "sampling" : {
         "script" : "custom_sampling.py",
         "arguments" : "2, 567",
         "output" : "sampling.log"
-    }
+    },
     "sample_run" : {
         "script" : "custom_run_sample.py",
         "arguments" : "2, 567",
         "output" : "run.log"
-    }
+    },
     "sample_extract" : {
         "script" : "custom_run_sample.py",
         "arguments" : "2, 567",
         "output" : "run.log"
-    }
+    },
     "framework" : {
         "output" : "framework_output.log",
         "evaluation_table" : "deffe_evaluation.csv",
