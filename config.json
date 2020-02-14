@@ -1,34 +1,40 @@
 {
-    "python_path" : ["$CUSTOM_APP"],
-    "knobs" : 
+    "python_path" : ["riscv"],
+    "systems" : 
         [
-        { 
-            "name" : "l1d_ways",
-            "values" : "1, 2, 4, 8"
-        },
-        { 
-            "name" : "l1i_ways",
-            "values" : "1, 2, 4, 8"
-        },
-        { 
-            "name" : "l2_ways",
-            "values" : "2, 4, 8"
-        },
-        { 
-            "name" : "l1d_size",
-            "values" : "1, 2, 4, 8, 16, 32"
-        },
-        { 
-            "name" : "l1i_size",
-            "values" : "1, 2, 4, 8"
-        },
-        { 
-            "name" : "l2_size",
-            "values" : "2, 4, 8, 16, 32, 64, 128, 256"
-        },
-        { 
-            "name" : "cache_line_size",
-            "values" : "16, 32, 64"
+        {
+            "name" : "riscv",
+            "knobs" : 
+                [
+                { 
+                    "name" : "l1d_ways",
+                    "values" : "1, 2, 4, 8"
+                },
+                { 
+                    "name" : "l1i_ways",
+                    "values" : "1, 2, 4, 8"
+                },
+                { 
+                    "name" : "l2_ways",
+                    "values" : "2, 4, 8"
+                },
+                { 
+                    "name" : "l1d_size",
+                    "values" : "1, 2, 4, 8, 16, 32"
+                },
+                { 
+                    "name" : "l1i_size",
+                    "values" : "1, 2, 4, 8"
+                },
+                { 
+                    "name" : "l2_size",
+                    "values" : "2, 4, 8, 16, 32, 64, 128, 256"
+                },
+                { 
+                    "name" : "cache_line_size",
+                    "values" : "16, 32, 64"
+                }
+            ]
         }
     ],
     "workloads" : 
@@ -41,30 +47,15 @@
                     "name" : "options",
                     "values" : "16, 32, 64, 128, 256"
                 }
-                ],
-                "knobs" : 
-                    [
-                    { 
-                        "name" : "tile_type",
-                        "values" : "16, 32, 64, 128, 256"
-                    },
-                    ]
+                ]
         },
         {
             "name" : "kmeans",
             "parameters" : 
                 [
                 { 
-                    "name" : "objects",
-                    "values" : "[10-1000000]"
-                },
-                { 
-                    "name" : "clusters",
-                    "values" : "[10-10000]"
-                },
-                { 
-                    "name" : "attributes",
-                    "values" : "[10-100]"
+                    "name" : "options",
+                    "values" : "10-1000-10"
                 }
                 ]
         },
@@ -73,46 +64,41 @@
             "parameters" : 
                 [
                 { 
-                    "name" : "rows",
-                    "values" : "[16-1024]"
-                },
-                { 
-                    "name" : "cols",
-                    "values" : "[16-1024]"
+                    "name" : "options",
+                    "values" : "16, 32, 64, 128, 256"
                 }
                 ]
         }
     ],
     "costs" : [ "cpu_cycles", "energy", "area" ],
-    "wc" : {
-        "script" : "custom_network.py",
+    "model" : {
+        "script" : "ml_model.py",
         "arguments" : "3, 256",
         "output" : "network.log"
     },
     "exploration" : {
-        "script" : "custom_dse.py",
+        "script" : "dse_full_exploration.py",
         "arguments" : "2, 567",
         "output" : "exploration.log"
     },
     "sampling" : {
-        "script" : "custom_sampling.py",
+        "script" : "random_sampling.py",
         "arguments" : "2, 567",
         "output" : "sampling.log"
     },
-    "sample_run" : {
-        "script" : "custom_run_sample.py",
+    "evaluate" : {
+        "script" : "evaluate.py",
         "arguments" : "2, 567",
-        "output" : "run.log"
+        "output" : "evaluate.log"
     },
-    "sample_extract" : {
-        "script" : "custom_run_sample.py",
+    "extract" : {
+        "script" : "extract.py",
         "arguments" : "2, 567",
-        "output" : "run.log"
+        "output" : "extract.log"
     },
     "framework" : {
         "output" : "framework_output.log",
         "evaluation_table" : "deffe_evaluation.csv",
-        "nn_predict_table" : "deffe_evaluation_nn.csv",
-        "run_predict_table" : "deffe_evaluation_run.csv",
+        "nn_predict_table" : "deffe_evaluation_nn.csv"
     }
 }
