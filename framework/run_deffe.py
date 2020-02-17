@@ -18,12 +18,12 @@ class DeffeFramework:
         self.init_n_val = 2 * self.init_n_train
         self.Initialize()
         self.params_cost = ParamsCost(config)
-        self.model = self.LoadModule(config.GetModel())
-        self.sampling = self.LoadModule(config.GetSampling())
+        self.model = self.LoadModule(config.GetModel().script)
+        self.sampling = self.LoadModule(config.GetSampling().script)
         self.sampling.Initialize(np.arange(len(self.params_cost.all_output)), self.init_n_train, self.init_n_val)
-        self.exploration = self.LoadModule(config.GetExploration())
-        self.evaluate = self.LoadModule(config.GetEvaluate())
-        self.extract = self.LoadModule(config.GetExtract())
+        self.exploration = self.LoadModule(config.GetExploration().script)
+        self.evaluate = self.LoadModule(config.GetEvaluate().script)
+        self.extract = self.LoadModule(config.GetExtract().script)
 
     def Configure(self):
         fr_config = self.config.GetFramework()
@@ -39,8 +39,7 @@ class DeffeFramework:
         print(sys.path)
         self.Configure()
 
-    def LoadModule(self, config_obj):
-        py_file = config_obj.script
+    def LoadModule(self, py_file):
         py_mod_name = pathlib.Path(py_file).stem
         py_mod = importlib.import_module(py_mod_name)
         return py_mod.GetObject(self)

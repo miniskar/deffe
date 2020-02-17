@@ -12,4 +12,3 @@ class DeffeRISCVEvaluate:
 def GetObject(framework):
     obj = DeffeRISCVEvaluate(framework)
     return obj
-

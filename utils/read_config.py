@@ -29,6 +29,7 @@ class DeffeConfigValues:
 
 class DeffeConfigKnob:
     def __init__(self, data):
+        self.data = data
         self.name = data['name']
         self.values = []
         if 'values' in data:
@@ -36,6 +37,7 @@ class DeffeConfigKnob:
 
 class DeffeConfigParameter:
     def __init__(self, data):
+        self.data = data
         self.name = data['name']
         self.values = []
         if 'values' in data:
@@ -43,6 +45,7 @@ class DeffeConfigParameter:
 
 class DeffeConfigSystem:
     def __init__(self, data):
+        self.data = data
         self.name = data['name']
         self.knobs = []
         if 'knobs' in data:
@@ -50,6 +53,7 @@ class DeffeConfigSystem:
 
 class DeffeConfigWorkload:
     def __init__(self, data):
+        self.data = data
         self.name = data['name']
         self.parameters = []
         if 'parameters' in data:
@@ -60,36 +64,43 @@ class DeffeConfigWorkload:
 
 class DeffeConfigModel:
     def __init__(self, data):
+        self.data = data
         self.script = data['script']
+        self.ml_model_script = data['ml_model_script']
         self.arguments = data['arguments']
         self.output = data['output']
         
 class DeffeConfigExploration:
     def __init__(self, data):
+        self.data = data
         self.script = data['script']
         self.arguments = data['arguments']
         self.output = data['output']
         
 class DeffeConfigSampling:
     def __init__(self, data):
+        self.data = data
         self.script = data['script']
         self.arguments = data['arguments']
         self.output = data['output']
         
 class DeffeConfigEvaluate:
     def __init__(self, data):
+        self.data = data
         self.script = data['script']
         self.arguments = data['arguments']
         self.output = data['output']
         
 class DeffeConfigExtract:
     def __init__(self, data):
+        self.data = data
         self.script = data['script']
         self.arguments = data['arguments']
         self.output = data['output']
 
 class DeffeConfigFramework:
     def __init__(self, data):
+        self.data = data
         self.output = data['output']
         self.evaluation_table = data['evaluation_table']
         self.nn_predict_table = data['nn_predict_table']

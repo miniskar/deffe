@@ -73,6 +73,7 @@
     "costs" : [ "cpu_cycles", "energy", "area" ],
     "model" : {
         "script" : "ml_model.py",
+        "ml_model_script" : "keras_cnn.py",
         "arguments" : "3, 256",
         "output" : "network.log"
     },
