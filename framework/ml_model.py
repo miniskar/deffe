@@ -21,7 +21,7 @@ class DeffeMLModel:
         return (params, cost)
 
     def Train(self, params, cost):
-        self.ml_model_script.Initialize(params, cost, cost)
+        self.ml_model_script.Initialize(params, cost)
         self.ml_model_script.preprocess_data()
         self.ml_model_script.Train()
 
