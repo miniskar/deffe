@@ -20,7 +20,7 @@ class DeffeRandomSampling:
                        till the end of input sequence has been reached
 
              Methods:
-                 step() - make a new step of sampling
+                 Step() - make a new step of sampling
                        rc = True if successful
 
                  training_seq:
@@ -31,7 +31,7 @@ class DeffeRandomSampling:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetSampling()
-        self._seq = []
+        self._seq = np.arange(1)
         self._n_train = 0
         self._n_val = 0
         self._pos = 0
@@ -40,8 +40,13 @@ class DeffeRandomSampling:
         self._train_idx = []
         self._val_idx = []
         self._exhausted = False
+        self._n_samples = 0
+        self._shuffle = True
 
-    def Initialize(self, org_seq, n_train, n_val, shuffle=True):
+    def Initialize(self, n_samples, n_train, n_val, shuffle=True):
+        self._n_samples = n_samples
+        self._shuffle = shuffle
+        org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
         self._seq = org_seq
         self._n_train = n_train
         self._n_val = n_val
@@ -113,7 +118,7 @@ class DeffeRandomSampling:
         return np.setdiff1d(self._seq, np.concatenate((self._train_idx, self._val_idx),axis=None), assume_unique=True )
 
     def GetBatch(self):
-        return (self.training_seq, self.val_seq, self.testing_seq)
+        return (self.training_seq, self.val_seq)
     
 
 def run_test1():

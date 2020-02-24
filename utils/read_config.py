@@ -32,35 +32,30 @@ class DeffeConfigKnob:
         self.data = data
         self.name = data['name']
         self.values = []
+        self.groups = []
+        self.map = self.name
+        if 'map' in data:
+            self.map = data['map']
         if 'values' in data:
             self.values = DeffeConfigValues(data['values'])
+        if 'groups' in data:
+            self.groups = re.split('\s*,\s*', data['groups'])
+        self.groups.append("all")
 
-class DeffeConfigParameter:
+class DeffeConfigScenarios:
     def __init__(self, data):
         self.data = data
         self.name = data['name']
         self.values = []
+        self.groups = []
+        self.map = self.name
+        if 'map' in data:
+            self.map = data['map']
         if 'values' in data:
             self.values = DeffeConfigValues(data['values'])
-
-class DeffeConfigSystem:
-    def __init__(self, data):
-        self.data = data
-        self.name = data['name']
-        self.knobs = []
-        if 'knobs' in data:
-            self.knobs = [DeffeConfigKnob(knob) for knob in data['knobs']]
-
-class DeffeConfigWorkload:
-    def __init__(self, data):
-        self.data = data
-        self.name = data['name']
-        self.parameters = []
-        if 'parameters' in data:
-            self.parameters = [DeffeConfigParameter(wk) for wk in data['parameters']]
-        self.knobs = []
-        if 'knobs' in data:
-            self.knobs = [DeffeConfigKnob(wk) for wk in data['knobs']]
+        if 'groups' in data:
+            self.groups = re.split('\s*,\s*', data['groups'])
+        self.groups.append("all")
 
 class DeffeConfigModel:
     def __init__(self, data):
@@ -69,6 +64,9 @@ class DeffeConfigModel:
         self.ml_model_script = data['ml_model_script']
         self.arguments = data['arguments']
         self.output = data['output']
+        self.parameters = []
+        if 'parameters' in data: 
+            self.parameters = re.split('\s*,\s*', data['parameters'])
         
 class DeffeConfigExploration:
     def __init__(self, data):
@@ -76,6 +74,11 @@ class DeffeConfigExploration:
         self.script = data['script']
         self.arguments = data['arguments']
         self.output = data['output']
+        self.exploration_list = []
+        if 'explore' in data:
+            self.exploration_list = data['explore']
+        if len(self.exploration_list) == 0:
+            self.exploration_list = ["all"]
         
 class DeffeConfigSampling:
     def __init__(self, data):
@@ -90,6 +93,9 @@ class DeffeConfigEvaluate:
         self.script = data['script']
         self.arguments = data['arguments']
         self.output = data['output']
+        self.parameters = []
+        if 'parameters' in data: 
+            self.parameters = re.split('\s*,\s*', data['parameters'])
         
 class DeffeConfigExtract:
     def __init__(self, data):
@@ -123,14 +129,14 @@ class DeffeConfig:
             return self.data['python_path']
         return []
 
-    def GetSystems(self):
-        if self.data != None and 'systems' in self.data:
-            return [ DeffeConfigSystem(sys) for sys in self.data['systems'] ]
+    def GetKnobs(self):
+        if self.data != None and 'knobs' in self.data:
+            return [DeffeConfigKnob(knob) for knob in self.data['knobs']]
         return []
 
-    def GetWorkloads(self):
-        if self.data != None and 'workloads' in self.data:
-            return [ DeffeConfigWorkload(wk) for wk in self.data['workloads'] ]
+    def GetScenarios(self):
+        if self.data != None and 'scenarios' in self.data:
+            return [DeffeConfigScenarios(scn) for scn in self.data['scenarios']]
         return []
 
     def GetCosts(self):

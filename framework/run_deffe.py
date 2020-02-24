@@ -6,9 +6,17 @@ sys.path.insert(0, framework_path)
 sys.path.insert(0, os.path.join(framework_path, "utils"))
 from read_config import *
 from workload_excel import *
-from params_cost import *
+from parameters import *
 import numpy as np
 
+# Requirements
+# * Scenario based evaluation and ml model creation
+# * Support multi-scenario exploration
+# * Multi-cost exploration support
+# * Support of partial set of parameters in the exploration
+#   ** Example: Some kernels are limited to some cores
+# * Mapping of knobs to common parameters in exploration
+#   ** Example: Mapping of core0_l1d_size and core1_l1d_size to l1d_size parameter in the evaluation and ml-model 
 class DeffeFramework:
     def __init__(self, args):
         config = DeffeConfig(args.config)
@@ -17,10 +25,9 @@ class DeffeFramework:
         self.init_n_train = 100
         self.init_n_val = 2 * self.init_n_train
         self.Initialize()
-        self.params_cost = ParamsCost(config)
+        self.parameters = Parameters(config)
         self.model = self.LoadModule(config.GetModel().script)
         self.sampling = self.LoadModule(config.GetSampling().script)
-        self.sampling.Initialize(np.arange(len(self.params_cost.all_output)), self.init_n_train, self.init_n_val)
         self.exploration = self.LoadModule(config.GetExploration().script)
         self.evaluate = self.LoadModule(config.GetEvaluate().script)
         self.extract = self.LoadModule(config.GetExtract().script)
@@ -45,18 +52,23 @@ class DeffeFramework:
         return py_mod.GetObject(self)
 
     def Run(self):
-        step = 0
-        while(not self.exploration.IsCompleted()):
-            print("***** Step {} *****".format(step))
-            samples = self.sampling.GetBatch()
-            if self.exploration.IsModelReady():
-                batch_output = self.model.Inference(samples)
-            else:
-                eval_output = self.evaluate.Run(samples)
-                batch_output = self.extract.Run(eval_output)
-                self.model.Train(samples, batch_output)
-            self.sampling.Step()
-            step = step + 1
+        for explore_groups in self.config.GetExploration().exploration_list:
+            (param_list, n_samples)  = self.parameters.Initialize(explore_groups)
+            self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
+            step = 0
+            while(not self.exploration.IsCompleted()):
+                print("***** Step {} *****".format(step))
+                samples = self.sampling.GetBatch()
+                parameters = self.parameters.GetParameters(samples)
+                if self.exploration.IsModelReady():
+                    batch_output = self.model.Inference(parameters)
+                else:
+                    eval_output = self.evaluate.Run(parameters)
+                    batch_output = self.extract.Run(eval_output)
+                    (train_acc, val_acc) = self.model.Train(parameters, batch_output)
+                    print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
+                self.sampling.Step()
+                step = step + 1
 
 def InitParser(parser):
     parser.add_argument('-config', dest='config', default="config.json")

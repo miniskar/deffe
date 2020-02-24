@@ -6,8 +6,7 @@ class DeffeRISCVExtract:
         self.config = framework.config.GetExtract()
 
     def Run(self, eval_output):
-        batch_output = None
-        return batch_output 
+        return eval_output
 
 def GetObject(framework):
     obj = DeffeRISCVExtract(framework)

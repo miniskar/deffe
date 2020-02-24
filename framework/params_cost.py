@@ -7,7 +7,28 @@ class ParamsCost:
         self.type_wl_param = 0
         self.type_wl_knob = 1
         self.type_sys_knob = 2
-        self.CombinedParamsCosts()
+        self.InitDataStructures()
+
+    def GetUniqueName(self, sys_wl, knob_param):
+        return sys_wl.name+"::"+knob_param.name
+
+    def GetEvaluateSpecificParameters(self, wl_name=None, sys_name=None):
+        all_options = {}
+        for param_name, pobj in self.unique_param_hash.items():
+            (system_wl, knob_param, type) = pobj
+            if (type == self.type_wl_param or
+               type == self.type_wl_knob) and wl_name != None and
+               system_wl.name != wl_name:
+                continue
+            if type == self.type_sys_knob and sys_name != None and
+               system_wl.name != sys_name:
+                continue
+            print("Values length: "+str(len(pobj.values.values)))
+            values = list(set(pobj.values.values))
+            all_options[param_name] = (values, system_wl, knob_param, type)
+            print(values)
+            print("Len:"+str(len(values)))
+        return all_options
 
     # Get permutation for all options
     def GetPermutations(self, sel_options):
@@ -37,14 +58,16 @@ class ParamsCost:
                     opt_val[k] = v
         return (fix_opts, var_keys, var_sel_options)
 
-    def CombinedParamsCosts(self):
+    # Entry method to get all permutations
+    def InitDataStructures(self):
         systems = self.config.GetSystems()
         workloads = self.config.GetWorkloads()
         costs = self.config.GetCosts()
         system_knobs = {}
         wl_params = {}
         wl_knobs = {}
-        param_hash = {}
+        param_hash = {} #key : [[#1] [#2]] #1: details of param #2: unique values set
+        unique_param_hash = {}
         for system in systems:
             for knob in system.knobs:
                 if system.name not in system_knobs:
@@ -53,6 +76,7 @@ class ParamsCost:
                 if knob.name not in param_hash:
                     param_hash[knob.name] = [[], []]
                 param_hash[knob.name][0].append((system, knob, self.type_sys_knob))
+                unique_param_hash[self.GetUniqueName(system, knob)] = (system, knob, self.type_sys_knob)
         for wl in workloads:
             for knob in wl.knobs:
                 if wl.name not in wl_knobs:
@@ -61,6 +85,7 @@ class ParamsCost:
                 if knob.name not in param_hash:
                     param_hash[knob.name] = [[], []]
                 param_hash[knob.name][0].append((wl, knob, self.type_wl_knob))
+                unique_param_hash[self.GetUniqueName(wl, knob)] = (wl, knob, self.type_wl_knob)
         for wl in workloads:
             for param in wl.parameters:
                 if wl.name not in wl_params:
@@ -69,16 +94,17 @@ class ParamsCost:
                 if param.name not in param_hash:
                     param_hash[param.name] = [[], []]
                 param_hash[param.name][0].append((wl, param, self.type_wl_param))
+                unique_param_hash[self.GetUniqueName(wl, param)] = (wl, param, self.type_wl_param)
         self.system_knobs = system_knobs
         self.wl_params = wl_params
         self.wl_knobs = wl_knobs
         self.param_hash = param_hash
-        opt_val_hash = {}
+        self.unique_param_hash = unique_param_hash
         all_options = {}
-        fix_opts = []
         for param_name, v in param_hash.items():
             common_data = []
             for data in v[0]:
+                #(system/wl, knob/param, type) = data
                 pobj = data[1]
                 print("Values length: "+str(len(pobj.values.values)))
                 common_data.extend(pobj.values.values)
@@ -86,8 +112,14 @@ class ParamsCost:
             all_options[param_name] = v[1]
             print(v[1])
             print("Len:"+str(len(v[1])))
+        self.all_options = all_options
+
+
+    def GetAllParameterPermutations(self):
         print("GetFixvars")
-        (fix_opts, var_keys, var_sel_options) = self.GetFixedVariableOptions(fix_opts, all_options, opt_val_hash)
+        opt_val_hash = {}
+        fix_opts = []
+        (fix_opts, var_keys, var_sel_options) = self.GetFixedVariableOptions(fix_opts, self.all_options, opt_val_hash)
         print("GetPermutations")
         all_output = self.GetPermutations(var_sel_options)
         print("Set outputs")
