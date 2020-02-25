@@ -57,22 +57,25 @@ class Parameters:
             for map_name in param_groups[grp].keys():
                 (param_list, param_values) = param_groups[grp][map_name]
                 for (param, ptype) in param_list:
-                    output_params.append((param, param_values))
+                    output_params.append((param, param_values, len(output_params)))
                     total_permutations = total_permutations * len(param_values)
         self.selected_params = output_params
         self.total_permutations = total_permutations
         self.indexing = []
         prev_dim_elements = 1
-        for (param, param_values) in self.selected_params:
+        self.param_all_values = []
+        for (param, param_values, pindex) in self.selected_params:
             self.indexing.append(prev_dim_elements)
             prev_dim_elements = len(param_values) * prev_dim_elements
+            self.param_all_values.append(len(param_values))
         self.prev_dim_elements = prev_dim_elements
-        return (output_params, total_permutations)
+        self.selected_pruned_params = self.GetPrunedSelectedParams(self.selected_params)
+        return (self.selected_params, self.selected_pruned_params, total_permutations)
 
     def GetPermutationSelection(self, nd_index):
         index = len(self.selected_params)-1
         out_dim_list = []
-        for (param, param_values) in reversed(self.selected_params):
+        for (param, param_values, pindex) in reversed(self.selected_params):
             dim_index = int(nd_index / self.indexing[index])
             out_dim_list.append(dim_index)
             nd_index = nd_index % self.indexing[index]
@@ -80,26 +83,48 @@ class Parameters:
         out_dim_list.reverse()
         return out_dim_list
 
-
-    def GetParameters(self, samples):
-        indexes = samples[0].tolist() + samples[1].tolist()
-        nparams = np.empty(shape=[0, len(self.selected_params)])
+    # Make sure that all values in the numpy 2d array are values
+    def GetNormalizedParameters(self, nparams, selected_params=None):
+        if selected_params == None:
+            selected_params = self.selected_params
         min_list = []
         max_list = []
-        for (param, param_values) in self.selected_params:
+        for (param, param_values, pindex) in selected_params:
             min_list.append(np.min(np.array(param_values).astype('float'))) 
             max_list.append(np.max(np.array(param_values).astype('float')))
         min_list = np.array(min_list).astype('float')
         max_list = np.array(max_list).astype('float')
-        for nd_index in indexes:
-            out_dim_list = self.GetPermutationSelection(nd_index)
-            param_sel_list = []
-            index = 0
-            for (param, param_values) in self.selected_params:
-                value = param_values[out_dim_list[index]]
-                param_sel_list.append(value)
-                index = index + 1
-            nparams = np.concatenate((nparams, [np.array(param_sel_list)]))
         nparams = nparams.astype('float')
         nparams = (nparams - min_list) / (max_list - min_list)
         return nparams
+
+    def GetNumpyParameters(self, samples, selected_params=None, with_indexing=False):
+        if selected_params == None:
+            selected_params = self.selected_params
+        nparams = np.empty(shape=[0, len(selected_params)])
+        indexes = samples[0].tolist() + samples[1].tolist()
+        for nd_index in indexes:
+            out_dim_list = self.GetPermutationSelection(nd_index)
+            param_sel_list = []
+            for (param, param_values, index) in selected_params:
+                param_value_index = out_dim_list[index]
+                value = param_values[param_value_index]
+                if with_indexing and type(value) == str:
+                    value = param_value_index
+                param_sel_list.append(value)
+            nparams = np.concatenate((nparams, [np.array(param_sel_list)]))
+        return nparams
+
+    def GetParameters(self, samples, selected_params=None, with_indexing=False, with_normalize=False):
+        if selected_params == None:
+            selected_params = self.selected_params
+        nparams = self.GetNumpyParameters(samples, selected_params, with_indexing=with_indexing)
+        if with_normalize:
+            nparams = self.GetNormalizedParameters(nparams, selected_params)
+        return nparams
+
+    def GetPrunedSelectedParams(self, param_list):
+        return [(param, pvalues, pindex) for (param, pvalues, pindex) in param_list if len(pvalues) > 1]
+
+    def GetHeaders(self, param_list):
+        return [param.name for (param, pvalues, pindex) in param_list]

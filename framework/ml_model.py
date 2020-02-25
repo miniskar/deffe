@@ -20,8 +20,8 @@ class DeffeMLModel:
         params = train + val
         return (params, cost)
 
-    def Train(self, params, cost):
-        self.ml_model_script.Initialize(params, cost)
+    def Train(self, headers, params, cost):
+        self.ml_model_script.Initialize(headers, params, cost)
         self.ml_model_script.preprocess_data()
         return self.ml_model_script.Train()
 

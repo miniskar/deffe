@@ -53,19 +53,22 @@ class DeffeFramework:
 
     def Run(self):
         for explore_groups in self.config.GetExploration().exploration_list:
-            (param_list, n_samples)  = self.parameters.Initialize(explore_groups)
+            (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups)
+            headers = self.parameters.GetHeaders(param_list)
+            pruned_headers = self.parameters.GetHeaders(pruned_param_list)
             self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
             step = 0
             while(not self.exploration.IsCompleted()):
                 print("***** Step {} *****".format(step))
                 samples = self.sampling.GetBatch()
-                parameters = self.parameters.GetParameters(samples)
+                parameters = self.parameters.GetParameters(samples, param_list)
+                parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=True, with_normalize=False)
                 if self.exploration.IsModelReady():
-                    batch_output = self.model.Inference(parameters)
+                    batch_output = self.model.Inference(parameters_normalize)
                 else:
                     eval_output = self.evaluate.Run(parameters)
                     batch_output = self.extract.Run(eval_output)
-                    (train_acc, val_acc) = self.model.Train(parameters, batch_output)
+                    (train_acc, val_acc) = self.model.Train(pruned_headers, parameters_normalize, batch_output)
                     print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
                 self.sampling.Step()
                 step = step + 1

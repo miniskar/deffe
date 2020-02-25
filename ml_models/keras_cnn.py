@@ -71,10 +71,10 @@ class KerasCNN:
         parser.add_argument('-last-layer-nodes', dest='last_layer_nodes', default="32")
         args = parser.parse_args(shlex.split(arg_string))
         return args
-        
 
-    def Initialize(self, parameters_data, cost_data, name="network"):
+    def Initialize(self, headers, parameters_data, cost_data, name="network"):
         args = self.args
+        print("Headers: "+str(headers))
         self.parameters_data = parameters_data
         self.cost_data = cost_data
         self.orig_cost_data = cost_data 

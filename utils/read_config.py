@@ -13,9 +13,18 @@ import json
 class DeffeConfigValues:
     def __init__(self, values):
         self.values = []
+        if type(values) == list:
+            self.values = []
+            for i in values:
+                self.values.extend(self.ExtractValues(str(i)))
+        else:
+            self.values.extend(self.ExtractValues(values))
+
+    def ExtractValues(self, values):
         values_list = re.split("\s*,\s*", values)
+        values_extract = []
         for value in values_list:
-            if re.search(r'\s*-\s*', value):
+            if re.search(r'^([0-9]+)\s*-\s*([0-9]+)', value):
                 fields = re.split('\s*-\s*', value)
                 start = int(fields[0])
                 end = int(fields[1])
@@ -23,9 +32,10 @@ class DeffeConfigValues:
                 if len(fields) > 2:
                     inc = int(fields[2])
                 sub_values = [str(i) for i in range(start, end, inc)]
-                self.values.extend(sub_values)
+                values_extract.extend(sub_values)
             else:
-                self.values.append(value)
+                values_extract.append(value)
+        return values_extract
 
 class DeffeConfigKnob:
     def __init__(self, data):
@@ -93,6 +103,12 @@ class DeffeConfigEvaluate:
         self.script = data['script']
         self.arguments = data['arguments']
         self.output = data['output']
+        self.slurm = False
+        if 'slurm' not in data and data['slurm'].lower() == 'true':
+            self.slurm = True
+        self.batch = 40
+        if 'batch' not in data:
+            self.batch = int(data['batch']) 
         self.parameters = []
         if 'parameters' in data: 
             self.parameters = re.split('\s*,\s*', data['parameters'])
