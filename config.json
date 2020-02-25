@@ -81,9 +81,11 @@
         "output" : "sampling.log"
     },
     "evaluate" : {
-        "script" : "evaluate.py",
+        "script"    : "evaluate.py",
         "arguments" : "2, 567",
-        "output" : "evaluate.log"
+        "batch"     : "40",
+        "slurm"     : "True",
+        "output"    : "evaluate.log"
     },
     "extract" : {
         "script" : "extract.py",
@@ -92,7 +94,8 @@
     },
     "framework" : {
         "output" : "framework_output.log",
-        "evaluation_table" : "deffe_evaluation.csv",
-        "nn_predict_table" : "deffe_evaluation_nn.csv"
+        "exploration_table" : "deffe_exploration.hdf5",
+        "evaluation_table" : "deffe_evaluation.hdf5",
+        "nn_predict_table" : "deffe_prediction.hdf5"
     }
 }

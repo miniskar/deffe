@@ -7,6 +7,12 @@ class DeffeRISCVEvaluate:
         self.framework = framework
         self.config = framework.config.GetEvaluate()
 
+    def InitializeParser(parser):
+        None
+
+    def SetArgs(args):
+        self.args = args
+
     def Run(self, parameters):
         eval_output = np.zeros(shape=(parameters.shape[0], 1))
         return eval_output
