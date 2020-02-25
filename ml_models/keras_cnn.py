@@ -341,6 +341,7 @@ class KerasCNN:
 
         # Generate predictions (probabilities -- the output of the last layer)
         # on new data using `predict`
+        return (0.0, 0.0)
 
     def get_last_cp_model(self, all_files):
         epoch_re = re.compile(r'weights-improvement-([0-9]+)-')

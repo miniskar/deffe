@@ -73,7 +73,7 @@ class Parameters:
         index = len(self.selected_params)-1
         out_dim_list = []
         for (param, param_values) in reversed(self.selected_params):
-            dim_index = nd_index / self.indexing[index]
+            dim_index = int(nd_index / self.indexing[index])
             out_dim_list.append(dim_index)
             nd_index = nd_index % self.indexing[index]
             index = index - 1

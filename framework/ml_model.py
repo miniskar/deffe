@@ -23,7 +23,7 @@ class DeffeMLModel:
     def Train(self, params, cost):
         self.ml_model_script.Initialize(params, cost)
         self.ml_model_script.preprocess_data()
-        self.ml_model_script.Train()
+        return self.ml_model_script.Train()
 
 def GetObject(framework):
     obj = DeffeMLModel(framework)
