@@ -118,7 +118,6 @@ class KerasCNN:
             x = layers.Dense(1, activation="relu", name="dense2")(x)
             self.model = keras.Model(inputs=inputs, outputs=x)
         self.model_name = "model.png"
-        pdb.set_trace()
         if name != "":
             self.model_name = name+"_model.png"
         tf.keras.utils.plot_model(self.model, to_file=self.model_name)
