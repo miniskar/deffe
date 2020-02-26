@@ -104,11 +104,14 @@ class DeffeConfigEvaluate:
         self.arguments = data['arguments']
         self.output = data['output']
         self.slurm = False
-        if 'slurm' not in data and data['slurm'].lower() == 'true':
+        if 'slurm' in data and data['slurm'].lower() == 'true':
             self.slurm = True
         self.batch = 40
-        if 'batch' not in data:
+        if 'batch' in data:
             self.batch = int(data['batch']) 
+        self.sample_evaluate_script = "run_sample.sh"
+        if 'sample_evaluate_script' in data:
+            self.sample_evaluate_script = data['sample_evaluate_script'] 
         self.parameters = []
         if 'parameters' in data: 
             self.parameters = re.split('\s*,\s*', data['parameters'])
@@ -124,8 +127,18 @@ class DeffeConfigFramework:
     def __init__(self, data):
         self.data = data
         self.output = data['output']
-        self.evaluation_table = data['evaluation_table']
-        self.nn_predict_table = data['nn_predict_table']
+        self.run_directory = "run"
+        if 'run_directory' in data:
+            self.run_directory = data['run_directory']
+        self.exploration_table = "deffe_exploration.hdf5"
+        if 'exploration_table' in data:
+            self.exploration_table = data['exploration_table']
+        self.evaluation_table = "deffe_evaluation.hdf5"
+        if 'evaluation_table' in data:
+            self.evaluation_table = data['evaluation_table']
+        self.ml_predict_table = "deffe_prediction.hdf5"
+        if 'ml_predict_table' in data:
+            self.ml_predict_table = data['ml_predict_table']
 
 class DeffeConfig:
     def __init__(self, file_name=None):

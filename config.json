@@ -86,19 +86,19 @@
             "name" : "kmeans_command",
             "map" : "command",
             "groups" : "kmeans",
-            "values" : "kemans_command_script.sh"
+            "values" : "riscv/kemans_command_script.sh"
         },
         {
             "name" : "nw_command",
             "map" : "command_file",
             "groups" : "nw",
-            "values" : "nw_command_script.sh"
+            "values" : "riscv/nw_command_script.sh"
         },
         {
             "name" : "matmul_command",
             "map" : "command_option",
             "groups" : "matmul",
-            "values" : "matmul_command_option.sh"
+            "values" : "riscv/matmul_command_option.sh"
         }
         ],
     "costs" : [ "cpu_cycles", "energy", "area" ],
@@ -127,6 +127,7 @@
         "arguments" : "2, 567",
         "batch"     : "40",
         "slurm"     : "True",
+        "sample_evaluate_script" : "riscv/run_gem5_template.sh",
         "output"    : "evaluate.log"
     },
     "extract" : {
@@ -139,6 +140,6 @@
         "run_directory" : "riscv_exploration",
         "exploration_table" : "deffe_exploration.hdf5",
         "evaluation_table" : "deffe_evaluation.hdf5",
-        "nn_predict_table" : "deffe_prediction.hdf5"
+        "ml_predict_table" : "deffe_prediction.hdf5"
     }
 }

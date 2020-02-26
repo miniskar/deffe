@@ -21,6 +21,7 @@ class DeffeFramework:
     def __init__(self, args):
         config = DeffeConfig(args.config)
         self.config = config
+        self.fr_config = self.config.GetFramework()
         self.args = args
         self.init_n_train = 100
         self.init_n_val = 2 * self.init_n_train
@@ -33,8 +34,8 @@ class DeffeFramework:
         self.extract = self.LoadModule(config.GetExtract().script)
 
     def Configure(self):
-        fr_config = self.config.GetFramework()
         #TODO: set parameters
+        None
 
     def Initialize(self):
         python_paths = self.config.GetPythonPaths()
@@ -52,6 +53,8 @@ class DeffeFramework:
         return py_mod.GetObject(self)
 
     def Run(self):
+        if not os.path.exists(self.fr_config.run_directory):
+            os.makedirs(self.fr_config.run_directory)
         for explore_groups in self.config.GetExploration().exploration_list:
             (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups)
             headers = self.parameters.GetHeaders(param_list)
@@ -66,8 +69,8 @@ class DeffeFramework:
                 if self.exploration.IsModelReady():
                     batch_output = self.model.Inference(parameters_normalize)
                 else:
-                    eval_output = self.evaluate.Run(parameters)
-                    batch_output = self.extract.Run(eval_output)
+                    eval_output = self.evaluate.Run(param_list, parameters)
+                    batch_output = self.extract.Run(param_list, eval_output)
                     (train_acc, val_acc) = self.model.Train(pruned_headers, parameters_normalize, batch_output)
                     print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
                 self.sampling.Step()

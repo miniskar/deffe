@@ -5,7 +5,13 @@ class DeffeRISCVExtract:
         self.framework = framework
         self.config = framework.config.GetExtract()
 
-    def Run(self, eval_output):
+    def InitializeParser(parser):
+        None
+
+    def SetArgs(args):
+        self.args = args
+
+    def Run(self, param_list, eval_output):
         return eval_output
 
 def GetObject(framework):
