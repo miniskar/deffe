@@ -33,7 +33,7 @@
             "values" : [2, 4, 8, 16, 32, 64, 128, 256]
         },
         { 
-            "name" : "cache_line_size",
+            "name" : "cacheline",
             "groups" : "riscv0",
             "values" : [16, 32, 64]
         }
@@ -101,7 +101,7 @@
             "values" : "riscv/matmul_command_option.sh"
         }
         ],
-    "costs" : [ "cpu_cycles", "energy", "area" ],
+    "costs" : [ "cpu_cycles" ],
     "model" : {
         "script" : "ml_model.py",
         "ml_model_script" : "keras_cnn.py",
@@ -113,9 +113,14 @@
         "script" : "dse_full_exploration.py",
         "arguments" : "2, 567",
         "output" : "exploration.log",
-        "explore" : [
-            "riscv0, matmul"
-        ]
+        "explore" : 
+            [
+            {
+                "name" : "matmul_explore",
+                "groups" : "riscv0, matmul",
+                "pre_evaluated_data" : "riscv/output_kmeans_dakota.csv"
+            }
+            ]
     },
     "sampling" : {
         "script" : "random_sampling.py",

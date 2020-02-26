@@ -74,9 +74,18 @@ class DeffeConfigModel:
         self.ml_model_script = data['ml_model_script']
         self.arguments = data['arguments']
         self.output = data['output']
-        self.parameters = []
-        if 'parameters' in data: 
-            self.parameters = re.split('\s*,\s*', data['parameters'])
+
+class DeffeConfigSingleExploration:
+    def __init__(self, data, i):
+        self.name = "explore_"+str(i)
+        self.pre_evaluated_data = None
+        self.groups = []
+        if data == None:
+            self.groups.append("all")
+        if data != None and 'pre_evaluated_data' in data:
+            self.pre_evaluated_data = data['pre_evaluated_data'] 
+        if data != None and 'groups' in data:
+            self.groups = re.split('\s*,\s*', data['groups'])
         
 class DeffeConfigExploration:
     def __init__(self, data):
@@ -86,9 +95,9 @@ class DeffeConfigExploration:
         self.output = data['output']
         self.exploration_list = []
         if 'explore' in data:
-            self.exploration_list = data['explore']
+            self.exploration_list = [DeffeConfigSingleExploration(exp, index) for index, exp in enumerate(self.data['explore'])]
         if len(self.exploration_list) == 0:
-            self.exploration_list = ["all"]
+            self.exploration_list = [DeffeConfigSingleExploration(None, 0)]
         
 class DeffeConfigSampling:
     def __init__(self, data):
@@ -112,9 +121,6 @@ class DeffeConfigEvaluate:
         self.sample_evaluate_script = "run_sample.sh"
         if 'sample_evaluate_script' in data:
             self.sample_evaluate_script = data['sample_evaluate_script'] 
-        self.parameters = []
-        if 'parameters' in data: 
-            self.parameters = re.split('\s*,\s*', data['parameters'])
         
 class DeffeConfigExtract:
     def __init__(self, data):

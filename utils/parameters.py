@@ -10,8 +10,6 @@ class Parameters:
 
     # Entry method to get all permutations
     def Initialize(self, explore_groups):
-        if len(explore_groups) == 0:
-            explore_groups['all'] = 1
         knobs = self.config.GetKnobs()
         scenarios = self.config.GetScenarios()
         param_groups = {}

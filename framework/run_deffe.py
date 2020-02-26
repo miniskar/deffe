@@ -56,7 +56,7 @@ class DeffeFramework:
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
         for explore_groups in self.config.GetExploration().exploration_list:
-            (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups)
+            (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups.groups)
             headers = self.parameters.GetHeaders(param_list)
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
             self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)

@@ -1,6 +1,6 @@
 import os
 
-class DeffeFullExploration:
+class DeffeExploration:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetModel()
@@ -17,5 +17,5 @@ class DeffeFullExploration:
         None
 
 def GetObject(framework):
-    obj = DeffeFullExploration(framework)
+    obj = DeffeExploration(framework)
     return obj
