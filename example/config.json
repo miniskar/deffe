@@ -1,5 +1,5 @@
 {
-    "python_path" : ["riscv", "ml_models"],
+    "python_path" : ["."],
     "knobs" : 
         [
         { 
@@ -86,19 +86,19 @@
             "name" : "kmeans_command",
             "map" : "command",
             "groups" : "kmeans",
-            "values" : "riscv/kemans_command_script.sh"
+            "values" : "kemans_command_script.sh"
         },
         {
             "name" : "nw_command",
             "map" : "command_file",
             "groups" : "nw",
-            "values" : "riscv/nw_command_script.sh"
+            "values" : "nw_command_script.sh"
         },
         {
             "name" : "matmul_command",
             "map" : "command_option",
             "groups" : "matmul",
-            "values" : "riscv/matmul_command_option.sh"
+            "values" : "matmul_command_option.sh"
         }
         ],
     "costs" : [ "cpu_cycles" ],
@@ -118,7 +118,7 @@
             {
                 "name" : "matmul_explore",
                 "groups" : "riscv0, matmul",
-                "pre_evaluated_data" : "riscv/output_kmeans_dakota.csv"
+                "pre_evaluated_data" : "output_kmeans_dakota.csv"
             }
             ]
     },
@@ -132,7 +132,7 @@
         "arguments" : "2, 567",
         "batch"     : "40",
         "slurm"     : "True",
-        "sample_evaluate_script" : "riscv/run_gem5_template.sh",
+        "sample_evaluate_script" : "run_gem5_template.sh",
         "output"    : "evaluate.log"
     },
     "extract" : {
