@@ -5,7 +5,7 @@ import shutil
 import re
 import sys
 
-class DeffeRISCVEvaluate:
+class DeffeEvaluate:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetEvaluate()
@@ -68,5 +68,5 @@ class DeffeRISCVEvaluate:
         return eval_output
 
 def GetObject(framework):
-    obj = DeffeRISCVEvaluate(framework)
+    obj = DeffeEvaluate(framework)
     return obj
