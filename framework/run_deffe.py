@@ -4,6 +4,8 @@ import socket
 framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, framework_path)
 sys.path.insert(0, os.path.join(framework_path, "utils"))
+sys.path.insert(0, os.path.join(framework_path, "ml_models"))
+sys.path.insert(0, os.path.join(framework_path, "framework"))
 from read_config import *
 from workload_excel import *
 from parameters import *
