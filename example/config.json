@@ -105,13 +105,12 @@
     "model" : {
         "script" : "ml_model.py",
         "ml_model_script" : "keras_cnn.py",
-        "arguments" : "3, 256",
         "output" : "network.log",
         "arguments" : "-train-test-split 0.6 -validation-split 0.3"
     },
     "exploration" : {
-        "script" : "dse_full_exploration.py",
-        "arguments" : "2, 567",
+        "script" : "exploration.py",
+        "arguments" : "",
         "output" : "exploration.log",
         "explore" : 
             [
@@ -124,12 +123,12 @@
     },
     "sampling" : {
         "script" : "random_sampling.py",
-        "arguments" : "2, 567",
+        "arguments" : "",
         "output" : "sampling.log"
     },
     "evaluate" : {
         "script"    : "evaluate.py",
-        "arguments" : "2, 567",
+        "arguments" : "",
         "batch"     : "40",
         "slurm"     : "True",
         "sample_evaluate_script" : "run_gem5_template.sh",
@@ -137,7 +136,7 @@
     },
     "extract" : {
         "script" : "extract.py",
-        "arguments" : "2, 567",
+        "arguments" : "",
         "output" : "extract.log"
     },
     "framework" : {
