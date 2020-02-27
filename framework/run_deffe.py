@@ -1,8 +1,11 @@
 import glob, importlib, os, pathlib, sys
 import socket
-
+import pdb
 framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.insert(0, framework_path)
+#sys.path.insert(0, framework_path)
+framework_env = os.getenv('DEFFE_DIR')
+if framework_env  == None: 
+    os.environ['DEFFE_DIR'] = framework_path
 sys.path.insert(0, os.getenv('DEFFE_DIR'))
 sys.path.insert(0, os.path.join(framework_path, "utils"))
 sys.path.insert(0, os.path.join(framework_path, "ml_models"))
@@ -63,6 +66,7 @@ class DeffeFramework:
             headers = self.parameters.GetHeaders(param_list)
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
             self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
+            self.evaluate.Initialize(param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
             step = 0
             while(not self.exploration.IsCompleted()):
                 print("***** Step {} *****".format(step))
@@ -72,7 +76,7 @@ class DeffeFramework:
                 if self.exploration.IsModelReady():
                     batch_output = self.model.Inference(parameters_normalize)
                 else:
-                    eval_output = self.evaluate.Run(param_list, parameters)
+                    eval_output = self.evaluate.Run(parameters)
                     batch_output = self.extract.Run(param_list, eval_output)
                     (train_acc, val_acc) = self.model.Train(pruned_headers, parameters_normalize, batch_output)
                     print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
