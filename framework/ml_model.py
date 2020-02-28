@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pdb
 
 class DeffeMLModel:
     def __init__(self, framework):
@@ -20,8 +21,14 @@ class DeffeMLModel:
         params = train + val
         return (params, cost)
 
-    def Train(self, headers, params, cost):
-        self.ml_model_script.Initialize(headers, params, cost)
+    def Train(self, step, headers, params, cost):
+        params_valid_indexes = []
+        cost_metrics = []
+        for index, (flag, actual_cost) in enumerate(cost):
+            if flag == self.framework.valid_flag:
+                params_valid_indexes.append(index)
+                cost_metrics.append(actual_cost)
+        self.ml_model_script.Initialize(step, headers, params[params_valid_indexes,], np.array(cost_metrics))
         self.ml_model_script.preprocess_data()
         return self.ml_model_script.Train()
 

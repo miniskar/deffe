@@ -25,6 +25,13 @@ commandline_option=${APP_OPTS}
 if [ -f "commandline_option.txt" ]; then
 commandline_option=`cat commandline_option.txt`
 fi
+l1d_ways=2
+l1i_ways=2
+l2_ways=2
+l1d_size=16
+l1i_size=16
+l2_size=128
+cacheline=64
 $RUN_DIR/gem5.cos/build/RISCV/gem5.opt \
     $RUN_DIR/gem5/configs/example/se.py \
     --cmd=${binary} \
@@ -36,7 +43,7 @@ $RUN_DIR/gem5.cos/build/RISCV/gem5.opt \
     --l1d_assoc=${l1d_ways} --l1d_size=${l1d_size}kB \
     --l1i_assoc=${l1i_ways} --l1i_size=${l1i_size}kB \
     --l2_assoc=${l2_ways} --l2_size=${l2_size}kB \
-    --cacheline_size=${cache_line_size} | tee output-gem5.log
+    --cacheline_size=${cacheline} | tee output-gem5.log
 
 CHISEL_BASE=chisel
 export PATH=/home/nqx/RISCV/gem5-mcpat-riscv/gem5-mcpat-parser:/home/nqx/install/bin:$PATH  && \

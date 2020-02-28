@@ -23,8 +23,13 @@ import numpy as np
 #   ** Example: Some kernels are limited to some cores
 # * Mapping of knobs to common parameters in exploration
 #   ** Example: Mapping of core0_l1d_size and core1_l1d_size to l1d_size parameter in the evaluation and ml-model 
+# * Should support prediction and exploration on pre-evaluated data
 class DeffeFramework:
     def __init__(self, args):
+        self.predicted_flag = 0
+        self.evaluate_flag = 1
+        self.valid_flag = 1
+        self.not_valid_flag = 0
         config = DeffeConfig(args.config)
         self.config = config
         self.fr_config = self.config.GetFramework()
@@ -65,26 +70,50 @@ class DeffeFramework:
             (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups.groups)
             headers = self.parameters.GetHeaders(param_list)
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
-            self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
             self.evaluate.Initialize(param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
+            if self.args.only_preloaded_data_exploration:
+                n_samples = len(self.evaluate.param_data_hash) 
+            self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
             step = 0
+            inc = int(self.args.step_inc)
             while(not self.exploration.IsCompleted()):
                 print("***** Step {} *****".format(step))
+                if step != 0:
+                    self.sampling.StepWithInc(inc)
+                if self.args.step_start != '':
+                    if step < int(self.args.step_start):
+                        step = step + 1
+                        continue
+                if self.args.step_end != '':
+                    if step > int(self.args.step_end):
+                        step = step + 1
+                        continue
                 samples = self.sampling.GetBatch()
-                parameters = self.parameters.GetParameters(samples, param_list)
-                parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=True, with_normalize=False)
+                parameter_values = None
+                parameters_normalize = None
+                if self.args.only_preloaded_data_exploration:
+                    parameter_values = self.evaluate.GetPreEvaluatedParameters(samples, param_list)
+                    pruned_parameter_values = self.parameters.GetPrunedSelectedValues(parameter_values, pruned_param_list)
+                    parameters_normalize = self.parameters.GetNormalizedParameters(np.array(pruned_parameter_values), pruned_param_list)
+                else:
+                    parameter_values = self.parameters.GetParameters(samples, param_list)
+                    parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=True, with_normalize=False)
                 if self.exploration.IsModelReady():
                     batch_output = self.model.Inference(parameters_normalize)
                 else:
-                    eval_output = self.evaluate.Run(parameters)
+                    eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(param_list, eval_output)
-                    (train_acc, val_acc) = self.model.Train(pruned_headers, parameters_normalize, batch_output)
+                    (train_acc, val_acc) = self.model.Train(step, pruned_headers, parameters_normalize, batch_output)
                     print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
-                self.sampling.Step()
                 step = step + 1
 
 def InitParser(parser):
     parser.add_argument('-config', dest='config', default="config.json")
+    parser.add_argument('-only-preloaded-data-exploration', dest='only_preloaded_data_exploration', action="store_true")
+    parser.add_argument('-step-increment', dest='step_inc', default='1')
+    parser.add_argument('-step-start', dest='step_start', default='')
+    parser.add_argument('-step-end', dest='step_end', default='')
+    parser.add_argument('-epochs', dest='epochs', default='-1')
     
 def main(args):
     framework = DeffeFramework(args)

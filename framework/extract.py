@@ -12,7 +12,13 @@ class DeffeExtract:
         self.args = args
 
     def Run(self, param_list, eval_output):
-        return eval_output
+        batch_output = []
+        for (flag, output) in eval_output:
+            if flag == self.framework.predicted_flag:
+                batch_output.append((self.framework.valid_flag, output))
+            else:
+                batch_output.append((self.framework.not_valid_flag, [0,]))
+        return batch_output
 
 def GetObject(framework):
     obj = DeffeExtract(framework)

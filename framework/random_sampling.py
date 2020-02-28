@@ -77,7 +77,7 @@ class DeffeRandomSampling:
     """
     def StepWithInc(self, inc):
         for i in range(inc):
-            self.step()
+            self.Step()
 
     def IsCompleted(self):
         return self._exhausted

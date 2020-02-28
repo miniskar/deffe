@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from keras.callbacks.callbacks import Callback
 from keras.callbacks import ModelCheckpoint
 import matplotlib.colors as mcolors
+import glob
 
 from keras.models import Sequential
 tf.keras.backend.clear_session()  # For easy reset of notebook state.
@@ -24,6 +25,7 @@ from tensorflow.python.ops import math_ops
 from tensorflow import keras
 from tensorflow.keras import layers
 
+checkpoint_dir = "checkpoints"
 def mean_squared_error(y_true, y_pred):
     return K.mean(K.square(y_pred - y_true), axis=-1)
 
@@ -50,6 +52,18 @@ class KerasCNN:
     def __init__(self, framework):
         self.framework = framework
         self.args = self.ParseArguments()
+        self.step = -1
+        self.step_start = framework.args.step_start
+        self.step_end= framework.args.step_end
+        self.epochs = int(self.args.epochs)
+        if framework.args.epochs != '-1':
+            self.epochs = int(framework.args.epochs)
+        self.nodes = int(self.args.nodes)
+        self.convs = int(self.args.convs)
+        self.validation_split = float(self.args.validation_split)
+        self.tl_freeze_layers = self.args.tl_freeze_layers
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
 
     def ParseArguments(self):
         arg_string = self.framework.config.GetModel().arguments
@@ -59,11 +73,11 @@ class KerasCNN:
         parser.add_argument('-icp', dest='icp', default="")
         parser.add_argument('-epochs', dest='epochs', default="50")
         parser.add_argument('-batch-size', dest='batch_size', default="256")
-        parser.add_argument('-transfer-learning', dest='transfer_learning', default="-1")
+        parser.add_argument('-tl_freeze_layers', dest='tl_freeze_layers', default="-1")
         parser.add_argument('-convs', dest='convs', default="2")
+        parser.add_argument('-tl-samples', dest='tl_samples', action='store_true')
         parser.add_argument('-no-run', dest='no_run', action='store_true')
         parser.add_argument('-evaluate-only', dest='evaluate', action='store_true')
-        parser.add_argument('-incremental-learning', dest='incremental_learning', action='store_true')
         parser.add_argument('-load-train-test', dest='load_train_test', action='store_true')
         parser.add_argument('-plot-loss', dest='plot_loss', action='store_true')
         parser.add_argument('-loss', dest='loss', default='')
@@ -72,8 +86,9 @@ class KerasCNN:
         args = parser.parse_args(shlex.split(arg_string))
         return args
 
-    def Initialize(self, headers, parameters_data, cost_data, name="network"):
+    def Initialize(self, step, headers, parameters_data, cost_data, name="network"):
         args = self.args
+        self.step = step
         print("Headers: "+str(headers))
         self.parameters_data = parameters_data
         self.cost_data = cost_data
@@ -83,15 +98,10 @@ class KerasCNN:
         self.train_count = 0
         self.val_count = 0 
         self.test_count = 0 
-        self.nodes = int(args.nodes)
         self.n_in_fmaps = parameters_data.shape[1]
-        convs = int(args.convs)
         last_layer_nodes = int(args.last_layer_nodes)
         self.name = name
-        self.validation_split = float(args.validation_split)
-        self.transfer_learning = args.transfer_learning
-        self.step = -1
-        if convs==0:
+        if self.convs==0:
             inputs = keras.Input(shape=(self.n_in_fmaps,), name='parameters')
             x = inputs
             x = layers.Dense(self.nodes, activation="tanh", name="dense0")(x)
@@ -103,7 +113,7 @@ class KerasCNN:
             x = layers.Dense(last_layer_nodes, activation="relu", name="dense3")(x)
             x = layers.Dense(self.n_out_fmaps, activation="relu", name="predict")(x)
             self.model = keras.Model(inputs=inputs, outputs=x)
-        elif convs==2:
+        elif self.convs==2:
             inputs = keras.Input(shape=(self.n_in_fmaps,), name='parameters')
             x = inputs
             x = layers.Reshape((self.n_in_fmaps, 1), name="reshape0")(x)
@@ -134,7 +144,6 @@ class KerasCNN:
         keras.losses.custom_loss = self.loss_function
         self.model = self.get_compiled_model(self.model, loss=self.loss_function, optimizer='adam', metrics=["mse"])
         self.batch_size = min(self.parameters_data.shape[0], int(args.batch_size))
-        self.epochs = int(args.epochs)
         self.disable_icp = False
 
     def get_compiled_model(self, model, loss='categorical_crossentropy', optimizer = keras.optimizers.RMSprop(learning_rate=1e-3), metrics=['accuracy']):
@@ -152,7 +161,7 @@ class KerasCNN:
         return self.batch_size
 
     def SetTransferLearning(self, count):
-        self.transfer_learning = count
+        self.tl_freeze_layers = count
 
     def DisableICP(self, flag=True):
         self.disable_icp = flag
@@ -186,6 +195,11 @@ class KerasCNN:
         z_test = orig_cost_data[test_idx,:].astype('float') 
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
+        if self.args.tl_samples and self.step != self.step_start:
+            all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step-1)))
+            last_cp = self.get_last_cp_model(all_files)
+            if last_cp != '':
+                self.load_model(last_cp)
 
     def load_train_test_data(self, step=-1):
         if step == -1:
@@ -290,16 +304,12 @@ class KerasCNN:
             if self.step != -1:
                 pretag = "step"+str(self.step)+"-train"+str(self.train_count)+"-val"+str(self.val_count)+"-"+pretag
             filepath = pretag + "{epoch:02d}-loss{loss:.4f}-valloss{val_loss:.4f}.hdf5"
-            model_checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min', save_weights_only=False)
+            model_checkpoint = ModelCheckpoint(os.path.join(checkpoint_dir, filepath), monitor='val_loss', verbose=1, save_best_only=True, mode='min', save_weights_only=False)
             callbacks_list = [model_checkpoint]
-            #if self.args.incremental_learning:
-                #fh = open("step"+str(self.step)+"-train"+str(self.train_count)+"-val"+str(self.val_count)+"testloss.csv", "w")
-                #test_checkpoint = TestCallback((x_test, y_test), fh)
-                #callbacks_list.append(test_checkpoint)
             print('# Fit model on training data')
             with tf.device('/cpu:0'):
-                if self.transfer_learning != "-1":
-                    for layer in self.model.layers[:int(self.args.transfer_learning)]:
+                if self.tl_freeze_layers != "-1":
+                    for layer in self.model.layers[:int(self.args.tl_freeze_layers)]:
                         print("Frozen Layer: "+layer.name)
                         layer.trainable = False
                 history = self.model.fit(x_train, y_train,
@@ -315,12 +325,6 @@ class KerasCNN:
                                 )
                 print("Completed model fitting")
             #fh.close()
-            if not self.args.incremental_learning:
-                print("Evaluating training and test accuracies")
-                self.evaluate(x_train, y_train, z_train, "training")
-                self.evaluate(x_test, y_test, z_test, "test")
-                self.model.save_weights('model.hdf5')
-                print(history.history.keys())
 
             # Plot training & validation loss values
             plot_loss = self.args.plot_loss

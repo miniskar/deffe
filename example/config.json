@@ -15,27 +15,27 @@
         { 
             "name" : "l2_ways",
             "groups" : "riscv0",
-            "values" : [2, 4, 8]
+            "values" : [1, 2, 4, 8]
         },
         { 
             "name" : "l1d_size",
             "groups" : "riscv0",
-            "values" : [1, 2, 4, 8, 16, 32]
+            "values" : [1, 2, 4, 8, 16, 32, 64]
         },
         { 
             "name" : "l1i_size",
             "groups" : "riscv0",
-            "values" : [1, 2, 4, 8]
+            "values" : [1, 2, 4, 8, 16, 32, 64]
         },
         { 
             "name" : "l2_size",
             "groups" : "riscv0",
-            "values" : [2, 4, 8, 16, 32, 64, 128, 256]
+            "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256]
         },
         { 
             "name" : "cacheline",
             "groups" : "riscv0",
-            "values" : [16, 32, 64]
+            "values" : [16, 32, 64, 128]
         }
     ],
     "scenarios" : 
@@ -50,7 +50,7 @@
             "name" : "kmeans_objects",
             "map" : "options",
             "groups" : "kmeans",
-            "values" : "10-1000-10"
+            "values" : "100-100100-100"
         },
         {
             "name" : "nw_size",
@@ -106,7 +106,7 @@
         "script" : "ml_model.py",
         "ml_model_script" : "keras_cnn.py",
         "output" : "network.log",
-        "arguments" : "-train-test-split 0.6 -validation-split 0.3"
+        "arguments" : "-convs 2 -loss custom_mean_abs_log_loss -tl-samples -epochs 2000 -train-test-split 0.6 -validation-split 0.3"
     },
     "exploration" : {
         "script" : "exploration.py",
@@ -115,8 +115,8 @@
         "explore" : 
             [
             {
-                "name" : "matmul_explore",
-                "groups" : "riscv0, matmul",
+                "name" : "kmeans_explore",
+                "groups" : "riscv0, kmeans",
                 "pre_evaluated_data" : "output_kmeans_dakota.csv"
             }
             ]

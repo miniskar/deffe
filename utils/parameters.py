@@ -70,6 +70,12 @@ class Parameters:
         self.selected_pruned_params = self.GetPrunedSelectedParams(self.selected_params)
         return (self.selected_params, self.selected_pruned_params, total_permutations)
 
+    def GetPrunedSelectedValues(self, parameters, pruned_param_list):
+        indexes = []
+        for (param, param_values, pindex) in pruned_param_list:
+            indexes.append(pindex)
+        return [param[indexes,] for param in parameters]
+
     def GetPermutationSelection(self, nd_index):
         index = len(self.selected_params)-1
         out_dim_list = []
@@ -92,9 +98,19 @@ class Parameters:
             max_list.append(np.max(np.array(param_values).astype('float')))
         min_list = np.array(min_list).astype('float')
         max_list = np.array(max_list).astype('float')
-        nparams = nparams.astype('float')
-        nparams = (nparams - min_list) / (max_list - min_list)
-        return nparams
+        nparams_out = nparams.astype('float')
+        nparams_out = (nparams_out - min_list) / (max_list - min_list)
+        if (nparams_out< 0.0).any():
+            print("Error: Some data in the sample normalization is negative. Please define the ranges properly")
+            print([index for index,param in enumerate(nparams_out) if (param<0.0).any()])
+            pdb.set_trace()
+            None
+        if (nparams_out> 1.0).any():
+            print("Error: Some data in the sample normalization is > 1.0. Please define the ranges properly")
+            print([index for index, param in enumerate(nparams_out) if (param>1.0).any()])
+            pdb.set_trace()
+            None
+        return nparams_out
 
     def GetNumpyParameters(self, samples, selected_params=None, with_indexing=False):
         if selected_params == None:
