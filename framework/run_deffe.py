@@ -114,6 +114,7 @@ def InitParser(parser):
     parser.add_argument('-step-start', dest='step_start', default='')
     parser.add_argument('-step-end', dest='step_end', default='')
     parser.add_argument('-epochs', dest='epochs', default='-1')
+    parser.add_argument('-batch-size', dest='batch_size', default='-1')
     
 def main(args):
     framework = DeffeFramework(args)

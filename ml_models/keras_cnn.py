@@ -143,7 +143,10 @@ class KerasCNN:
             self.loss_function = custom_mean_abs_log_loss
         keras.losses.custom_loss = self.loss_function
         self.model = self.get_compiled_model(self.model, loss=self.loss_function, optimizer='adam', metrics=["mse"])
-        self.batch_size = min(self.parameters_data.shape[0], int(args.batch_size))
+        batch_size = int(args.batch_size)
+        if self.framework.args.batch_size != '-1':
+            batch_size = int(self.framework.args.batch_size)
+        self.batch_size = min(self.parameters_data.shape[0], batch_size)
         self.disable_icp = False
 
     def get_compiled_model(self, model, loss='categorical_crossentropy', optimizer = keras.optimizers.RMSprop(learning_rate=1e-3), metrics=['accuracy']):
@@ -307,23 +310,22 @@ class KerasCNN:
             model_checkpoint = ModelCheckpoint(os.path.join(checkpoint_dir, filepath), monitor='val_loss', verbose=1, save_best_only=True, mode='min', save_weights_only=False)
             callbacks_list = [model_checkpoint]
             print('# Fit model on training data')
-            with tf.device('/cpu:0'):
-                if self.tl_freeze_layers != "-1":
-                    for layer in self.model.layers[:int(self.args.tl_freeze_layers)]:
-                        print("Frozen Layer: "+layer.name)
-                        layer.trainable = False
-                history = self.model.fit(x_train, y_train,
-                                batch_size=self.GetBatchSize(),
-                                epochs=self.GetEpochs(),
-                                # We pass some validation for
-                                # monitoring validation loss and metrics
-                                # at the end of each epoch
-                                #validation_data=(x_test, y_test),
-                                validation_split = self.validation_split,
-                                callbacks=callbacks_list,
-                                shuffle=True
-                                )
-                print("Completed model fitting")
+            if self.tl_freeze_layers != "-1":
+                for layer in self.model.layers[:int(self.args.tl_freeze_layers)]:
+                    print("Frozen Layer: "+layer.name)
+                    layer.trainable = False
+            history = self.model.fit(x_train, y_train,
+                            batch_size=self.GetBatchSize(),
+                            epochs=self.GetEpochs(),
+                            # We pass some validation for
+                            # monitoring validation loss and metrics
+                            # at the end of each epoch
+                            #validation_data=(x_test, y_test),
+                            validation_split = self.validation_split,
+                            callbacks=callbacks_list,
+                            shuffle=True
+                            )
+            print("Completed model fitting")
             #fh.close()
 
             # Plot training & validation loss values
