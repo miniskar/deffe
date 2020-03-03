@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.join(framework_path, "framework"))
 from read_config import *
 from parameters import *
 import numpy as np
+from workload_excel import *
 
 # Requirements
 # * Scenario based evaluation and ml model creation
@@ -45,7 +46,11 @@ class DeffeFramework:
         self.evaluate = self.LoadModule(config.GetEvaluate().pyscript)
         self.extract = self.LoadModule(config.GetExtract().pyscript)
         self.slurm = self.LoadModule(config.GetSlurm().pyscript)
-
+        self.exploration_table = Workload()
+        self.evaluation_table = Workload()
+        self.ml_predict_table = Workload()
+        self.evaluation_predict_table = Workload()
+         
     def Configure(self):
         #TODO: set parameters
         None
@@ -66,7 +71,15 @@ class DeffeFramework:
         return py_mod.GetObject(self)
 
     def WriteExplorationOutput(self, parameter_values, batch_output):
-        None
+        for index, (valid_flag, eval_type, cost_metrics) in enumerate(batch_output):
+            param_val = parameter_values[index].tolist()
+            cost_metrics = cost_metrics.tolist()
+            if eval_type == self.evaluate_flag:
+                self.evaluation_table.WriteDataInCSV(param_val + cost_metrics)
+                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
+            if eval_type == self.predicted_flag:
+                self.ml_predict_table.WriteDataInCSV(param_val + cost_metrics)
+                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
 
     def Run(self):
         if not os.path.exists(self.fr_config.run_directory):
@@ -77,6 +90,9 @@ class DeffeFramework:
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
             self.evaluate.Initialize(param_list, pruned_param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
             self.extract.Initialize(param_list, self.config.GetCosts())
+            self.evaluation_table.WriteHeaderInCSV(explore_groups.evaluation_table, self.evaluate.param_hdrs+self.config.GetCosts())
+            self.ml_predict_table.WriteHeaderInCSV(explore_groups.ml_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
+            self.evaluation_predict_table.WriteHeaderInCSV(explore_groups.evaluation_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
             if self.args.only_preloaded_data_exploration:
                 n_samples = len(self.evaluate.param_data_hash) 
             self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
@@ -109,11 +125,10 @@ class DeffeFramework:
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(parameter_values, param_list, eval_output)
-                    self.WriteExplorationOutput(parameter_values, batch_output)
                     (train_acc, val_acc) = self.model.Train(step, pruned_headers, parameters_normalize, batch_output)
                     print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
+                self.WriteExplorationOutput(parameter_values, batch_output)
                 step = step + 1
-
 def InitParser(parser):
     parser.add_argument('-config', dest='config', default="config.json")
     parser.add_argument('-only-preloaded-data-exploration', dest='only_preloaded_data_exploration', action="store_true")

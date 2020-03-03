@@ -27,14 +27,14 @@ class DeffeExtract:
         cmd = "cd "+run_dir+" ; sh "+extract_script+" > "+self.config.output_log+" 2>&1 3>&1 ; cd "+os.getcwd()
         return cmd
 
-    def GetResult(self, eval_output):
+    def GetResult(self, flag, eval_output):
         (run_dir, sample_evaluate_script) = eval_output
         file_path = os.path.join(run_dir, self.config.cost_output)
         if os.path.exists(file_path):
             with open(file_path, "r") as fh:
                 lines = fh.readlines()
                 return (self.framework.valid_flag, np.array([RemoveWhiteSpaces(lines[0]),]).astype('str'))
-        return (self.framework.not_valid_flag, np.array([0,]).astype('str'))
+        return (self.framework.not_valid_flag, flag, np.array([0,]).astype('str'))
 
     def Run(self, param_val, param_list, eval_output):
         batch_output = []
@@ -43,7 +43,7 @@ class DeffeExtract:
         for index, (flag, output) in enumerate(eval_output):
             (param_pattern, param_hash, param_dict) = self.parameters.GetParamHash(param_val[index], self.param_list)
             if flag == self.framework.predicted_flag:
-                batch_output.append((self.framework.valid_flag, output))
+                batch_output.append((self.framework.valid_flag, flag, output))
             elif flag == self.framework.evaluate_flag:
                 cmd = self.GetExtractCommand(output, param_pattern, param_dict)
                 (run_dir, eval_script_filename) = output
@@ -52,14 +52,14 @@ class DeffeExtract:
                     self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
                     cmd = self.framework.slurm.GetSlurmJobCommand(slurm_script_filename)
                 mt.Run([cmd])
-                batch_output.append((self.framework.not_valid_flag, np.array([0,]).astype('str')))
+                batch_output.append((self.framework.not_valid_flag, flag, np.array([0,]).astype('str')))
             else:
                 print("[Error] Unknow flag received in DeffeExtract::Run")
-                batch_output.append((self.framework.not_valid_flag, np.array([0,]).astype('str')))
+                batch_output.append((self.framework.not_valid_flag, flag, np.array([0,]).astype('str')))
         mt.Close()
         for index, (flag, output) in enumerate(eval_output):
             if flag == self.framework.evaluate_flag:
-                batch_output[index] = self.GetResult(output)
+                batch_output[index] = self.GetResult(flag, output)
         return batch_output
 
 def GetObject(framework):

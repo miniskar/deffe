@@ -40,6 +40,7 @@ class Workload:
         self.param_indexes = []
         self.cost_indexes = []
         self.data_hash = {}
+        self.csv_filename = None
 
     def GetHeaders(self, specific_columns=None):
         if specific_columns == None:
@@ -338,6 +339,19 @@ class Workload:
         headers = self.headers_data + column_names
         new_data = [ rdata + column_data for rdata in self.data_lines ]
         return headers, new_data
+
+    def WriteHeaderInCSV(self, filename, headers=None):
+        self.csv_filename = filename
+        if headers == None:
+            headers = self.headers_data
+        with open(self.csv_filename, "w") as csv_fh:
+            csv_fh.write(", ".join(headers)+"\n")
+            csv_fh.close()
+            
+    def WriteDataInCSV(self, data):
+        with open(self.csv_filename, "a") as csv_fh:
+            csv_fh.writelines(", ".join(data)+"\n")
+            csv_fh.close()
 
     def WriteExcel(self, filename, headers=None, data=None):
         xlsx_filename = filename + ".xlsx"

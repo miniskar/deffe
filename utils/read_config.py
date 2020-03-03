@@ -94,6 +94,18 @@ class DeffeConfigSingleExploration:
             self.pre_evaluated_data = data['pre_evaluated_data'] 
         if data != None and 'groups' in data:
             self.groups = re.split('\s*,\s*', data['groups'])
+        self.exploration_table = "deffe_exploration.csv"
+        if data != None and 'exploration_table' in data:
+            self.exploration_table = data['exploration_table']
+        self.evaluation_table = "deffe_evaluation.csv"
+        if data != None and 'evaluation_table' in data:
+            self.evaluation_table = data['evaluation_table']
+        self.ml_predict_table = "deffe_prediction.csv"
+        if data != None and 'ml_predict_table' in data:
+            self.ml_predict_table = data['ml_predict_table']
+        self.evaluation_predict_table = "deffe_eval_predict.csv"
+        if data != None and 'evaluation_predict_table' in data:
+            self.evaluation_predict_table = data['evaluation_predict_table']
         
 class DeffeConfigExploration:
     def __init__(self, data):
@@ -185,15 +197,6 @@ class DeffeConfigFramework:
         self.run_directory = "run"
         if data != None and 'run_directory' in data:
             self.run_directory = data['run_directory']
-        self.exploration_table = "deffe_exploration.hdf5"
-        if data != None and 'exploration_table' in data:
-            self.exploration_table = data['exploration_table']
-        self.evaluation_table = "deffe_evaluation.hdf5"
-        if data != None and 'evaluation_table' in data:
-            self.evaluation_table = data['evaluation_table']
-        self.ml_predict_table = "deffe_prediction.hdf5"
-        if data != None and 'ml_predict_table' in data:
-            self.ml_predict_table = data['ml_predict_table']
 
 class DeffeConfigSlurm:
     def __init__(self, data):
