@@ -1,12 +1,14 @@
 import os
 import pdb
 import numpy as np
+import re
 
 class Parameters:
-    def __init__(self, config):
+    def __init__(self, config, framework):
         self.config = config
         self.type_knob = 1
         self.type_scenario = 2
+        self.framework = framework
 
     # Entry method to get all permutations
     def Initialize(self, explore_groups):
@@ -100,16 +102,17 @@ class Parameters:
         max_list = np.array(max_list).astype('float')
         nparams_out = nparams.astype('float')
         nparams_out = (nparams_out - min_list) / (max_list - min_list)
-        if (nparams_out< 0.0).any():
-            print("Error: Some data in the sample normalization is negative. Please define the ranges properly")
-            print([index for index,param in enumerate(nparams_out) if (param<0.0).any()])
-            pdb.set_trace()
-            None
-        if (nparams_out> 1.0).any():
-            print("Error: Some data in the sample normalization is > 1.0. Please define the ranges properly")
-            print([index for index, param in enumerate(nparams_out) if (param>1.0).any()])
-            pdb.set_trace()
-            None
+        if not self.framework.args.bounds_no_check:
+            if (nparams_out< 0.0).any():
+                print("Error: Some data in the sample normalization is negative. Please define the ranges properly")
+                print([index for index,param in enumerate(nparams_out) if (param<0.0).any()])
+                pdb.set_trace()
+                None
+            if (nparams_out> 1.0).any():
+                print("Error: Some data in the sample normalization is > 1.0. Please define the ranges properly")
+                print([index for index, param in enumerate(nparams_out) if (param>1.0).any()])
+                pdb.set_trace()
+                None
         return nparams_out
 
     def GetNumpyParameters(self, samples, selected_params=None, with_indexing=False):
@@ -142,3 +145,35 @@ class Parameters:
 
     def GetHeaders(self, param_list):
         return [param.name for (param, pvalues, pindex) in param_list]
+
+    def CreateRunScript(self, script, run_dir, param_pattern, param_dict):
+        with open(script, "r") as rfh, open(os.path.join(run_dir, os.path.basename(script)), "w") as wfh:
+            lines = rfh.readlines()
+            for line in lines:
+                wline = param_pattern.sub(lambda m: param_dict[re.escape(m.group(0))], line)
+                wfh.write(wline)
+            rfh.close()
+            wfh.close()
+
+    def GetParamHash(self, param_val, param_list=None):
+        if param_list == None:
+            param_list = self.selected_params
+        param_hash = {}
+        index = 0
+        for (param, param_values, pindex) in param_list:
+            param_key = "${"+param.name+"}"
+            if index >= len(param_val):
+                pdb.set_trace()
+                None
+            param_hash[param_key] = param_val[index]
+            param_key = "${"+param.map+"}"
+            if param.name != param.map:
+                if param_key in param_hash:
+                    print("[Error] Multiple map_name(s):"+param.map+" used in the evaluation")
+                param_hash[param_key] = param_val[index]
+            index = index + 1
+        param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
+        param_pattern = re.compile("|".join(param_dict.keys()))
+        return (param_pattern, param_hash, param_dict)
+            
+

@@ -84,9 +84,9 @@
         },
         {
             "name" : "kmeans_command",
-            "map" : "command",
+            "map" : "command_file",
             "groups" : "kmeans",
-            "values" : "kemans_command_script.sh"
+            "values" : "kmeans_command_script.sh"
         },
         {
             "name" : "nw_command",
@@ -103,15 +103,15 @@
         ],
     "costs" : [ "cpu_cycles" ],
     "model" : {
-        "script" : "ml_model.py",
+        "pyscript" : "ml_model.py",
         "ml_model_script" : "keras_cnn.py",
-        "output" : "network.log",
+        "output_log" : "network.log",
         "arguments" : "-convs 2 -loss custom_mean_abs_log_loss -tl-samples -epochs 2000 -train-test-split 0.6 -validation-split 0.3"
     },
     "exploration" : {
-        "script" : "exploration.py",
+        "pyscript" : "exploration.py",
         "arguments" : "",
-        "output" : "exploration.log",
+        "output_log" : "exploration.log",
         "explore" : 
             [
             {
@@ -122,28 +122,38 @@
             ]
     },
     "sampling" : {
-        "script" : "random_sampling.py",
+        "pyscript" : "random_sampling.py",
         "arguments" : "",
-        "output" : "sampling.log"
+        "output_log" : "sampling.log"
     },
     "evaluate" : {
-        "script"    : "evaluate.py",
+        "pyscript"    : "evaluate.py",
         "arguments" : "",
-        "batch"     : "40",
-        "slurm"     : "True",
         "sample_evaluate_script" : "run_gem5_template.sh",
-        "output"    : "evaluate.log"
+        "slurm"     : "True",
+        "batch_size"     : "400",
+        "output_log"    : "evaluate.log"
     },
     "extract" : {
-        "script" : "extract.py",
+        "pyscript" : "extract.py",
         "arguments" : "",
-        "output" : "extract.log"
+        "sample_extract_script" : "extract.sh",
+        "slurm"     : "True",
+        "batch_size"     : "400",
+        "cost_output" : "results.out",
+        "output_log" : "extract.log"
     },
     "framework" : {
-        "output" : "framework_output.log",
+        "output_log" : "framework_output.log",
         "run_directory" : "riscv_exploration",
         "exploration_table" : "deffe_exploration.hdf5",
         "evaluation_table" : "deffe_evaluation.hdf5",
         "ml_predict_table" : "deffe_prediction.hdf5"
+    },
+    "slurm" : {
+        "nodes" : 1,
+        "cpus_per_task" : 1,
+        "constraint" : "x86_64,centos",
+        "user_script_configured" : "False"
     }
 }

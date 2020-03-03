@@ -38,7 +38,6 @@ class ThreadObject:
             self.Join()
 
 def example_run(arg1, arg2):
-    print("Arg1: "+str(arg1)+" Arg2:"+str(arg2))
     time.sleep(1)
     
 if __name__ == "__main__":

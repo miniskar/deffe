@@ -1,6 +1,8 @@
 import glob, importlib, os, pathlib, sys
 import socket
 import pdb
+import signal
+
 framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 #sys.path.insert(0, framework_path)
 framework_env = os.getenv('DEFFE_DIR')
@@ -11,7 +13,6 @@ sys.path.insert(0, os.path.join(framework_path, "utils"))
 sys.path.insert(0, os.path.join(framework_path, "ml_models"))
 sys.path.insert(0, os.path.join(framework_path, "framework"))
 from read_config import *
-from workload_excel import *
 from parameters import *
 import numpy as np
 
@@ -37,12 +38,13 @@ class DeffeFramework:
         self.init_n_train = 100
         self.init_n_val = 2 * self.init_n_train
         self.Initialize()
-        self.parameters = Parameters(config)
-        self.model = self.LoadModule(config.GetModel().script)
-        self.sampling = self.LoadModule(config.GetSampling().script)
-        self.exploration = self.LoadModule(config.GetExploration().script)
-        self.evaluate = self.LoadModule(config.GetEvaluate().script)
-        self.extract = self.LoadModule(config.GetExtract().script)
+        self.parameters = Parameters(config, self)
+        self.model = self.LoadModule(config.GetModel().pyscript)
+        self.sampling = self.LoadModule(config.GetSampling().pyscript)
+        self.exploration = self.LoadModule(config.GetExploration().pyscript)
+        self.evaluate = self.LoadModule(config.GetEvaluate().pyscript)
+        self.extract = self.LoadModule(config.GetExtract().pyscript)
+        self.slurm = self.LoadModule(config.GetSlurm().pyscript)
 
     def Configure(self):
         #TODO: set parameters
@@ -63,6 +65,9 @@ class DeffeFramework:
         py_mod = importlib.import_module(py_mod_name)
         return py_mod.GetObject(self)
 
+    def WriteExplorationOutput(self, parameter_values, batch_output):
+        None
+
     def Run(self):
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
@@ -70,7 +75,8 @@ class DeffeFramework:
             (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups.groups)
             headers = self.parameters.GetHeaders(param_list)
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
-            self.evaluate.Initialize(param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
+            self.evaluate.Initialize(param_list, pruned_param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
+            self.extract.Initialize(param_list, self.config.GetCosts())
             if self.args.only_preloaded_data_exploration:
                 n_samples = len(self.evaluate.param_data_hash) 
             self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
@@ -102,7 +108,8 @@ class DeffeFramework:
                     batch_output = self.model.Inference(parameters_normalize)
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
-                    batch_output = self.extract.Run(param_list, eval_output)
+                    batch_output = self.extract.Run(parameter_values, param_list, eval_output)
+                    self.WriteExplorationOutput(parameter_values, batch_output)
                     (train_acc, val_acc) = self.model.Train(step, pruned_headers, parameters_normalize, batch_output)
                     print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
                 step = step + 1
@@ -110,6 +117,8 @@ class DeffeFramework:
 def InitParser(parser):
     parser.add_argument('-config', dest='config', default="config.json")
     parser.add_argument('-only-preloaded-data-exploration', dest='only_preloaded_data_exploration', action="store_true")
+    parser.add_argument('-no-run', dest='no_run', action="store_true")
+    parser.add_argument('-bounds-no-check', dest='bounds_no_check', action="store_true")
     parser.add_argument('-step-increment', dest='step_inc', default='1')
     parser.add_argument('-step-start', dest='step_start', default='')
     parser.add_argument('-step-end', dest='step_end', default='')

@@ -1,21 +1,24 @@
 import os
 import pdb
-import shutil
 import re
 import sys
 import numpy as np
 import pandas as pd
+from utils.multi_thread_run import *
+from deffe_utils import *
 
 class DeffeEvaluate:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetEvaluate()
+        self.batch_size = int(self.config.batch_size)
         self.counter = 0
         self.fr_config = self.framework.fr_config
         self.preload_data = []
         self.preload_header = []
+        self.parameters = self.framework.parameters
 
-    def Initialize(self, param_list, cost_list, preload_file):
+    def Initialize(self, param_list, pruned_param_list, cost_list, preload_file):
         self.param_list = param_list
         self.cost_list = cost_list
         if preload_file == None:
@@ -48,6 +51,23 @@ class DeffeEvaluate:
                 self.np_cost_hdrs.append(hdr)
                 self.np_cost_valid_indexes.append(index)
         trans_data = preload_data.transpose()
+        trans_data_flag = np.full(shape=trans_data.shape, fill_value=False)
+        pruned_list_indexes = []
+        for pdata in pruned_param_list:
+            (param, param_values, pindex) = pdata
+            pruned_list_indexes.append(pindex)
+            for pvalue in param_values:
+                trans_data_flag[pindex] = trans_data_flag[pindex] | (trans_data[pindex] == pvalue)
+        for pdata in pruned_param_list:
+            (param, param_values, pindex) = pdata
+            if pindex not in pruned_list_indexes:
+                trans_data_flag[pindex] = np.full(shape=trans_data_flag[pindex].shape, fill_value=True)
+        trans_data_flag = trans_data_flag.transpose()
+        valid_indexes = []
+        for index, tdata in enumerate(trans_data_flag):
+            if tdata.all():
+                valid_indexes.append(index)
+        #TODO
         self.param_data = trans_data[self.np_param_valid_indexes,].transpose()
         self.cost_data = trans_data[self.np_cost_valid_indexes,].transpose()
         self.param_data_hash = {}
@@ -122,42 +142,56 @@ class DeffeEvaluate:
         param_pattern = re.compile("|".join(param_dict.keys()))
         return (param_pattern, param_hash, param_dict)
             
-    def CreateRunScript(self, script, run_dir, param_pattern, param_dict):
-        with open(script, "r") as rfh, \
-             open(os.path.join(run_dir, os.path.basename(script)), "w") as wfh:
-            lines = rfh.readlines()
-            for line in lines:
-                wline = param_pattern.sub(lambda m: param_dict[re.escape(m.group(0))], line)
-                wfh.write(wline)
-            rfh.close()
-            wfh.close()
-            
 
     def CreateEvaluateCase(self, param_val):
-        (param_pattern, param_hash, param_dict) = self.GetParamHash(param_val)
+        (param_pattern, param_hash, param_dict) = self.parameters.GetParamHash(param_val, self.param_list)
         run_dir = self.fr_config.run_directory
         dir_name = os.path.join(run_dir, "evaluate_"+str(self.counter))
         run_dir = dir_name
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
-        self.CreateRunScript(self.config.sample_evaluate_script, run_dir, param_pattern, param_dict)
+        scripts = []
+        run_dir = os.path.abspath(run_dir)
         if "${command_file}" in param_hash:
             filename = param_hash["${command_file}"]
-            self.CreateRunScript(filename, run_dir, param_pattern, param_dict)
+            self.parameters.CreateRunScript(filename, run_dir, param_pattern, param_dict)
+            scripts.append((run_dir, filename))
         if "${command_option}" in param_hash:
             filename = param_hash["${command_option}"]
-            self.CreateRunScript(filename, run_dir, param_pattern, param_dict)
+            self.parameters.CreateRunScript(filename, run_dir, param_pattern, param_dict)
+            scripts.append((run_dir, filename))
+        self.parameters.CreateRunScript(self.config.sample_evaluate_script, run_dir, param_pattern, param_dict)
+        scripts.append((run_dir, self.config.sample_evaluate_script))
+        cmd = ""
+        for index, (rdir, filename) in enumerate(scripts):
+            redirect_symbol = ">>"
+            if index == 0:
+                redirect_symbol = ">"
+            cmd = cmd + "cd "+rdir+" ; sh "+filename+" "+redirect_symbol+" "+self.config.output_log+" 2>&1 3>&1 ; cd "+os.getcwd()+" ; "
+        with open(os.path.join(run_dir, "evaluate.sh"), "w") as fh:
+            fh.write(cmd)
+            fh.close()
         self.counter = self.counter + 1
+        out = ((run_dir, self.config.sample_evaluate_script), cmd)
+        if self.config.slurm:
+            slurm_script_filename = os.path.join(run_dir, "slurm_evaluate.sh")
+            self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
+            slurm_script_cmd = self.framework.slurm.GetSlurmJobCommand(slurm_script_filename)
+            out = ((run_dir, slurm_script_filename), slurm_script_cmd)
+        return out
 
     def Run(self, parameters):
         eval_output = []
+        mt = MultiThreadBatchRun(self.batch_size, self.framework)
         for param_val in parameters:
             param_hash_key = tuple(param_val[self.param_extract_indexes].tolist())
             if param_hash_key in self.param_data_hash:
                 eval_output.append((self.framework.predicted_flag, self.param_data_hash[param_hash_key]))
             else:
-                output = self.CreateEvaluateCase(param_val)
+                (output, cmd) = self.CreateEvaluateCase(param_val)
                 eval_output.append((self.framework.evaluate_flag, output))
+                mt.Run([cmd])
+        mt.Close()
         return eval_output
 
 def GetObject(framework):

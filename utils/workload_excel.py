@@ -943,7 +943,7 @@ def PerformArithmatic(args, workload):
         elif operator == '/':
             if const_fields:
                 for rdata in data:
-                    rdata[dst_index] = str(float(rdata[src0_index]) / float(src1_index)) 
+                    rdata[dst_index] = str(float(rdata[src0_index]) / float(src1_index))
             else:
                 for rdata in data:
                     rdata[dst_index] = str(float(rdata[src0_index]) / float(rdata[src1_index]))
