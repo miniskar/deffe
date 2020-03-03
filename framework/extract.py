@@ -1,5 +1,5 @@
 import os
-from utils.multi_thread_run import *
+from multi_thread_run import *
 from deffe_utils import *
 import numpy as np
 

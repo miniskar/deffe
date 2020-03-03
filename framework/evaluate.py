@@ -4,10 +4,14 @@ import re
 import sys
 import numpy as np
 import pandas as pd
-from utils.multi_thread_run import *
+from multi_thread_run import *
 from deffe_utils import *
 
+''' DeffeEvaluate class to evaluate the batch of samples with multi-thread execution environment either with/without 
+    the help of slurm
+    '''
 class DeffeEvaluate:
+    # Constructor
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetEvaluate()
@@ -18,39 +22,8 @@ class DeffeEvaluate:
         self.preload_header = []
         self.parameters = self.framework.parameters
 
-    def Initialize(self, param_list, pruned_param_list, cost_list, preload_file):
-        self.param_list = param_list
-        self.cost_list = cost_list
-        if preload_file == None:
-            return
-        param_hdrs = []
-        param_hash = {}
-        cost_hash = {}
-        for index, cost in enumerate(self.cost_list):
-            cost_hash[cost] = index
-        for pdata in self.param_list:
-            (param, param_values, pindex) = pdata
-            param_hdrs.append(param.name.lower())
-            param_hash[param.name.lower()] = pdata
-            param_hash[param.map.lower()] = pdata
-        self.param_hdrs = param_hdrs
-        self.param_hash = param_hash
-        pd_data = pd.read_csv(preload_file, dtype='str', delimiter=r'\s*,\s*', engine='python')
-        np_data = pd_data.values.astype('str')
-        np_hdrs = np.char.lower(np.array(list(pd_data.columns)).astype('str'))
-        preload_data = np_data[1:]
-        self.np_param_valid_indexes = []
-        self.np_param_hdrs = []
-        self.np_cost_valid_indexes = []
-        self.np_cost_hdrs = []
-        for index, hdr in enumerate(np_hdrs):
-            if hdr in param_hash:
-                self.np_param_valid_indexes.append(index)
-                self.np_param_hdrs.append(hdr)
-            if hdr in cost_hash:
-                self.np_cost_hdrs.append(hdr)
-                self.np_cost_valid_indexes.append(index)
-        trans_data = preload_data.transpose()
+    # Get valid preloaded data. 
+    def GetValidPreloadedData(self):
         trans_data_flag = np.full(shape=trans_data.shape, fill_value=False)
         pruned_list_indexes = []
         for pdata in pruned_param_list:
@@ -68,15 +41,53 @@ class DeffeEvaluate:
             if tdata.all():
                 valid_indexes.append(index)
         #TODO
+
+    # Initialize method should be called for every new instance of new batch of samples.
+    # Parameters to be passed: Parameters list, Pruned parameters list, Cost metrics names, and also 
+    # if any preload_file (Pre-Evaluated results)
+    def Initialize(self, param_list, pruned_param_list, cost_list, preload_file):
+        self.param_data_hash = {}
+        self.param_extract_indexes = []
+        self.unused_params_values = []
+        self.param_list = param_list
+        self.cost_list = cost_list
+        param_hdrs = []
+        param_hash = {}
+        cost_hash = {}
+        for index, cost in enumerate(self.cost_list):
+            cost_hash[cost] = index
+        for pdata in self.param_list:
+            (param, param_values, pindex) = pdata
+            param_hdrs.append(param.name.lower())
+            param_hash[param.name.lower()] = pdata
+            param_hash[param.map.lower()] = pdata
+        self.param_hdrs = param_hdrs
+        self.param_hash = param_hash
+        if preload_file == None:
+            return
+        pd_data = pd.read_csv(preload_file, dtype='str', delimiter=r'\s*,\s*', engine='python')
+        np_data = pd_data.values.astype('str')
+        np_hdrs = np.char.lower(np.array(list(pd_data.columns)).astype('str'))
+        preload_data = np_data[1:]
+        self.np_param_valid_indexes = []
+        self.np_param_hdrs = []
+        self.np_cost_valid_indexes = []
+        self.np_cost_hdrs = []
+        for index, hdr in enumerate(np_hdrs):
+            if hdr in param_hash:
+                self.np_param_valid_indexes.append(index)
+                self.np_param_hdrs.append(hdr)
+            if hdr in cost_hash:
+                self.np_cost_hdrs.append(hdr)
+                self.np_cost_valid_indexes.append(index)
+        trans_data = preload_data.transpose()
+        #self.GetValidPreloadedData(trans_data)
         self.param_data = trans_data[self.np_param_valid_indexes,].transpose()
         self.cost_data = trans_data[self.np_cost_valid_indexes,].transpose()
-        self.param_data_hash = {}
         np_param_hdrs_hash = {}
         for index, hdr in enumerate(self.np_param_hdrs):
             np_param_hdrs_hash[hdr] = index
-        self.param_extract_indexes = []
         unused_params_list = []
-        self.unused_params_values = []
         count = 0
         for pdata in self.param_list:
             (param, param_values, pindex) = pdata
@@ -104,14 +115,17 @@ class DeffeEvaluate:
             if len(param_values) > 1:
                 if param.name in np_param_hdrs_hash:
                     self.param_extract_indexes[np_param_hdrs_hash[param.name]] = pindex
-                elif param.name in np_param_hdrs_hash:
+                elif param.map in np_param_hdrs_hash:
                     self.param_extract_indexes[np_param_hdrs_hash[param.map]] = pindex
+        self.np_param_hdrs_hash = np_param_hdrs_hash
         for index in range(len(self.param_data)):
             self.param_data_hash[tuple(self.param_data[index])] = self.cost_data[index]
 
+    # Get parameters full list which includes the parameters used only for ML model and unused parameters
     def GetParamsFullList(self, np_params):
         return np.append(np_params, self.unused_params_values)[self.rev_param_extract_indexes,]
 
+    # Get pre-evaluated parameters
     def GetPreEvaluatedParameters(self, samples, param_list):
         indexes = samples[0].tolist() + samples[1].tolist()
         out_params = []
@@ -120,12 +134,15 @@ class DeffeEvaluate:
             out_params.append(params)
         return out_params
 
+    # Initialize parser with command line arguments 
     def InitializeParser(self, parser):
         None
 
+    # Set evaluate module specific arguments
     def SetArgs(self, args):
         self.args = args
 
+    # Get parameter hash for pre-loaded data
     def GetParamHash(self, param_val):
         param_hash = {}
         index = 0
@@ -141,8 +158,8 @@ class DeffeEvaluate:
         param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
         param_pattern = re.compile("|".join(param_dict.keys()))
         return (param_pattern, param_hash, param_dict)
-            
-
+     
+    # Create environment for evaluating one sample    
     def CreateEvaluateCase(self, param_val):
         (param_pattern, param_hash, param_dict) = self.parameters.GetParamHash(param_val, self.param_list)
         run_dir = self.fr_config.run_directory
@@ -180,6 +197,9 @@ class DeffeEvaluate:
             out = ((run_dir, slurm_script_filename), slurm_script_cmd)
         return out
 
+    # Run method will evaluate the set of parameters
+    # ** If it is available in the pre-loaded data, it returns that value
+    # ** Else, it evaluate in traditional way
     def Run(self, parameters):
         eval_output = []
         mt = MultiThreadBatchRun(self.batch_size, self.framework)
@@ -194,6 +214,7 @@ class DeffeEvaluate:
         mt.Close()
         return eval_output
 
+# Get object of evaluate
 def GetObject(framework):
     obj = DeffeEvaluate(framework)
     return obj

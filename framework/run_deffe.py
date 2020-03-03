@@ -38,7 +38,7 @@ class DeffeFramework:
         self.args = args
         self.init_n_train = 100
         self.init_n_val = 2 * self.init_n_train
-        self.Initialize()
+        self.InitializePythonPaths()
         self.parameters = Parameters(config, self)
         self.model = self.LoadModule(config.GetModel().pyscript)
         self.sampling = self.LoadModule(config.GetSampling().pyscript)
@@ -50,20 +50,16 @@ class DeffeFramework:
         self.evaluation_table = Workload()
         self.ml_predict_table = Workload()
         self.evaluation_predict_table = Workload()
-         
-    def Configure(self):
-        #TODO: set parameters
-        None
-
-    def Initialize(self):
+ 
+    # Initialize the python paths        
+    def InitializePythonPaths(self):
         python_paths = self.config.GetPythonPaths()
         for path in python_paths:
             if path[0] != '/':
                 sys.path.insert(0, os.path.join(os.getcwd(), path))
             else:
                 sys.path.insert(0, path)
-        print(sys.path)
-        self.Configure()
+        #print(sys.path)
 
     def LoadModule(self, py_file):
         py_mod_name = pathlib.Path(py_file).stem

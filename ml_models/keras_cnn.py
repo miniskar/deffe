@@ -68,7 +68,7 @@ class KerasCNN:
     def ParseArguments(self):
         arg_string = self.framework.config.GetModel().arguments
         parser = argparse.ArgumentParser()
-        parser.add_argument('-train-test-split', dest='train_test_split', default="0.70")
+        parser.add_argument('-train-test-split', dest='train_test_split', default="1.00")
         parser.add_argument('-validation-split', dest='validation_split', default="0.20")
         parser.add_argument('-icp', dest='icp', default="")
         parser.add_argument('-epochs', dest='epochs', default="50")
@@ -402,7 +402,6 @@ class KerasCNN:
                 self.model.load_weights(icp_file)
                 if self.args.load_train_test:
                     self.load_train_test_data(step)
-                x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
                 x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
                 keras.losses.custom_loss = self.loss_function
                 loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
