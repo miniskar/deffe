@@ -24,6 +24,7 @@ from tensorflow.python.ops import math_ops
 
 from tensorflow import keras
 from tensorflow.keras import layers
+from baseml import *
 
 checkpoint_dir = "checkpoints"
 def mean_squared_error(y_true, y_pred):
@@ -48,7 +49,7 @@ def custom_mean_abs_loss_v3(y_actual, y_predicted):
     error_sq = K.square(y_predicted-K.log(y_actual))
     return K.mean(error_sq, axis=-1)
 
-class KerasCNN:
+class KerasCNN(BaseMLModel):
     def __init__(self, framework):
         self.framework = framework
         self.args = self.ParseArguments()
@@ -170,62 +171,12 @@ class KerasCNN:
         self.disable_icp = flag
 
     def preprocess_data(self):
-        parameters = self.parameters_data
-        cost_data = self.cost_data
-        orig_cost_data = self.orig_cost_data
-        train_count = int(parameters.shape[0]*float(self.args.train_test_split))
-        test_count = parameters.shape[0] - train_count
-        print("Total count:"+str(parameters.shape[0]))
-        print("Train count:"+str(train_count))
-        print("Test count:"+str(test_count))
-        self.train_count = train_count
-        self.val_count = int(train_count * self.validation_split)
-        self.test_count = test_count
-        indices = np.random.permutation(parameters.shape[0])
-        training_idx = indices[:train_count]
-        test_idx = indices[train_count:]
-        np.save("train-indices.npy", training_idx)
-        np.save("test-indices.npy", test_idx)
-        print("Tr_indices:"+str(training_idx))
-        print("test_indices:"+str(test_idx))
-        print("Tr_indices count:"+str(training_idx.size))
-        print("test_indices count:"+str(test_idx.size))
-        x_train = parameters[training_idx,:].astype('float')
-        y_train = cost_data[training_idx,:].astype('float')
-        z_train = orig_cost_data[training_idx,:].astype('float') 
-        x_test = parameters[test_idx,:].astype('float')
-        y_test = cost_data[test_idx,:].astype('float')
-        z_test = orig_cost_data[test_idx,:].astype('float') 
-        self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
-        self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
+        BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.orig_cost_data, self.args.train_test_split, self.validation_split)
         if self.args.tl_samples and self.step != self.step_start:
             all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step-1)))
             last_cp = self.get_last_cp_model(all_files)
             if last_cp != '':
                 self.load_model(last_cp)
-
-    def load_train_test_data(self, step=-1):
-        if step == -1:
-            training_idx = np.load("train-indices.npy")
-            test_idx     = np.load("test-indices.npy")
-        else:
-            training_idx = np.load("step{}-train-indices.npy".format(step))
-            test_idx     = np.load("step{}-test-indices.npy".format(step))
-        parameters = self.parameters_data
-        cost_data = self.cost_data
-        orig_cost_data = self.orig_cost_data
-        x_train = parameters[training_idx,:].astype('float')
-        y_train = cost_data[training_idx,:].astype('float')
-        z_train = orig_cost_data[training_idx,:].astype('float') 
-        x_test = parameters[test_idx,:].astype('float')
-        y_test = cost_data[test_idx,:].astype('float')
-        z_test = orig_cost_data[test_idx,:].astype('float') 
-        self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
-        self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
-        self.train_count = len(training_idx) * (1-self.validation_split)
-        self.val_count = len(training_idx) * self.validation_split
-        self.test_count = len(test_idx)
-
 
     def evaluate(self, x_test, y_test, z_test, tags=""):
         if x_test.size == 0:
@@ -265,6 +216,7 @@ class KerasCNN:
         self.model.load_weights(model_name)
 
     def Train(self):
+        pdb.set_trace()
         class TestCallback(Callback):
             def __init__(self, test_data, fh):
                 self.test_data = test_data
