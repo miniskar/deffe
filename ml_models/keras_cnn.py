@@ -216,7 +216,6 @@ class KerasCNN(BaseMLModel):
         self.model.load_weights(model_name)
 
     def Train(self):
-        pdb.set_trace()
         class TestCallback(Callback):
             def __init__(self, test_data, fh):
                 self.test_data = test_data
@@ -309,7 +308,7 @@ class KerasCNN(BaseMLModel):
             epoch_flag = epoch_re.search(icp_file)
             epoch=0 #loss0.4787-valloss0.4075.hdf5a
             if epoch_flag:
-                epoch = int(epoch_flag[1]) 
+                epoch = int(epoch_flag.group(1)) 
             if epoch > max_epoch:
                 max_epoch = epoch
                 last_icp = icp_file
@@ -340,17 +339,17 @@ class KerasCNN(BaseMLModel):
                 valcount = 0
                 step = -1 
                 if epoch_flag:
-                    epoch = int(epoch_flag[1]) 
+                    epoch = int(epoch_flag.group(1)) 
                 if loss_flag:
-                    train_loss = float(loss_flag[1]) 
+                    train_loss = float(loss_flag.group(1)) 
                 if valloss_flag:
-                    val_loss = float(valloss_flag[1]) 
+                    val_loss = float(valloss_flag.group(1)) 
                 if step_flag:
-                    step = int(step_flag[1])
+                    step = int(step_flag.group(1))
                 if traincount_flag:
-                    traincount = int(float(traincount_flag[1]))
+                    traincount = int(float(traincount_flag.group(1)))
                 if valcount_flag:
-                    valcount = int(float(valcount_flag[1]))
+                    valcount = int(float(valcount_flag.group(1)))
                 self.model.load_weights(icp_file)
                 if self.args.load_train_test:
                     self.load_train_test_data(step)
