@@ -68,7 +68,7 @@ class DeffeRandomSampling:
         self._train_idx = self._seq[0:self._n_train]
         self._val_idx = self._seq[self._n_train: self._n_train+self._n_val]
         self._pos = self._n_train + self._n_val
-        print("Trianing: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
+        #print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
 
     """
        Take one step, generate the sequence of training and validation sets
@@ -100,7 +100,7 @@ class DeffeRandomSampling:
             self._val_idx = np.concatenate((self._val_idx[range(tmp,len(self._val_idx))], new_val), axis=None)
         self._pos = new_pos
         self._step = self._step + 1 
-        print("Trianing: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
+        print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
         return True
     
     @property 

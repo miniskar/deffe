@@ -8,10 +8,16 @@ from sklearn.ensemble import RandomForestRegressor
 import os, sys, logging
 import time
 from baseml import *
+import shlex
+import pdb
 
 class SKlearnRF(BaseMLModel):
     def __init__(self, framework):
         self.framework = framework
+        self.args = self.ParseArguments()
+        self.step = -1
+        self.step_start = framework.args.step_start
+        self.step_end= framework.args.step_end
 
     def ParseArguments(self):
         arg_string = self.framework.config.GetModel().arguments
@@ -51,18 +57,26 @@ class SKlearnRF(BaseMLModel):
         self.rf_dict = rf_dict
 
     def preprocess_data(self):
-        BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.args.train_test_split, 0.20)
-    def Inference(self):
-        return None
-
-    def Train(self):
+        BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.cost_data, self.args.train_test_split, 0.20)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
         y_train = np.log(y_train.reshape((y_train.shape[0], )))
         z_train = z_train.reshape((z_train.shape[0], ))
         y_test = np.log(y_test.reshape((y_test.shape[0], )))
         z_test = z_test.reshape((z_test.shape[0], ))
+        self.y_train = y_train
+        self.z_train = z_train
+        self.y_test = y_test
+        self.z_test = z_test
 
+    def Inference(self):
+        return None
+
+    def Train(self):
+        x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
+        x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
+
+        rf_dict = self.rf_dict
         n_estimators = rf_dict['n_estimators']
         random_state = rf_dict['random_state']
         crtiterion = rf_dict['crtiterion']
@@ -73,7 +87,7 @@ class SKlearnRF(BaseMLModel):
         rf = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth, random_state=random_state, n_jobs=n_jobs)
 
         obj_train = y_train
-        if args.real_objective:
+        if self.args.real_objective:
             obj_train = z_train
         start = time.time()
         rf.fit(x_train, obj_train)
@@ -83,19 +97,29 @@ class SKlearnRF(BaseMLModel):
         print('Regression training complete...')
 
         start = time.time()
-        obj_pred = rf.predict(x_test)
+        obj_pred_train = rf.predict(x_train)
+        obj_pred_test = None
+        if len(x_test) > 0:
+            obj_pred_test  = rf.predict(x_test)
         inference_time = "{:.3f} seconds".format(time.time() - start)
         print("Total runtime of script: "+inference_time)
 
         print('Regression prediction complete...')
 
-        if args.real_objective:
-            y_data = self.compute_error(y_test, np.log(np.abs(obj_pred)))
-            z_data = self.compute_error(z_test, obj_pred)
+        y_train_data = z_train_data = y_test_data = z_test_data = [0.0]
+        if self.args.real_objective:
+            y_train_data = self.compute_error(y_train, np.log(np.abs(obj_pred_train)))
+            z_train_data = self.compute_error(z_train, obj_pred_train)
+            if obj_pred_test != None:
+                y_test_data = self.compute_error(y_test, np.log(np.abs(obj_pred_test)))
+                z_test_data = self.compute_error(z_test, obj_pred_test)
         else:
-            y_data = self.compute_error(y_test, obj_pred)
-            z_data = self.compute_error(z_test, np.exp(obj_pred))
-        return y_data + z_data + [lapsed_time, inference_time]
+            y_train_data = self.compute_error(y_train, obj_pred_train)
+            z_train_data = self.compute_error(z_train, np.exp(obj_pred_train))
+            if obj_pred_test != None:
+                y_test_data = self.compute_error(y_test, obj_pred_test)
+                z_test_data = self.compute_error(z_test, np.exp(obj_pred_test))
+        return (y_train_data[0], y_test_data[0])
         
     def compute_error(self, test, pred):
         all_errors = np.zeros(pred.shape)

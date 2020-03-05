@@ -71,10 +71,10 @@ class DeffeConfigModel:
     def __init__(self, data):
         self.data = data
         self.ml_model_script = "keras_cnn.py"
-        if data != None and 'ml_model_script' in data['ml_model_script']:
+        if data != None and 'ml_model_script' in data:
             self.ml_model_script = data['ml_model_script']
         self.output_log = "ml_model.log"
-        if data != None and 'output_log' in data['output_log']:
+        if data != None and 'output_log' in data:
             self.output_log = data['output_log']
         self.pyscript = "ml_model.py"
         if data != None and 'pyscript' in data:
@@ -117,7 +117,7 @@ class DeffeConfigExploration:
         if data != None and 'arguments' in data:
             self.arguments = data['arguments']
         self.output_log = "exploration.log"
-        if data != None and 'output_log' in data['output_log']:
+        if data != None and 'output_log' in data:
             self.output_log = data['output_log']
         self.exploration_list = []
         if data != None and 'explore' in data:
@@ -129,7 +129,7 @@ class DeffeConfigSampling:
     def __init__(self, data):
         self.data = data
         self.output_log = "sampling.log"
-        if data != None and 'output_log' in data['output_log']:
+        if data != None and 'output_log' in data:
             self.output_log = data['output_log']
         self.pyscript = "random_sampling.py"
         if data != None and 'pyscript' in data:

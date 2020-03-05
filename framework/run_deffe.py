@@ -95,7 +95,6 @@ class DeffeFramework:
             step = 0
             inc = int(self.args.step_inc)
             while(not self.exploration.IsCompleted()):
-                print("***** Step {} *****".format(step))
                 if step != 0:
                     self.sampling.StepWithInc(inc)
                 if self.args.step_start != '':
@@ -103,9 +102,10 @@ class DeffeFramework:
                         step = step + 1
                         continue
                 if self.args.step_end != '':
-                    if step > int(self.args.step_end):
+                    if step >= int(self.args.step_end):
                         step = step + 1
-                        continue
+                        break
+                print("***** Step {} *****".format(step))
                 samples = self.sampling.GetBatch()
                 parameter_values = None
                 parameters_normalize = None
