@@ -30,7 +30,6 @@ from torchsummary import summary
 
 from baseml import *
 
-checkpoint_dir = "checkpoints"
 def mean_squared_error(y_actual, y_predicted):
     return torch.mean(torch.square(y_actual - y_predicted), axis=-1)
 
@@ -60,7 +59,6 @@ class TorchCNN(BaseMLModel):
         if framework.args.epochs != '-1':
             self.epochs = int(framework.args.epochs)
         self.nodes = int(self.args.nodes)
-        self.convs = int(self.args.convs)
         self.validation_split = float(self.args.validation_split)
         self.tl_freeze_layers = self.args.tl_freeze_layers
         if not os.path.exists(checkpoint_dir):
@@ -75,7 +73,6 @@ class TorchCNN(BaseMLModel):
         parser.add_argument('-epochs', dest='epochs', default="50")
         parser.add_argument('-batch-size', dest='batch_size', default="256")
         parser.add_argument('-tl_freeze_layers', dest='tl_freeze_layers', default="-1")
-        parser.add_argument('-convs', dest='convs', default="2")
         parser.add_argument('-tl-samples', dest='tl_samples', action='store_true')
         parser.add_argument('-no-run', dest='no_run', action='store_true')
         parser.add_argument('-evaluate-only', dest='evaluate', action='store_true')
@@ -120,14 +117,14 @@ class TorchCNN(BaseMLModel):
         self.name = name
         self.device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
         now = datetime.now()
-        dt_string = now.strftime("%Y%m%d_%H%M%S")
-        log_file = 'train_{}.log'.format(dt_string)
+        self.dt_string = now.strftime("%Y%m%d_%H%M%S")
+        log_file = 'train_{}.log'.format(self.dt_string)
         
         logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', filename=log_file)
         
         print('Log filename {}'.format( log_file))
         logging.info('Using device {}'.format(self.device))
-        self.loss_function = custom_mean_abs_exp_loss
+        self.loss_function = custom_mean_abs_log_loss
         if args.loss == 'custom_mean_abs_loss':
             self.loss_function = custom_mean_abs_loss
         elif args.loss == 'mean_squared_error':
@@ -159,8 +156,8 @@ class TorchCNN(BaseMLModel):
     def preprocess_data(self):
         BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.orig_cost_data, self.args.train_test_split, self.validation_split)
         if self.args.tl_samples and self.step != self.step_start:
-            all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step-1)))
-            last_cp = self.get_last_cp_model(all_files)
+            all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.pth".format(self.step-1)))
+            last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != '':
                 self.load_model(last_cp)
 
@@ -198,19 +195,28 @@ class TorchCNN(BaseMLModel):
 
     def load_model(self, model_name):
         print("Loading the checkpoint: "+model_name)
-        #TODO load model weights
-        #keras.losses.custom_loss = self.loss_function
-        #self.model.load_weights(model_name)
+        #load model weights
+        self.model = torch.load(model_name)
+
+    def calculate_loss(self, g_model, dataset):
+        features = torch.cat([dataset[:][0]], dim=0)
+        ground_truth = torch.cat([dataset[:][1]], dim=0)
+        pred = g_model(features)
+        return self.loss_function(ground_truth, pred)
 
     def Train(self):
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test
-        n_train = x_train.shape[0]
-        train_loader = DataLoader(TensorDataset(torch.Tensor(x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))), torch.Tensor(y_train)), batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
+        n_train = int(x_train.shape[0]*(1.0-self.validation_split))
+        n_val = int(x_train.shape[0]*self.validation_split)
+        print("Train count:"+str(n_train))
+        print("Val count:"+str(n_val))
+        full_set = TensorDataset(torch.Tensor(x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))), torch.Tensor(y_train))
+        train_set, val_set = torch.utils.data.random_split(full_set, [n_train, n_val])
+        train_loader = DataLoader(train_set, batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
+        val_loader = DataLoader(val_set, batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
         #test_loader = DataLoader(TensorDataset(torch.Tensor(x_test), torch.Tensor(y_test)), batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
         test_loader = None
-        val_loader = train_loader
-        n_val = x_train.shape[0]
         #x_train_torch = torch.from_numpy(x_train).reshape([x_train.shape[0], 1, [x_train.shape[2]]) 
         tr_comment = '{}_INPUT_{}_PARAM_{}_{}_{}_STEP_{}_SIZE_{}'.format(
             self.name, self.network_topo[0],self.network_topo[1],self.network_topo[2],self.network_topo[3], self.step, x_train.shape[0]+x_test.shape[0])
@@ -226,6 +232,8 @@ class TorchCNN(BaseMLModel):
         criterion = nn.MSELoss()
         n_epochs= self.epochs
         val_acc = 0.0
+        best_val_acc = 1.0
+        best_train_acc = 1.0
         epoch_test = 5
         for epoch in range(n_epochs):
             g_model.train()
@@ -238,10 +246,8 @@ class TorchCNN(BaseMLModel):
                     ground_truth = ground_truth.to(device=self.device, dtype=torch.float32)
                     g_model = g_model.to(device=self.device)
                     pred = g_model(features)
-                    if self.args.real_objective:
-                        loss = custom_mean_abs_loss(y_predicted=pred, y_actual=ground_truth)
-                    else:
-                        loss = criterion(pred, ground_truth)
+                    loss = self.loss_function(ground_truth, pred)
+                    #loss = criterion(pred, ground_truth)
                     epoch_loss += loss.item()
                     writer.add_scalar('Loss/train', loss.item(), global_step)
                     optimizer.zero_grad()
@@ -250,10 +256,15 @@ class TorchCNN(BaseMLModel):
                     global_step += 1
                     pbar.set_postfix(**{'batch training loss': loss.item(), 'batch val loss':val_acc})
                     pbar.update( features.shape[0] )
-                #print("Loss: "+str(epoch_loss))
-                val_acc = 0.0
-                if n_val > 0:
-                    val_acc = model_eval(self.args, g_model, val_loader, self.device, n_val)
+                train_acc = self.calculate_loss(g_model, train_set).tolist()
+                val_acc = self.calculate_loss(g_model, val_set).tolist()
+                if val_acc < best_val_acc:
+                    best_val_acc = val_acc
+                    best_train_acc = train_acc
+                    #step2-train350-val350-weights-improvement-610-loss0.1988-valloss0.1341.pth
+                    weight_file = 'step{}-train{}-val{}-weights-improvement-{}-loss{:0.4f}-valloss{:0.4f}.pth'.format( self.step, n_train, n_val, epoch,  best_train_acc, best_val_acc)
+                    logging.info('Saving weights to {}'.format( weight_file ))
+                    torch.save(g_model.state_dict(), os.path.join(checkpoint_dir, weight_file))
                 full_details = False
                 #acc = model_eval(g_model, test_loader, device, n_test)
                 if full_details and test_loader != None:
@@ -270,30 +281,13 @@ class TorchCNN(BaseMLModel):
                     logging.info('Step {0:d} Testing accuracy: max_error(%)={1:.4f}, min_error={2:.4f}, avg_error={3:.4f}, std={4:.4f}, num_val={5}'.
                                 format(self.step, acc['max'], acc['min'], acc['avg'], acc['std'], n_test))
                     pass
-        weight_file = 'weights_{}.pth'.format( dt_string )
-        logging.info('Saving weights to {}'.format( weight_file ))
-        torch.save(g_model.state_dict(), weight_file)
-        return (0.0, 0.0)
-
-    def get_last_cp_model(self, all_files):
-        epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
-        max_epoch = 0
-        last_icp = ''
-        for index, icp_file in enumerate(all_files):
-            epoch_flag = epoch_re.search(icp_file)
-            epoch=0 #loss0.4787-valloss0.4075.hdf5a
-            if epoch_flag:
-                epoch = int(epoch_flag.group(1)) 
-            if epoch > max_epoch:
-                max_epoch = epoch
-                last_icp = icp_file
-        return last_icp
+        return (best_train_acc, best_val_acc)
 
     def evaluate_model(self, all_files, outfile="test-output.csv"):
         epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
         loss_re = re.compile(r'-loss([^-]*)-')
-        valloss_re = re.compile(r'-valloss(.*)\.hdf5')
-        #step2-train350-val350-weights-improvement-610-loss0.1988-valloss0.1341.hdf5
+        valloss_re = re.compile(r'-valloss(.*)\.pth')
+        #step2-train350-val350-weights-improvement-610-loss0.1988-valloss0.1341.pth
         step_re = re.compile(r'step([^-]*)-')
         traincount_re = re.compile(r'-train([^-]*)-')
         valcount_re = re.compile(r'val([0-9][^-]*)-')

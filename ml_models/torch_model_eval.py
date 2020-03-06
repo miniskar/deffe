@@ -12,11 +12,7 @@ import torch.nn.functional as F
 from tqdm import tqdm, trange
 
 
-def custom_mean_abs_loss(y_predicted, y_actual):
-    error_sq = torch.abs(torch.exp(y_predicted)-torch.exp(y_actual))/torch.exp(y_actual)
-    return torch.mean(error_sq)
-
-def model_eval(args, net, loader, device, n_val):
+def model_eval(args, net, loader, device, n_val, loss_fn):
     """
       Running model inference and compute the validation accuracy
     """

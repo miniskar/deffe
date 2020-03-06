@@ -26,7 +26,6 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from baseml import *
 
-checkpoint_dir = "checkpoints"
 def mean_squared_error(y_true, y_pred):
     return K.mean(K.square(y_pred - y_true), axis=-1)
 
@@ -174,7 +173,7 @@ class KerasCNN(BaseMLModel):
         BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.orig_cost_data, self.args.train_test_split, self.validation_split)
         if self.args.tl_samples and self.step != self.step_start:
             all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step-1)))
-            last_cp = self.get_last_cp_model(all_files)
+            last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != '':
                 self.load_model(last_cp)
 
@@ -299,20 +298,6 @@ class KerasCNN(BaseMLModel):
         # Generate predictions (probabilities -- the output of the last layer)
         # on new data using `predict`
         return (0.0, 0.0)
-
-    def get_last_cp_model(self, all_files):
-        epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
-        max_epoch = 0
-        last_icp = ''
-        for index, icp_file in enumerate(all_files):
-            epoch_flag = epoch_re.search(icp_file)
-            epoch=0 #loss0.4787-valloss0.4075.hdf5a
-            if epoch_flag:
-                epoch = int(epoch_flag.group(1)) 
-            if epoch > max_epoch:
-                max_epoch = epoch
-                last_icp = icp_file
-        return last_icp
 
     def evaluate_model(self, all_files, outfile="test-output.csv"):
         epoch_re = re.compile(r'weights-improvement-([0-9]+)-')

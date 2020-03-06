@@ -1,9 +1,11 @@
 import numpy as np
+import re
 
+checkpoint_dir = "checkpoints"
 class BaseMLModel:
     def __init__(self):
         None
-    
+
     def preprocess_data(self, parameters, cost_data, orig_cost_data, train_test_split, validation_split):
         train_count = int(parameters.shape[0]*float(train_test_split))
         test_count = parameters.shape[0] - train_count
@@ -52,5 +54,20 @@ class BaseMLModel:
         self.train_count = len(training_idx) * (1-self.validation_split)
         self.val_count = len(training_idx) * self.validation_split
         self.test_count = len(test_idx)
+
+    def get_last_cp_model(self, all_files):
+        epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
+        max_epoch = 0
+        last_icp = ''
+        for index, icp_file in enumerate(all_files):
+            epoch_flag = epoch_re.search(icp_file)
+            epoch=0 #loss0.4787-valloss0.4075.hdf5a
+            if epoch_flag:
+                epoch = int(epoch_flag.group(1)) 
+            if epoch > max_epoch:
+                max_epoch = epoch
+                last_icp = icp_file
+        return last_icp
+
 
 
