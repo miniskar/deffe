@@ -1,29 +1,27 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-import tensorflow as tf
 import pdb
 import re
 import shlex
 import argparse
-from keras.utils import plot_model
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
-from keras.callbacks.callbacks import Callback
-from keras.callbacks import ModelCheckpoint
 import matplotlib.colors as mcolors
 import glob
-
+import os
+import tensorflow as tf
+from keras.utils import plot_model
+from keras.callbacks.callbacks import Callback
+from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
-tf.keras.backend.clear_session()  # For easy reset of notebook state.
 import keras.backend as K
 import keras.losses
-import os
 from tensorflow.python.ops import math_ops
-
 from tensorflow import keras
 from tensorflow.keras import layers
+tf.keras.backend.clear_session()  # For easy reset of notebook state.
+
 from baseml import *
 
 def mean_squared_error(y_true, y_pred):

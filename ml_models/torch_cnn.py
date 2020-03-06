@@ -1,32 +1,29 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-import tensorflow as tf
 import pdb
 import re
+import os
 import io
-from contextlib import redirect_stdout
-from tqdm import tqdm, trange
 import shlex
 import argparse
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import glob
 import logging
-from torch_wl_cnn import *
 from datetime import datetime
+from contextlib import redirect_stdout
+from tqdm import tqdm, trange
+from torch_wl_cnn import *
 from torch_model_eval import *
-import os
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import TensorDataset, DataLoader, random_split, Subset
 from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
-
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 from baseml import *
 
