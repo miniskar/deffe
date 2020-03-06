@@ -1,0 +1,160 @@
+{
+    "python_path" : ["."],
+    "knobs" : 
+        [
+        { 
+            "name" : "l1d_ways",
+            "groups" : "riscv0",
+            "values" : [2, 4, 8]
+        },
+        { 
+            "name" : "l1i_ways",
+            "groups" : "riscv0",
+            "values" : [2, 4, 8]
+        },
+        { 
+            "name" : "l2_ways",
+            "groups" : "riscv0",
+            "values" : [2, 4, 8]
+        },
+        { 
+            "name" : "l1d_size",
+            "groups" : "riscv0",
+            "values" : [4, 8, 16]
+        },
+        { 
+            "name" : "l1i_size",
+            "groups" : "riscv0",
+            "values" : [4, 8, 16]
+        },
+        { 
+            "name" : "l2_size",
+            "groups" : "riscv0",
+            "values" : [16, 32, 64]
+        },
+        { 
+            "name" : "cacheline",
+            "groups" : "riscv0",
+            "values" : [16, 32, 64]
+        }
+    ],
+    "scenarios" : 
+        [
+        {
+            "name" : "matmul_size",
+            "map" : "options",
+            "groups" : "matmul",
+            "values" : [16, 32, 64, 128, 256]
+        },
+        {
+            "name" : "kmeans_objects",
+            "map" : "options",
+            "groups" : "kmeans",
+            "values" : "100-200-10"
+        },
+        {
+            "name" : "nw_size",
+            "map" : "options",
+            "groups" : "nw",
+            "values" : [16, 32, 64, 128, 256]
+        },
+        {
+            "name" : "matmul_binary",
+            "map" : "binary",
+            "groups" : "matmul",
+            "values" : "/home/nqx/RISCV/Benchmarks/mt-all-matmul/build.64.newlib/RISCVProject"
+        },
+        {
+            "name" : "kmeans_binary",
+            "map" : "binary",
+            "groups" : "kmeans",
+            "values" : "/home/nqx/RISCV/Benchmarks/kmeans_serial/build.64.linux/RISCVProject"
+        },
+        {
+            "name" : "nw_binary",
+            "map" : "binary",
+            "groups" : "nw",
+            "values" : "/home/nqx/RISCV/Benchmarks/nw/build.64.linux/RISCVProject"
+        },
+        {
+            "name" : "kmeans_input",
+            "map" : "input",
+            "groups" : "kmeans",
+            "values" : "/home/nqx/RISCV/Benchmarks/rodinia_3.1/data/kmeans/kdd_cup"
+        },
+        {
+            "name" : "kmeans_command",
+            "map" : "command_file",
+            "groups" : "kmeans",
+            "values" : "kmeans_command_script.sh"
+        },
+        {
+            "name" : "nw_command",
+            "map" : "command_file",
+            "groups" : "nw",
+            "values" : "nw_command_script.sh"
+        },
+        {
+            "name" : "matmul_command",
+            "map" : "command_option",
+            "groups" : "matmul",
+            "values" : "matmul_command_option.sh"
+        }
+        ],
+    "costs" : [ "cpu_cycles" ],
+    "model" : {
+        "pyscript" : "ml_model.py",
+        "ml_model_script" : "sklearn_rf.py",
+        "output_log" : "rf_network.log",
+        "arguments" : "-train-test-split 1.0"
+    },
+    "exploration" : {
+        "pyscript" : "exploration.py",
+        "arguments" : "",
+        "output_log" : "exploration.log",
+        "explore" : 
+            [
+            {
+                "name" : "kmeans_explore",
+                "groups" : "riscv0, kmeans",
+                "pre_evaluated_data" : "output_kmeans_dakota.csv",
+                "exploration_table" : "deffe_exploration.csv",
+                "evaluation_table" : "deffe_evaluation.csv",
+                "ml_predict_table" : "deffe_prediction.csv",
+                "evaluation_predict_table" : "deffe_eval_predict.csv"
+            }
+            ]
+    },
+    "sampling" : {
+        "pyscript" : "random_sampling.py",
+        "arguments" : "",
+        "output_log" : "sampling.log"
+    },
+    "evaluate" : {
+        "pyscript"    : "evaluate.py",
+        "arguments" : "",
+        "sample_evaluate_script" : "run_gem5_template.sh",
+        "slurm"     : "True",
+        "batch_size"     : "400",
+        "output_log"    : "evaluate.log"
+    },
+    "extract" : {
+        "pyscript" : "extract.py",
+        "arguments" : "",
+        "sample_extract_script" : "extract.sh",
+        "slurm"     : "True",
+        "batch_size"     : "400",
+        "cost_output" : "results.out",
+        "output_log" : "extract.log"
+    },
+    "framework" : {
+        "output_log" : "framework_output.log",
+        "run_directory" : "riscv_exploration"
+    },
+    "slurm" : {
+        "nodes" : 1,
+        "cpus_per_task" : 1,
+        "constraint" : "x86_64,centos",
+        "user_script_configured" : "False"
+    }
+}

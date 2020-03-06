@@ -2,6 +2,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow as tf
 import pdb
 import re
+import io
+from contextlib import redirect_stdout
+from tqdm import tqdm, trange
 import shlex
 import argparse
 import matplotlib.pyplot as plt
@@ -11,13 +14,16 @@ from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import glob
-
+import logging
+from torch_wl_cnn import *
+from datetime import datetime
+from torch_model_eval import *
 import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import TensorDataset, DataLoader, random_split, Subset
 from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 
@@ -25,11 +31,11 @@ from torchsummary import summary
 from baseml import *
 
 checkpoint_dir = "checkpoints"
-def mean_squared_error(y_true, y_pred):
-    return torch.mean(torch.square(y_pred - y_true), axis=-1)
+def mean_squared_error(y_actual, y_predicted):
+    return torch.mean(torch.square(y_actual - y_predicted), axis=-1)
 
-def mean_squared_error_int(y_true, y_pred):
-    return torch.mean(torch.square((y_pred) - (y_true)), axis=-1)
+def mean_squared_error_int(y_actual, y_predicted):
+    return torch.mean(torch.square((y_actual) - (y_predicted)), axis=-1)
 
 def custom_mean_abs_loss(y_actual, y_predicted):
     error_sq = torch.abs(y_predicted-y_actual)/y_actual
@@ -82,6 +88,21 @@ class TorchCNN(BaseMLModel):
         args = parser.parse_args(shlex.split(arg_string))
         return args
 
+    def initialize_nn(self):
+        """
+           Model
+        """
+        network_topo = [8, 64, 32, 16]
+        nn = torch_wl_cnn_gen(network_topo)
+        ## convoluted way to capture the network structure to string
+        with io.StringIO() as buf, redirect_stdout(buf):
+            print(nn)
+            nn_struct = buf.getvalue()
+        logging.info('Network Structure:')
+        print(nn_struct)
+        logging.info('{}'.format( nn_struct))
+        return nn, network_topo
+
     def Initialize(self, step, headers, parameters_data, cost_data, name="network"):
         args = self.args
         self.step = step
@@ -98,9 +119,14 @@ class TorchCNN(BaseMLModel):
         last_layer_nodes = int(args.last_layer_nodes)
         self.name = name
         self.device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
-        self.logging.info('Using device {}'.format(device))
-        self.nn, self.network_topo = initialize_nn()
-        summary(self.nn, (1, parameters_data.shape[1]))
+        now = datetime.now()
+        dt_string = now.strftime("%Y%m%d_%H%M%S")
+        log_file = 'train_{}.log'.format(dt_string)
+        
+        logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', filename=log_file)
+        
+        print('Log filename {}'.format( log_file))
+        logging.info('Using device {}'.format(self.device))
         self.loss_function = custom_mean_abs_exp_loss
         if args.loss == 'custom_mean_abs_loss':
             self.loss_function = custom_mean_abs_loss
@@ -110,21 +136,13 @@ class TorchCNN(BaseMLModel):
             self.loss_function = mean_squared_error_int
         elif args.loss == 'custom_mean_abs_log_loss':
             self.loss_function = custom_mean_abs_log_loss
-        keras.losses.custom_loss = self.loss_function
-        self.model = self.get_compiled_model(self.model, loss=self.loss_function, optimizer='adam', metrics=["mse"])
         batch_size = int(args.batch_size)
         if self.framework.args.batch_size != '-1':
             batch_size = int(self.framework.args.batch_size)
         self.batch_size = min(self.parameters_data.shape[0], batch_size)
         self.disable_icp = False
-
-    def get_compiled_model(self, model, loss='categorical_crossentropy', optimizer = keras.optimizers.RMSprop(learning_rate=1e-3), metrics=['accuracy']):
-        model.compile(optimizer=optimizer,
-              loss=loss,
-              metrics=metrics)
-        for l in model.layers:
-            print(l.input_shape, l.output_shape)
-        return model
+        self.nn, self.network_topo = self.initialize_nn()
+        summary(self.nn, (1, parameters_data.shape[1]))
 
     def GetEpochs(self):
         return self.epochs
@@ -180,92 +198,81 @@ class TorchCNN(BaseMLModel):
 
     def load_model(self, model_name):
         print("Loading the checkpoint: "+model_name)
-        keras.losses.custom_loss = self.loss_function
-        self.model.load_weights(model_name)
+        #TODO load model weights
+        #keras.losses.custom_loss = self.loss_function
+        #self.model.load_weights(model_name)
 
     def Train(self):
-        class TestCallback(Callback):
-            def __init__(self, test_data, fh):
-                self.test_data = test_data
-                self.fh = fh
-
-            def on_epoch_end(self, epoch, logs={}):
-                x, y = self.test_data
-                loss, acc = self.model.evaluate(x, y, verbose=0)
-                fh.write(str(epoch)+", "+str(loss)+", "+str(acc))
-                #print('\nTesting loss: {}, acc: {}\n'.format(loss, acc))
-
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
-        x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
-        # Train the model by slicing the data into "batches"
-        # of size "batch_size", and repeatedly iterating over
-        # the entire dataset for a given number of "epochs"
-        if self.args.no_run:
-            return
-        if self.args.evaluate and self.args.icp != "":
-            print("Loading checkpoint file:"+self.args.icp)
-            keras.losses.custom_loss = self.loss_function
-            self.model.load_weights(self.args.icp)
-            print('\n# Evaluate on test data')
-            self.evaluate(x_train, y_train, z_train, "training")
-            self.evaluate(x_test, y_test, z_test, "test")
-            loss, acc = self.model.evaluate(self.x_train, self.y_train, verbose=0)
-            print("Train Loss: "+str(loss))
-            loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
-            print("Test Loss: "+str(loss))
-        elif self.args.icp != "" and not self.disable_icp:
-            print("Loading checkpoint file:"+self.args.icp)
-            keras.losses.custom_loss = self.loss_function
-            self.model.load_weights(self.args.icp)
-            #self.model = keras.models.load_model(self.args.icp)
-            #print('\n# Evaluate on test data')
-            #self.evaluate(x_train, y_train, z_train, "training")
-            #self.evaluate(x_test, y_test, z_test, "test")
-        if not self.args.evaluate:
-            pretag = "weights-improvement-"
-            if self.step != -1:
-                pretag = "step"+str(self.step)+"-train"+str(self.train_count)+"-val"+str(self.val_count)+"-"+pretag
-            filepath = pretag + "{epoch:02d}-loss{loss:.4f}-valloss{val_loss:.4f}.hdf5"
-            model_checkpoint = ModelCheckpoint(os.path.join(checkpoint_dir, filepath), monitor='val_loss', verbose=1, save_best_only=True, mode='min', save_weights_only=False)
-            callbacks_list = [model_checkpoint]
-            print('# Fit model on training data')
-            if self.tl_freeze_layers != "-1":
-                for layer in self.model.layers[:int(self.args.tl_freeze_layers)]:
-                    print("Frozen Layer: "+layer.name)
-                    layer.trainable = False
-            history = self.model.fit(x_train, y_train,
-                            batch_size=self.GetBatchSize(),
-                            epochs=self.GetEpochs(),
-                            # We pass some validation for
-                            # monitoring validation loss and metrics
-                            # at the end of each epoch
-                            #validation_data=(x_test, y_test),
-                            validation_split = self.validation_split,
-                            callbacks=callbacks_list,
-                            shuffle=True
-                            )
-            print("Completed model fitting")
-            #fh.close()
+        x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test
+        n_train = x_train.shape[0]
+        train_loader = DataLoader(TensorDataset(torch.Tensor(x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))), torch.Tensor(y_train)), batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
+        #test_loader = DataLoader(TensorDataset(torch.Tensor(x_test), torch.Tensor(y_test)), batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
+        test_loader = None
+        val_loader = train_loader
+        n_val = x_train.shape[0]
+        #x_train_torch = torch.from_numpy(x_train).reshape([x_train.shape[0], 1, [x_train.shape[2]]) 
+        tr_comment = '{}_INPUT_{}_PARAM_{}_{}_{}_STEP_{}_SIZE_{}'.format(
+            self.name, self.network_topo[0],self.network_topo[1],self.network_topo[2],self.network_topo[3], self.step, x_train.shape[0]+x_test.shape[0])
+        print(tr_comment)
+        writer = SummaryWriter(comment=tr_comment)
+        logging.info('STEP={}, n_train={}, n_val={}, total={}'.format( self.step, n_train, n_val, n_train+n_val))
+        #save_indices(dt_string, self.step, train_idx, val_idx, test_idx)
+        lr = 0.0010
+        momentum = 0.9
+        global_step = 0
+        g_model = self.nn
+        optimizer = optim.SGD(g_model.parameters(), lr=lr, momentum=momentum, weight_decay=1e-8)
+        criterion = nn.MSELoss()
+        n_epochs= self.epochs
+        val_acc = 0.0
+        epoch_test = 5
+        for epoch in range(n_epochs):
+            g_model.train()
+            epoch_loss = 0
+            with tqdm(total=n_train, desc='Epoch {}/{}'.format(epoch+1, n_epochs), unit='sample', ascii=True, dynamic_ncols=True) as pbar:
+                for batch in train_loader:
+                    features = batch[0] #.reshape([x_train.shape[0], 1, x_train.shape[1]])
+                    ground_truth = batch[1]
+                    features = features.to(device=self.device, dtype=torch.float32)
+                    ground_truth = ground_truth.to(device=self.device, dtype=torch.float32)
+                    g_model = g_model.to(device=self.device)
+                    pred = g_model(features)
+                    if self.args.real_objective:
+                        loss = custom_mean_abs_loss(y_predicted=pred, y_actual=ground_truth)
+                    else:
+                        loss = criterion(pred, ground_truth)
+                    epoch_loss += loss.item()
+                    writer.add_scalar('Loss/train', loss.item(), global_step)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    global_step += 1
+                    pbar.set_postfix(**{'batch training loss': loss.item(), 'batch val loss':val_acc})
+                    pbar.update( features.shape[0] )
+                #print("Loss: "+str(epoch_loss))
+                val_acc = 0.0
+                if n_val > 0:
+                    val_acc = model_eval(self.args, g_model, val_loader, self.device, n_val)
+                full_details = False
+                #acc = model_eval(g_model, test_loader, device, n_test)
+                if full_details and test_loader != None:
+                    test_acc = model_eval(self.args, g_model, test_loader, self.device, n_test)
+                    val_acc_hash = model_compute_error(self.args, g_model, val_loader, self.device, n_val)
+                    test_acc_hash = model_compute_error(self.args, g_model, test_loader, self.device, n_test)
+                    logging.info('Step {0:d} Epoch {1:d} Training Loss {2:9.4f} Validation MSE Loss {3:9.4f} Test MSE Loss {4:9.4f} Validation Avg Loss {5:9.4f} Test Avg Loss {6:9.4f} Validation Min Loss {7:9.4f} Test Min Loss {8:9.4f} Validation Max Loss {9:9.4f} Test Max Loss {10:9.4f}'.format( self.step, epoch, epoch_loss, val_acc, test_acc, val_acc_hash['avg'], test_acc_hash['avg'], val_acc_hash['min'], test_acc_hash['min'], val_acc_hash['max'], test_acc_hash['max']))
+                else:
+                    logging.info('Step {0:d} Epoch {1:d} Training Loss {2:9.4f} Validation Loss {3:9.4f}'.format( self.step, epoch, epoch_loss, val_acc))
+                writer.add_scalar('Loss/validation', val_acc, global_step)
 
-            # Plot training & validation loss values
-            plot_loss = self.args.plot_loss
-            if plot_loss:
-                plt.plot(history.history['loss'])
-                plt.plot(history.history['val_loss'])
-                plt.title('Model loss')
-                plt.ylabel('Loss')
-                #plt.yscale('log')
-                plt.xlabel('Epoch')
-                plt.legend(['Train', 'Test'], loc='upper left')
-                plt.savefig("loss.png")
-                plt.close()
-
-            # The returned "history" object holds a record
-            # of the loss values and metric values during training
-            #print('\nhistory dict:', history.history)
-
-        # Generate predictions (probabilities -- the output of the last layer)
-        # on new data using `predict`
+                if epoch+1==n_epochs and test_loader != None:
+                    acc = model_compute_error(self.args, g_model, test_loader, self.device, n_test)
+                    logging.info('Step {0:d} Testing accuracy: max_error(%)={1:.4f}, min_error={2:.4f}, avg_error={3:.4f}, std={4:.4f}, num_val={5}'.
+                                format(self.step, acc['max'], acc['min'], acc['avg'], acc['std'], n_test))
+                    pass
+        weight_file = 'weights_{}.pth'.format( dt_string )
+        logging.info('Saving weights to {}'.format( weight_file ))
+        torch.save(g_model.state_dict(), weight_file)
         return (0.0, 0.0)
 
     def get_last_cp_model(self, all_files):
