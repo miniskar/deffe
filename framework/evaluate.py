@@ -69,6 +69,7 @@ class DeffeEvaluate:
         np_data = pd_data.values.astype('str')
         np_hdrs = np.char.lower(np.array(list(pd_data.columns)).astype('str'))
         preload_data = np_data[1:]
+        trans_data = preload_data.transpose()
         self.np_param_valid_indexes = []
         self.np_param_hdrs = []
         self.np_cost_valid_indexes = []
@@ -77,10 +78,17 @@ class DeffeEvaluate:
             if hdr in param_hash:
                 self.np_param_valid_indexes.append(index)
                 self.np_param_hdrs.append(hdr)
+                param = self.param_hash[hdr][0]
+                param_values = list(tuple(trans_data[index]))
+                is_numbers = self.framework.parameters.IsParameterNumber(param_values)
+                if is_numbers:
+                    minp = np.min(trans_data[index].astype('float'))
+                    maxp = np.max(trans_data[index].astype('float'))
+                    #print("MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
+                    self.framework.parameters.UpdateMinMaxRange(param, minp, maxp)
             if hdr in cost_hash:
                 self.np_cost_hdrs.append(hdr)
                 self.np_cost_valid_indexes.append(index)
-        trans_data = preload_data.transpose()
         #self.GetValidPreloadedData(trans_data)
         self.param_data = trans_data[self.np_param_valid_indexes,].transpose()
         self.cost_data = trans_data[self.np_cost_valid_indexes,].transpose()

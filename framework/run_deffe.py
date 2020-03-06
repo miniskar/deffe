@@ -86,6 +86,7 @@ class DeffeFramework:
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
             self.evaluate.Initialize(param_list, pruned_param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
             self.extract.Initialize(param_list, self.config.GetCosts())
+            self.config.WriteFile(explore_groups.name+"-minmax.json", self.parameters.GetMinMaxToJSonData())
             self.evaluation_table.WriteHeaderInCSV(explore_groups.evaluation_table, self.evaluate.param_hdrs+self.config.GetCosts())
             self.ml_predict_table.WriteHeaderInCSV(explore_groups.ml_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
             self.evaluation_predict_table.WriteHeaderInCSV(explore_groups.evaluation_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())

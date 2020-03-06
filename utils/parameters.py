@@ -3,12 +3,30 @@ import pdb
 import numpy as np
 import re
 
+def IsNumber(x):
+    allowed_types = [float, int, np.float64, np.float32, np.float16, np.int64, np.int32, np.int16, np.int8, np.uint64, np.uint32, np.uint16, np.uint8]
+    if type(x) in allowed_types:
+        return True
+    return False
+
+def IsFloat(x):
+    float_pattern = '^[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?$'
+    float_re = re.compile(float_pattern, re.VERBOSE)
+    if IsNumber(x):
+        return True
+    if float_re.findall(x):
+        return True
+    else:
+        return False
+
 class Parameters:
     def __init__(self, config, framework):
         self.config = config
         self.type_knob = 1
         self.type_scenario = 2
         self.framework = framework
+        self.min_list_params = {}
+        self.max_list_params = {}
 
     # Entry method to get all permutations
     def Initialize(self, explore_groups):
@@ -70,7 +88,20 @@ class Parameters:
             self.param_all_values.append(len(param_values))
         self.prev_dim_elements = prev_dim_elements
         self.selected_pruned_params = self.GetPrunedSelectedParams(self.selected_params)
+        for (param, param_values, pindex) in self.selected_params:
+            is_numbers = self.IsParameterNumber(param_values)
+            if is_numbers:
+                minp = np.min(np.array(param_values).astype('float'))
+                maxp = np.max(np.array(param_values).astype('float'))
+                #print("1MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
+                self.UpdateMinMaxRange(param, minp, maxp)
         return (self.selected_params, self.selected_pruned_params, total_permutations)
+
+    def IsParameterNumber(self, param_values):
+        is_numbers = True
+        for val in param_values:
+            is_numbers = is_numbers & IsFloat(val)
+        return is_numbers
 
     def GetPrunedSelectedValues(self, parameters, pruned_param_list):
         indexes = []
@@ -89,6 +120,32 @@ class Parameters:
         out_dim_list.reverse()
         return out_dim_list
 
+    def UpdateMinMaxRange(self, param, minp, maxp):
+        if param.map in self.min_list_params:
+            minp = min(minp, self.min_list_params[param.map])
+        if param.map in self.max_list_params:
+            maxp = max(maxp, self.max_list_params[param.map])
+        self.min_list_params[param.map] = minp
+        self.max_list_params[param.map] = maxp
+
+    def GetMinMaxToJSonData(self):
+        data = {}
+        for (param, param_values, pindex) in self.selected_params:
+            if param.map in data:
+                continue
+            enable = False
+            if param.map in self.min_list_params:
+                enable = True
+            if param.map in self.min_list_params:
+                enable = True
+            if enable:
+                data[param.map] = {}
+                if param.map in self.min_list_params:
+                    data[param.map]["min"] = self.min_list_params[param.map]
+                if param.map in self.max_list_params:
+                    data[param.map]["max"] = self.max_list_params[param.map]
+        return data 
+
     # Make sure that all values in the numpy 2d array are values
     def GetNormalizedParameters(self, nparams, selected_params=None):
         if selected_params == None:
@@ -96,8 +153,8 @@ class Parameters:
         min_list = []
         max_list = []
         for (param, param_values, pindex) in selected_params:
-            min_list.append(np.min(np.array(param_values).astype('float'))) 
-            max_list.append(np.max(np.array(param_values).astype('float')))
+            min_list.append(self.min_list_params[param.map]) 
+            max_list.append(self.max_list_params[param.map])
         min_list = np.array(min_list).astype('float')
         max_list = np.array(max_list).astype('float')
         nparams_out = nparams.astype('float')

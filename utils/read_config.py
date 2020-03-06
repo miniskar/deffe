@@ -230,6 +230,11 @@ class DeffeConfig:
             return self.data
         return None
 
+    def WriteFile(self, filename, data):
+        self.file_name = filename
+        with open(filename, "w") as outfile:
+            json.dump(data, outfile, indent=2)
+
     def GetPythonPaths(self):
         if self.data != None and 'python_path' in self.data:
             return self.data['python_path']
@@ -288,6 +293,7 @@ class DeffeConfig:
 def main():
     name = 'config.json'
     config = DeffeConfig(name)
+    config.WriteFile("config_write.json", config.data)
 
 if __name__ == "__main__":
     main()
