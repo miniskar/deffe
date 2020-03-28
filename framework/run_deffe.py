@@ -28,29 +28,34 @@ from workload_excel import *
 # * Should support prediction and exploration on pre-evaluated data
 class DeffeFramework:
     def __init__(self, args):
+        self.args = args
+ 
+    # Initialize the class objects with default values
+    def Initialize(self):
+        config = DeffeConfig(self.args.config)
+        self.config = config
+        self.init_n_train = 100
+        self.init_n_val = 2 * self.init_n_train
+        self.InitializePythonPaths()
         self.predicted_flag = 0
         self.evaluate_flag = 1
         self.valid_flag = 1
         self.not_valid_flag = 0
-        config = DeffeConfig(args.config)
-        self.config = config
         self.fr_config = self.config.GetFramework()
-        self.args = args
-        self.init_n_train = 100
-        self.init_n_val = 2 * self.init_n_train
-        self.InitializePythonPaths()
-        self.parameters = Parameters(config, self)
-        self.model = self.LoadModule(config.GetModel().pyscript)
-        self.sampling = self.LoadModule(config.GetSampling().pyscript)
-        self.exploration = self.LoadModule(config.GetExploration().pyscript)
-        self.evaluate = self.LoadModule(config.GetEvaluate().pyscript)
-        self.extract = self.LoadModule(config.GetExtract().pyscript)
-        self.slurm = self.LoadModule(config.GetSlurm().pyscript)
         self.exploration_table = Workload()
         self.evaluation_table = Workload()
         self.ml_predict_table = Workload()
         self.evaluation_predict_table = Workload()
- 
+        self.parameters = Parameters(self.config, self)
+        self.model = self.LoadModule(self.config.GetModel().pyscript)
+        self.sampling = self.LoadModule(self.config.GetSampling().pyscript)
+        self.exploration = self.LoadModule(self.config.GetExploration().pyscript)
+        self.evaluate = self.LoadModule(self.config.GetEvaluate().pyscript)
+        self.extract = self.LoadModule(self.config.GetExtract().pyscript)
+        self.slurm = self.LoadModule(self.config.GetSlurm().pyscript)
+        self.exploration.Initialize()
+        self.model.Initialize()
+
     # Initialize the python paths        
     def InitializePythonPaths(self):
         python_paths = self.config.GetPythonPaths()
@@ -61,11 +66,13 @@ class DeffeFramework:
                 sys.path.insert(0, path)
         #print(sys.path)
 
+    # Generic loading of python module
     def LoadModule(self, py_file):
         py_mod_name = pathlib.Path(py_file).stem
         py_mod = importlib.import_module(py_mod_name)
         return py_mod.GetObject(self)
 
+    # Log exploration output into file
     def WriteExplorationOutput(self, parameter_values, batch_output):
         for index, (valid_flag, eval_type, cost_metrics) in enumerate(batch_output):
             param_val = parameter_values[index].tolist()
@@ -77,24 +84,37 @@ class DeffeFramework:
                 self.ml_predict_table.WriteDataInCSV(param_val + cost_metrics)
                 self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
 
+    # Returns true if model is ready 
+    def IsModelReady(self):
+        if self.model.IsModelReady():
+            return True
+        return False
+
+    # Run the framework
     def Run(self):
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
+        # Iterate through multiple explorations list as per the configuration
         for explore_groups in self.config.GetExploration().exploration_list:
+            # extract the parameters and cost metrics in that exploration list
             (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups.groups)
             headers = self.parameters.GetHeaders(param_list)
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
+            # Initialize the evaluate, extract and ML models
             self.evaluate.Initialize(param_list, pruned_param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
             self.extract.Initialize(param_list, self.config.GetCosts())
             self.config.WriteFile(explore_groups.name+"-minmax.json", self.parameters.GetMinMaxToJSonData())
             self.evaluation_table.WriteHeaderInCSV(explore_groups.evaluation_table, self.evaluate.param_hdrs+self.config.GetCosts())
             self.ml_predict_table.WriteHeaderInCSV(explore_groups.ml_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
             self.evaluation_predict_table.WriteHeaderInCSV(explore_groups.evaluation_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
+            # Preload the data if anything is configured
             if self.args.only_preloaded_data_exploration:
                 n_samples = len(self.evaluate.param_data_hash) 
             self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
             step = 0
             inc = int(self.args.step_inc)
+
+            # Iterate the exploration until it is completed
             while(not self.exploration.IsCompleted()):
                 if step != 0:
                     self.sampling.StepWithInc(inc)
@@ -110,6 +130,7 @@ class DeffeFramework:
                 samples = self.sampling.GetBatch()
                 parameter_values = None
                 parameters_normalize = None
+                # Check if the data point already exist in pre-computed data 
                 if self.args.only_preloaded_data_exploration:
                     parameter_values = self.evaluate.GetPreEvaluatedParameters(samples, param_list)
                     pruned_parameter_values = self.parameters.GetPrunedSelectedValues(parameter_values, pruned_param_list)
@@ -117,7 +138,8 @@ class DeffeFramework:
                 else:
                     parameter_values = self.parameters.GetParameters(samples, param_list)
                     parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=True, with_normalize=False)
-                if self.exploration.IsModelReady():
+                # Check if model is already ready
+                if self.IsModelReady():
                     batch_output = self.model.Inference(parameters_normalize)
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
@@ -126,6 +148,8 @@ class DeffeFramework:
                     print("Train accuracy: "+str(train_acc)+" Val accuracy: "+str(val_acc))
                 self.WriteExplorationOutput(parameter_values, batch_output)
                 step = step + 1
+
+# Initialize parser command line arguments                   
 def InitParser(parser):
     parser.add_argument('-config', dest='config', default="config.json")
     parser.add_argument('-only-preloaded-data-exploration', dest='only_preloaded_data_exploration', action="store_true")
@@ -137,8 +161,10 @@ def InitParser(parser):
     parser.add_argument('-epochs', dest='epochs', default='-1')
     parser.add_argument('-batch-size', dest='batch_size', default='-1')
     
+# Main function
 def main(args):
     framework = DeffeFramework(args)
+    framework.Initialize()
     framework.Run()
 
 if __name__ == "__main__":

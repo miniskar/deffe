@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import pdb
+import argparse
+import shlex
 
 class DeffeMLModel:
     def __init__(self, framework):
@@ -11,12 +13,33 @@ class DeffeMLModel:
         parameters = np.array([])
         cost_output = np.array([])
 
+    # Initialize the members
+    def Initialize(self):
+        self.parser = self.AddArgumentsToParser()
+        self.args = self.ReadArguments()
+
+    # Read arguments provided in JSON configuration file
+    def ReadArguments(self):
+        arg_string = self.config.arguments
+        args = self.parser.parse_args(shlex.split(arg_string))
+        return args
+    
+    # Add command line arguments to parser
+    def AddArgumentsToParser(self):
+        parser = argparse.ArgumentParser()
+        return parser
+    
+    # Check if model is ready
     def IsModelReady(self):
+        # TODO: This method is yet to be implemented
         return False
 
+    # Run the prediction/inference
     def Inference(self, samples):
+        # TODO: Inference is yet to be implemented
         return self.batch_output
 
+    # Train the model
     def Train(self, step, headers, params, cost):
         params_valid_indexes = []
         cost_metrics = []

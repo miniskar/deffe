@@ -106,7 +106,8 @@
         "pyscript" : "ml_model.py",
         "ml_model_script" : "torch_cnn.py",
         "output_log" : "torch_network.log",
-        "arguments" : "-tl-samples -epochs 100 -validation-split 0.4"
+        "arguments" : "",
+        "ml_arguments" : "-tl-samples -epochs 100 -validation-split 0.4"
     },
     "exploration" : {
         "pyscript" : "exploration.py",

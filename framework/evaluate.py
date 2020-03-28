@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from multi_thread_run import *
 from deffe_utils import *
+import argparse
+import shlex
 
 ''' DeffeEvaluate class to evaluate the batch of samples with multi-thread execution environment either with/without 
     the help of slurm
@@ -21,7 +23,20 @@ class DeffeEvaluate:
         self.preload_data = []
         self.preload_header = []
         self.parameters = self.framework.parameters
+        self.parser = self.AddArgumentsToParser()
+        self.args = self.ReadArguments()
 
+    # Read arguments provided in JSON configuration file
+    def ReadArguments(self):
+        arg_string = self.config.arguments
+        args = self.parser.parse_args(shlex.split(arg_string))
+        return args
+    
+    # Add command line arguments to parser
+    def AddArgumentsToParser(self):
+        parser = argparse.ArgumentParser()
+        return parser
+    
     # Get valid preloaded data. 
     def GetValidPreloadedData(self):
         trans_data_flag = np.full(shape=trans_data.shape, fill_value=False)
@@ -141,14 +156,6 @@ class DeffeEvaluate:
             params = self.GetParamsFullList(self.param_data[nd_index])
             out_params.append(params)
         return out_params
-
-    # Initialize parser with command line arguments 
-    def InitializeParser(self, parser):
-        None
-
-    # Set evaluate module specific arguments
-    def SetArgs(self, args):
-        self.args = args
 
     # Get parameter hash for pre-loaded data
     def GetParamHash(self, param_val):

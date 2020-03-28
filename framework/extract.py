@@ -2,6 +2,8 @@ import os
 from multi_thread_run import *
 from deffe_utils import *
 import numpy as np
+import argparse
+import shlex
 
 class DeffeExtract:
     def __init__(self, framework):
@@ -9,16 +11,24 @@ class DeffeExtract:
         self.config = framework.config.GetExtract()
         self.batch_size = int(self.config.batch_size)
         self.parameters = self.framework.parameters
+        self.parser = self.AddArgumentsToParser()
+        self.args = self.ReadArguments()
 
-    def InitializeParser(parser):
-        None
-
+    # Read arguments provided in JSON configuration file
+    def ReadArguments(self):
+        arg_string = self.config.arguments
+        args = self.parser.parse_args(shlex.split(arg_string))
+        return args
+    
+    # Add command line arguments to parser
+    def AddArgumentsToParser(self):
+        parser = argparse.ArgumentParser()
+        return parser
+    
+    # Initialize the class with parameters list and to be extracted cost metrics
     def Initialize(self, param_list, cost_list):
         self.param_list = param_list
         self.cost_list = cost_list
-
-    def SetArgs(args):
-        self.args = args
 
     def GetExtractCommand(self, output, param_pattern, param_dict):
         (run_dir, sample_evaluate_script) = output
@@ -36,6 +46,7 @@ class DeffeExtract:
                 return (self.framework.valid_flag, np.array([RemoveWhiteSpaces(lines[0]),]).astype('str'))
         return (self.framework.not_valid_flag, flag, np.array([0,]).astype('str'))
 
+    # Run the extraction
     def Run(self, param_val, param_list, eval_output):
         batch_output = []
         mt = MultiThreadBatchRun(self.batch_size, self.framework)

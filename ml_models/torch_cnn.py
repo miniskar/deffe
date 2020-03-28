@@ -48,7 +48,9 @@ def custom_mean_abs_log_loss(y_actual, y_predicted):
 class TorchCNN(BaseMLModel):
     def __init__(self, framework):
         self.framework = framework
-        self.args = self.ParseArguments()
+        self.config = self.framework.config.GetModel()
+        self.parser = self.AddArgumentsToParser()
+        self.args = self.ReadArguments()
         self.step = -1
         self.step_start = framework.args.step_start
         self.step_end= framework.args.step_end
@@ -61,8 +63,12 @@ class TorchCNN(BaseMLModel):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-    def ParseArguments(self):
-        arg_string = self.framework.config.GetModel().arguments
+    def ReadArguments(self):
+        arg_string = self.config.ml_arguments
+        args = self.parser.parse_args(shlex.split(arg_string))
+        return args
+
+    def AddArgumentsToParser(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-train-test-split', dest='train_test_split', default="1.00")
         parser.add_argument('-validation-split', dest='validation_split', default="0.20")
@@ -79,8 +85,7 @@ class TorchCNN(BaseMLModel):
         parser.add_argument('-nodes', dest='nodes', default="256")
         parser.add_argument('-last-layer-nodes', dest='last_layer_nodes', default="32")
         parser.add_argument('-real-objective', dest='real_objective', action='store_true')
-        args = parser.parse_args(shlex.split(arg_string))
-        return args
+        return parser
 
     def initialize_nn(self):
         """

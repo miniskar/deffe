@@ -106,7 +106,8 @@
         "pyscript" : "ml_model.py",
         "ml_model_script" : "keras_cnn.py",
         "output_log" : "network.log",
-        "arguments" : "-convs 2 -loss custom_mean_abs_log_loss -tl-samples -epochs 2000 -train-test-split 1.0 -validation-split 0.4"
+        "arguments" : "",
+        "ml_arguments" : "-convs 2 -loss custom_mean_abs_log_loss -tl-samples -epochs 2000 -train-test-split 1.0 -validation-split 0.4"
     },
     "exploration" : {
         "pyscript" : "exploration.py",

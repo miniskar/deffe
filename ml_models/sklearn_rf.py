@@ -14,13 +14,19 @@ import pdb
 class SKlearnRF(BaseMLModel):
     def __init__(self, framework):
         self.framework = framework
-        self.args = self.ParseArguments()
+        self.config = self.framework.config.GetModel()
+        self.parser = self.AddArgumentsToParser()
+        self.args = self.ReadArguments()
         self.step = -1
         self.step_start = framework.args.step_start
         self.step_end= framework.args.step_end
 
-    def ParseArguments(self):
-        arg_string = self.framework.config.GetModel().arguments
+    def ReadArguments(self):
+        arg_string = self.config.ml_arguments
+        args = self.parser.parse_args(shlex.split(arg_string))
+        return args
+
+    def AddArgumentsToParser(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("-rf_random_state", default=0, type=int)
         parser.add_argument("-rf_n_estimators", default=10, type=int)
@@ -30,8 +36,7 @@ class SKlearnRF(BaseMLModel):
         parser.add_argument('-real-objective', dest='real_objective', action='store_true')
         parser.add_argument("-alpha", default=0.5, type=float)
         parser.add_argument('-train-test-split', dest='train_test_split', default="1.00")
-        args = parser.parse_args(shlex.split(arg_string))
-        return args
+        return parser
 
     def Initialize(self, step, headers, parameters_data, cost_data, name="network"):
         args = self.args

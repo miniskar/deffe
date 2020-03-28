@@ -106,7 +106,8 @@
         "pyscript" : "ml_model.py",
         "ml_model_script" : "sklearn_rf.py",
         "output_log" : "rf_network.log",
-        "arguments" : "-train-test-split 1.0"
+        "arguments" : "",
+        "ml_arguments" : "-train-test-split 1.0"
     },
     "exploration" : {
         "pyscript" : "exploration.py",

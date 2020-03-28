@@ -82,6 +82,9 @@ class DeffeConfigModel:
         self.arguments = ""
         if data != None and 'arguments' in data:
             self.arguments = data['arguments']
+        self.ml_arguments = ""
+        if data != None and 'ml_arguments' in data:
+            self.ml_arguments = data['ml_arguments']
 
 class DeffeConfigSingleExploration:
     def __init__(self, data, i):
