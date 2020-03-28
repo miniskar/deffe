@@ -25,3 +25,9 @@ $ python3 ../framework/run_deffe.py -h
 $ cd .. ;
 ```
 
+To run the exploration on the preloaded data
+```
+$ cd example ;
+$ python3 ../framework/run_deffe.py -config config_small.json -step-start 0 -step-end 1 -epochs 100 -batch-size 256 -only-preloaded-data-exploration
+$ cd .. ;
+```
