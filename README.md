@@ -56,7 +56,7 @@ def GetObject(framework):
     return obj
 ```
 
-    The "GetObject" method returns the object of the class. It should take the Deffe framework object as an input to configure the class. The class will have "Initialize" and "Run" method. 
+The "GetObject" method returns the object of the class. It should take the Deffe framework object as an input to configure the class. The class will have "Initialize" and "Run" method. 
 
 
 
