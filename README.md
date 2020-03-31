@@ -31,3 +31,34 @@ $ cd example ;
 $ python3 ../framework/run_deffe.py -config config_small.json -step-start 0 -step-end 1 -epochs 100 -batch-size 256 -only-preloaded-data-exploration
 $ cd .. ;
 ```
+
+## How to extend Deffe?
+Every customizable class in Deffe follows the below bare minimal methods.
+```
+import os
+import argparse
+import shlex
+
+class DeffeExploration:
+    def __init__(self, framework):
+        self.config = framework.config.GetExploration()
+        self.framework = framework
+
+    # Initialize the members
+    def Initialize(self):
+        None
+
+    def Run(self):
+        None
+
+def GetObject(framework):
+    obj = DeffeExploration(framework)
+    return obj
+```
+
+    The "GetObject" method returns the object of the class. It should take the Deffe framework object as an input to configure the class. The class will have "Initialize" and "Run" method. 
+
+
+
+
+
