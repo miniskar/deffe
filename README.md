@@ -9,6 +9,15 @@ Deffe framework is implemented fully in python and it is configured through json
 
 The above figures shows the main blocks and their corresponding python files in the Deffe framework.
 
+## Dependency 
+The following package dependencies to be installed.
+```
+1. Python3
+2. Graphviz 
+3. Install the below packages with PIP 
+   keras, tensorflow, tensorflow-gpu, scikit-learn xlsxwriter matplotlib pandas pydot tensorflow-gpu
+```
+
 ## How to run Deffe?
 An example Deffe configuration for RISCV design space exploration along with their associated files are placed in <b>example</b> directory. 
 ```
