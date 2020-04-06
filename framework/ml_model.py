@@ -1,3 +1,13 @@
+## Copyright 2020 UT-Battelle, LLC.  See LICENSE.txt for more information.
+###
+ # @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
+ #         miniskarnr@ornl.gov
+ # 
+ # Modification:
+ #              Baseline code
+ # Date:        Apr, 2020
+ #**************************************************************************
+###
 import os
 import numpy as np
 import pdb
