@@ -31,6 +31,9 @@ class SKlearnRF(BaseMLModel):
         self.step_start = framework.args.step_start
         self.step_end= framework.args.step_end
 
+    def GetTrainValSplit(self):
+        return float(self.args.train_test_split)
+
     def ReadArguments(self):
         arg_string = self.config.ml_arguments
         args = self.parser.parse_args(shlex.split(arg_string))

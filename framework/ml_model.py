@@ -44,6 +44,10 @@ class DeffeMLModel:
         # TODO: This method is yet to be implemented
         return False
 
+    # Get Train-Validation split 
+    def GetTrainValSplit(self):
+        return self.ml_model_script.GetTrainValSplit()
+
     # Run the prediction/inference
     def Inference(self, samples):
         # TODO: Inference is yet to be implemented

@@ -73,6 +73,9 @@ class TorchCNN(BaseMLModel):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
+    def GetTrainValSplit(self):
+        return self.validation_split
+
     def ReadArguments(self):
         arg_string = self.config.ml_arguments
         args = self.parser.parse_args(shlex.split(arg_string))

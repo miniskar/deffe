@@ -56,7 +56,8 @@ class DeffeRandomSampling:
     def Initialize(self, n_samples, n_train, n_val, shuffle=True):
         self._n_samples = n_samples
         self._shuffle = shuffle
-        org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
+        org_seq = np.random.choice(n_samples, size=n_samples, replace=False)
+        #org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
         self._seq = org_seq
         self._n_train = n_train
         self._n_val = n_val
@@ -98,8 +99,8 @@ class DeffeRandomSampling:
         
         new_pos = self._pos + self._n_val
         if new_pos > self._len:
-            print('Insufficient remaining samples in sequence, truncating num of new samples from {} to {}'.format(
-                self._n_val, new_pos-self._len ))
+            #print('Insufficient remaining samples in sequence, truncating num of new samples from {} to {}'.format(
+            #    self._n_val, new_pos-self._len ))
             new_pos = self._len
             self._exhausted = True
 

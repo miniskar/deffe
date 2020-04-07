@@ -117,10 +117,16 @@ class DeffeFramework:
             self.evaluation_table.WriteHeaderInCSV(explore_groups.evaluation_table, self.evaluate.param_hdrs+self.config.GetCosts())
             self.ml_predict_table.WriteHeaderInCSV(explore_groups.ml_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
             self.evaluation_predict_table.WriteHeaderInCSV(explore_groups.evaluation_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
+            init_n_train = self.init_n_train
+            init_n_val = self.init_n_val
             # Preload the data if anything is configured
             if self.args.only_preloaded_data_exploration:
                 n_samples = len(self.evaluate.param_data_hash) 
-            self.sampling.Initialize(n_samples, self.init_n_train, self.init_n_val)
+                if self.args.full_exploration:
+                    val_percentage = self.model.GetTrainValSplit()
+                    init_n_train = int(n_samples * (1.0-val_percentage))
+                    init_n_val = n_samples - init_n_train
+            self.sampling.Initialize(n_samples, init_n_train, init_n_val)
             step = 0
             inc = int(self.args.step_inc)
 
@@ -170,6 +176,8 @@ def InitParser(parser):
     parser.add_argument('-step-end', dest='step_end', default='')
     parser.add_argument('-epochs', dest='epochs', default='-1')
     parser.add_argument('-batch-size', dest='batch_size', default='-1')
+    parser.add_argument('-full-exploration', dest='full_exploration', action='store_true')
+    parser.add_argument('-loss', dest='loss', default='')
     
 # Main function
 def main(args):

@@ -97,7 +97,7 @@ class DeffeConfigModel:
             self.ml_arguments = data['ml_arguments']
 
 class DeffeConfigSingleExploration:
-    def __init__(self, data, i):
+    def __init__(self, data, i, config_root):
         self.name = "explore_"+str(i)
         self.pre_evaluated_data = None
         self.groups = []
@@ -105,6 +105,11 @@ class DeffeConfigSingleExploration:
             self.groups.append("all")
         if data != None and 'pre_evaluated_data' in data:
             self.pre_evaluated_data = data['pre_evaluated_data'] 
+            if not os.path.exists(self.pre_evaluated_data):
+                self.pre_evaluated_data = os.path.join(os.path.dirname(config_root.json_file), self.pre_evaluated_data)
+                if not os.path.exists(self.pre_evaluated_data):
+                    print("[Error] Unable to find preloaded data: "+data['pre_evaluated_data'])
+                    sys.exit(0);
         if data != None and 'groups' in data:
             self.groups = re.split('\s*,\s*', data['groups'])
         self.exploration_table = "deffe_exploration.csv"
@@ -121,7 +126,7 @@ class DeffeConfigSingleExploration:
             self.evaluation_predict_table = data['evaluation_predict_table']
         
 class DeffeConfigExploration:
-    def __init__(self, data):
+    def __init__(self, data, config_root):
         self.data = data
         self.pyscript = "exploration.py"
         if data != None and 'pyscript' in data:
@@ -134,9 +139,9 @@ class DeffeConfigExploration:
             self.output_log = data['output_log']
         self.exploration_list = []
         if data != None and 'explore' in data:
-            self.exploration_list = [DeffeConfigSingleExploration(exp, index) for index, exp in enumerate(self.data['explore'])]
+            self.exploration_list = [DeffeConfigSingleExploration(exp, index, config_root) for index, exp in enumerate(self.data['explore'])]
         if len(self.exploration_list) == 0:
-            self.exploration_list = [DeffeConfigSingleExploration(None, 0)]
+            self.exploration_list = [DeffeConfigSingleExploration(None, 0, config_root)]
         
 class DeffeConfigSampling:
     def __init__(self, data):
@@ -233,6 +238,7 @@ class DeffeConfigSlurm:
 class DeffeConfig:
     def __init__(self, file_name=None):
         self.data = None
+        self.json_file = file_name
         if file_name != None:
             self.ReadFile(file_name)
 
@@ -275,8 +281,8 @@ class DeffeConfig:
 
     def GetExploration(self):
         if self.data != None and 'exploration' in self.data:
-            return DeffeConfigExploration(self.data['exploration'])
-        return DeffeConfigExploration(None)
+            return DeffeConfigExploration(self.data['exploration'], self)
+        return DeffeConfigExploration(None, self)
 
     def GetSampling(self):
         if self.data != None and 'sampling' in self.data:

@@ -75,6 +75,9 @@ class KerasCNN(BaseMLModel):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
+    def GetTrainValSplit(self):
+        return self.validation_split
+
     def ReadArguments(self):
         arg_string = self.config.ml_arguments
         args = self.parser.parse_args(shlex.split(arg_string))
@@ -145,15 +148,20 @@ class KerasCNN(BaseMLModel):
             self.model_name = name+"_model.png"
         tf.keras.utils.plot_model(self.model, to_file=self.model_name)
         self.model.summary()
+        self.loss_fn = args.loss
+        if self.framework.args.loss != '':
+            self.loss_fn = self.framework.args.loss
         self.loss_function = custom_mean_abs_exp_loss
-        if args.loss == 'custom_mean_abs_loss':
+        if self.loss_fn == 'custom_mean_abs_loss':
             self.loss_function = custom_mean_abs_loss
-        elif args.loss == 'mean_squared_error':
+        elif self.loss_fn == 'mean_squared_error':
             self.loss_function = mean_squared_error 
-        elif args.loss == 'mean_squared_error_int':
+        elif self.loss_fn == 'mean_squared_error_int':
             self.loss_function = mean_squared_error_int
-        elif args.loss == 'custom_mean_abs_log_loss':
+        elif self.loss_fn == 'custom_mean_abs_log_loss':
             self.loss_function = custom_mean_abs_log_loss
+        elif self.loss_fn == 'custom_mean_abs_exp_loss':
+            self.loss_function = custom_mean_abs_exp_loss
         keras.losses.custom_loss = self.loss_function
         self.model = self.get_compiled_model(self.model, loss=self.loss_function, optimizer='adam', metrics=["mse"])
         batch_size = int(args.batch_size)
