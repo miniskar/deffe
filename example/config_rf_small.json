@@ -118,7 +118,7 @@
             {
                 "name" : "kmeans_explore",
                 "groups" : "riscv0, kmeans",
-                "pre_evaluated_data" : "output_kmeans_dakota.csv",
+                "pre_evaluated_data" : "output_kmeans_deffe.csv",
                 "exploration_table" : "deffe_exploration.csv",
                 "evaluation_table" : "deffe_evaluation.csv",
                 "ml_predict_table" : "deffe_prediction.csv",

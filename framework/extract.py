@@ -19,6 +19,8 @@ class DeffeExtract:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetExtract()
+        if not os.path.exists(self.config.sample_extract_script):
+            self.config.sample_extract_script = os.path.join(self.framework.config_dir, self.config.sample_extract_script)
         self.batch_size = int(self.config.batch_size)
         self.parameters = self.framework.parameters
         self.parser = self.AddArgumentsToParser()
@@ -41,14 +43,14 @@ class DeffeExtract:
         self.cost_list = cost_list
 
     def GetExtractCommand(self, output, param_pattern, param_dict):
-        (run_dir, sample_evaluate_script) = output
+        (run_dir, evaluate_script) = output
         extract_script = self.config.sample_extract_script
         self.parameters.CreateRunScript(extract_script, run_dir, param_pattern, param_dict)
         cmd = "cd "+run_dir+" ; sh "+extract_script+" > "+self.config.output_log+" 2>&1 3>&1 ; cd "+os.getcwd()
         return cmd
 
     def GetResult(self, flag, eval_output):
-        (run_dir, sample_evaluate_script) = eval_output
+        (run_dir, evaluate_script) = eval_output
         file_path = os.path.join(run_dir, self.config.cost_output)
         if os.path.exists(file_path):
             with open(file_path, "r") as fh:

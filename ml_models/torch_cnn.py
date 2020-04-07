@@ -69,12 +69,20 @@ class TorchCNN(BaseMLModel):
             self.epochs = int(framework.args.epochs)
         self.nodes = int(self.args.nodes)
         self.validation_split = float(self.args.validation_split)
+        if self.framework.args.validation_split != '':
+            self.validation_split = float(self.framework.args.validation_split)
+        self.train_test_split = float(self.args.train_test_split)
+        if self.framework.args.train_test_split != '':
+            self.train_test_split = float(self.framework.args.train_test_split)
         self.tl_freeze_layers = self.args.tl_freeze_layers
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
     def GetTrainValSplit(self):
         return self.validation_split
+
+    def GetTrainTestSplit(self):
+        return self.train_test_split
 
     def ReadArguments(self):
         arg_string = self.config.ml_arguments
@@ -168,10 +176,15 @@ class TorchCNN(BaseMLModel):
     def DisableICP(self, flag=True):
         self.disable_icp = flag
 
-    def preprocess_data(self):
-        BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.orig_cost_data, self.args.train_test_split, self.validation_split)
+    def PreLoadData(self):
+        BaseMLModel.PreLoadData(self, self.step, self.parameters_data, self.cost_data, self.orig_cost_data, self.train_test_split, self.validation_split)
         if self.args.tl_samples and self.step != self.step_start:
             all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.pth".format(self.step-1)))
+            last_cp = BaseMLModel.get_last_cp_model(self, all_files)
+            if last_cp != '':
+                self.load_model(last_cp)
+        else:
+            all_files = glob.glob(os.path.join(checkpoint_dir, "*weights-improvement-*.hdf5"))
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != '':
                 self.load_model(last_cp)
@@ -220,12 +233,14 @@ class TorchCNN(BaseMLModel):
         return self.loss_function(ground_truth, pred)
 
     def Train(self):
+        BaseMLModel.save_train_test_data(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test
         n_train = int(x_train.shape[0]*(1.0-self.validation_split))
         n_val = int(x_train.shape[0]*self.validation_split)
         print("Train count:"+str(n_train))
         print("Val count:"+str(n_val))
+        print("Test count:"+str(x_test.shape[0]))
         full_set = TensorDataset(torch.Tensor(x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))), torch.Tensor(y_train))
         train_set, val_set = torch.utils.data.random_split(full_set, [n_train, n_val])
         train_loader = DataLoader(train_set, batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
@@ -249,6 +264,7 @@ class TorchCNN(BaseMLModel):
         val_acc = 0.0
         best_val_acc = 1.0
         best_train_acc = 1.0
+        best_epoch = 0
         epoch_test = 5
         for epoch in range(n_epochs):
             g_model.train()
@@ -276,6 +292,7 @@ class TorchCNN(BaseMLModel):
                 if val_acc < best_val_acc:
                     best_val_acc = val_acc
                     best_train_acc = train_acc
+                    best_epoch = epoch
                     #step2-train350-val350-weights-improvement-610-loss0.1988-valloss0.1341.pth
                     weight_file = 'step{}-train{}-val{}-weights-improvement-{}-loss{:0.4f}-valloss{:0.4f}.pth'.format( self.step, n_train, n_val, epoch,  best_train_acc, best_val_acc)
                     logging.info('Saving weights to {}'.format( weight_file ))
@@ -296,9 +313,42 @@ class TorchCNN(BaseMLModel):
                     logging.info('Step {0:d} Testing accuracy: max_error(%)={1:.4f}, min_error={2:.4f}, avg_error={3:.4f}, std={4:.4f}, num_val={5}'.
                                 format(self.step, acc['max'], acc['min'], acc['avg'], acc['std'], n_test))
                     pass
-        return (best_train_acc, best_val_acc)
+        return (self.step, best_epoch, best_train_acc, best_val_acc, n_train, n_val)
 
-    def evaluate_model(self, all_files, outfile="test-output.csv"):
+    def GetStats(self, icp_file):
+        epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
+        loss_re = re.compile(r'-loss([^-]*)-')
+        valloss_re = re.compile(r'-valloss(.*)\.hdf5')
+        step_re = re.compile(r'step([^-]*)-')
+        traincount_re = re.compile(r'-train([^-]*)-')
+        valcount_re = re.compile(r'val([0-9][^-]*)-')
+        epoch_flag = epoch_re.search(icp_file)
+        loss_flag = loss_re.search(icp_file)
+        valloss_flag = valloss_re.search(icp_file)
+        step_flag = step_re.search(icp_file)
+        traincount_flag = traincount_re.search(icp_file)
+        valcount_flag = valcount_re.search(icp_file)
+        epoch=0 #loss0.4787-valloss0.4075.hdf5a
+        train_loss = 0.0
+        val_loss = 0.0
+        traincount = 0
+        valcount = 0
+        step = -1 
+        if epoch_flag:
+            epoch = int(epoch_flag.group(1)) 
+        if loss_flag:
+            train_loss = float(loss_flag.group(1)) 
+        if valloss_flag:
+            val_loss = float(valloss_flag.group(1)) 
+        if step_flag:
+            step = int(step_flag.group(1))
+        if traincount_flag:
+            traincount = int(float(traincount_flag.group(1)))
+        if valcount_flag:
+            valcount = int(float(valcount_flag.group(1)))
+        return (step, epoch, train_loss, val_loss, traincount, valcount)
+
+    def EvaluateModel(self, all_files, outfile="test-output.csv"):
         epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
         loss_re = re.compile(r'-loss([^-]*)-')
         valloss_re = re.compile(r'-valloss(.*)\.pth')
@@ -335,9 +385,12 @@ class TorchCNN(BaseMLModel):
                 if valcount_flag:
                     valcount = int(float(valcount_flag.group(1)))
                 self.model.load_weights(icp_file)
-                if self.args.load_train_test:
+                if self.args.load_train_test or self.framework.args.load_train_test:
                     self.load_train_test_data(step)
                 x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
+                x_test, y_test, z_test = self.x_test, self.y_test, self.z_test   
+                if x_test.size == 0:
+                    x_test, y_test, z_test = self.x_train, self.y_train, self.z_train
                 keras.losses.custom_loss = self.loss_function
                 loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
                 if fh != None:

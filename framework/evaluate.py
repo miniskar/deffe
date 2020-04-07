@@ -27,6 +27,8 @@ class DeffeEvaluate:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetEvaluate()
+        if not os.path.exists(self.config.sample_evaluate_script):
+            self.config.sample_evaluate_script = os.path.join(self.framework.config_dir, self.config.sample_evaluate_script)
         self.batch_size = int(self.config.batch_size)
         self.counter = 0
         self.fr_config = self.framework.fr_config
@@ -90,6 +92,8 @@ class DeffeEvaluate:
         self.param_hash = param_hash
         if preload_file == None:
             return
+        if not os.path.exists(preload_file):
+            preload_file = os.path.join(self.framework.config_dir, preload_file)
         pd_data = pd.read_csv(preload_file, dtype='str', delimiter=r'\s*,\s*', engine='python')
         np_data = pd_data.values.astype('str')
         np_hdrs = np.char.lower(np.array(list(pd_data.columns)).astype('str'))
@@ -115,8 +119,18 @@ class DeffeEvaluate:
                 self.np_cost_hdrs.append(hdr)
                 self.np_cost_valid_indexes.append(index)
         #self.GetValidPreloadedData(trans_data)
-        self.param_data = trans_data[self.np_param_valid_indexes,].transpose()
-        self.cost_data = trans_data[self.np_cost_valid_indexes,].transpose()
+        param_data = trans_data[self.np_param_valid_indexes,].transpose()
+        cost_data = trans_data[self.np_cost_valid_indexes,].transpose()
+        print("Loaded data items:"+str(param_data.shape[0]))
+        valid_indexes = []
+        for index in range(len(param_data)):
+            tp_data = tuple(param_data[index])
+            if tp_data not in self.param_data_hash:
+                self.param_data_hash[tp_data] = cost_data[index]
+                valid_indexes.append(index)
+        self.param_data = param_data[valid_indexes,]
+        self.cost_data = cost_data[valid_indexes,]
+        print("Valid data items:"+str(self.param_data.shape[0]))
         np_param_hdrs_hash = {}
         for index, hdr in enumerate(self.np_param_hdrs):
             np_param_hdrs_hash[hdr] = index
@@ -151,8 +165,6 @@ class DeffeEvaluate:
                 elif param.map in np_param_hdrs_hash:
                     self.param_extract_indexes[np_param_hdrs_hash[param.map]] = pindex
         self.np_param_hdrs_hash = np_param_hdrs_hash
-        for index in range(len(self.param_data)):
-            self.param_data_hash[tuple(self.param_data[index])] = self.cost_data[index]
 
     # Get parameters full list which includes the parameters used only for ML model and unused parameters
     def GetParamsFullList(self, np_params):
@@ -196,10 +208,14 @@ class DeffeEvaluate:
         run_dir = os.path.abspath(run_dir)
         if "${command_file}" in param_hash:
             filename = param_hash["${command_file}"]
+            if not os.path.exists(filename):
+                filename = os.path.join(self.framework.config_dir, filename)
             self.parameters.CreateRunScript(filename, run_dir, param_pattern, param_dict)
             scripts.append((run_dir, filename))
         if "${command_option}" in param_hash:
             filename = param_hash["${command_option}"]
+            if not os.path.exists(filename):
+                filename = os.path.join(self.framework.config_dir, filename)
             self.parameters.CreateRunScript(filename, run_dir, param_pattern, param_dict)
             scripts.append((run_dir, filename))
         self.parameters.CreateRunScript(self.config.sample_evaluate_script, run_dir, param_pattern, param_dict)

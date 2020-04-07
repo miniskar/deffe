@@ -37,8 +37,35 @@ $ cd .. ;
 To run the exploration on the preloaded data
 ```
 $ cd example ;
-$ python3 ../framework/run_deffe.py -config config_small.json -step-start 0 -step-end 1 -epochs 100 -batch-size 256 -only-preloaded-data-exploration
+$ python3 ../framework/run_deffe.py -config config_small.json -only-preloaded-data-exploration -step-start 0 -step-end 1 -epochs 100 -batch-size 256 
 $ cd .. ;
+```
+
+To run full exploration (all samples at once training, means no transfer learning across samples) on the pre-evaluated/pre-loaded data
+```
+$ cd example ;
+$ python3 ../framework/run_deffe.py -config config_small.json -only-preloaded-data-exploration -full-exploration -train-test-split 0.7 -validation-split 0.23 -step-start 0 -step-end 1 -epochs 100 -batch-size 256 
+$ cd .. ;
+```
+
+## How to run experiments?
+### Run Deffe with K-means data set with pre-evaluated full-set of samples
+```
+* Dataset: examples/output_kmeans_deffe.csv
+* Config file: examples/config_kmeans.json
+* Loss functions: custom_mean_abs_log_loss (default) or custom_mean_abs_exp_loss (exponential loss function)
+* Run directory: example/experiments/full_explore/log/kmeans   (For log loss function)
+                 example/experiments/full_explore/exp/kmeans   (For exponential loss function)
+* Command to run: 
+    $ source setup.source
+    $ cd example/experiments/full_explore/log/kmeans 
+    $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_kmeans.json -only-preloaded-data-exploration -epochs 20000 -batch-size 4096 -full-exploration -train-test-split 0.7 -validation-split 0.23 -loss custom_mean_abs_log_loss
+* Command to generate stats. It will load the same training and testing indices used for ML model 
+    $ python3 $DEFFE_DIR/framework/run_deffe.py -model-extract-dir checkpoints -config $DEFFE_DIR/example/config_kmeans.json  -only-preloaded-data-exploration -train-test-split 0.7 -validation-split 0.23 -load-train-test -loss custom_mean_abs_exp_loss
+* Output: 
+        Intermediate checkpoint files directory: example/experiments/full_explore/log/kmeans/checkpoints
+        Training and Test indexes used: step0-train-indices.npy, step0-test-indices.npy
+        Output statistics in file: test-output.csv in the format (Epoch, TrainLoss, ValLoss, TestLoss, Step, TrainCount, ValCount)
 ```
 
 ## How to extend Deffe?
@@ -68,6 +95,45 @@ def GetObject(framework):
 The "GetObject" method returns the object of the class. It should take the Deffe framework object as an input to configure the class. The class will have "Initialize" and "Run" method. 
 
 
-
+## How to configure JSON configuration?
+An example JSON configuration file parameters are shown in short given below.
+```
+{
+    "python_path" : ["."],
+    "knobs" : 
+        [
+            ### Array of Knobs (Architecture / Application Knobs) ###
+        ],
+    "scenarios" : 
+        [
+            ### Array of Scenarios (Application scenarios) ###
+        ],
+    "costs" : 
+        [ 
+            ### Array of Cost metric names ###
+        ],
+    "model" : {
+            ### ML-Model JSON key-value configuration parameters ###
+    },
+    "exploration" : {
+            ### Exploration (DSE) module json key-value configuration parameters ###
+    },
+    "sampling" : {
+            ### Intelligent sampling (Random) module JSON key-value configuration parameters ###
+    },
+    "evaluate" : {
+            ### Evaluate (Sampling points evaluation) module json key-value configuration parameters ###
+    },
+    "extract" : {
+            ### Extract (evaluation output extraction) module json key-value configuration parameters ###
+    },
+    "framework" : {
+            ### Framework  module json key-value configuration parameters ###
+    },
+    "slurm" : {
+            ### Slurm json key-value configuration parameters ###
+    }
+}
+```
 
 

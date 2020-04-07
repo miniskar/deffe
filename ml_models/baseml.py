@@ -10,30 +10,31 @@
 ###
 import numpy as np
 import re
+import pdb
 
 checkpoint_dir = "checkpoints"
 class BaseMLModel:
     def __init__(self):
         None
 
-    def preprocess_data(self, parameters, cost_data, orig_cost_data, train_test_split, validation_split):
-        train_count = int(parameters.shape[0]*float(train_test_split))
+    def PreLoadData(self, step, parameters, cost_data, orig_cost_data, train_test_split, validation_split):
+        train_count = int(parameters.shape[0]*train_test_split)
         test_count = parameters.shape[0] - train_count
-        print("Total count:"+str(parameters.shape[0]))
-        print("Train count:"+str(train_count))
-        print("Test count:"+str(test_count))
+        print("Init Total count:"+str(parameters.shape[0]))
+        print("Init Train count:"+str(train_count))
+        print("Init Test count:"+str(test_count))
         self.train_count = train_count
         self.val_count = int(train_count * validation_split)
         self.test_count = test_count
         indices = np.random.permutation(parameters.shape[0])
         training_idx = indices[:train_count]
         test_idx = indices[train_count:]
-        np.save("train-indices.npy", training_idx)
-        np.save("test-indices.npy", test_idx)
         #print("Tr_indices:"+str(training_idx))
         #print("test_indices:"+str(test_idx))
         #print("Tr_indices count:"+str(training_idx.size))
         #print("test_indices count:"+str(test_idx.size))
+        self.training_idx = training_idx
+        self.test_idx = test_idx
         x_train = parameters[training_idx,:].astype('float')
         y_train = cost_data[training_idx,:].astype('float')
         z_train = orig_cost_data[training_idx,:].astype('float') 
@@ -43,12 +44,28 @@ class BaseMLModel:
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
 
+    def save_train_test_data(self, step=-1):
+        if step == -1:
+            print("Saving train indices: train-indices.npy")
+            np.save("train-indices.npy", self.training_idx)
+            print("Saving test indices: train-indices.npy")
+            np.save("test-indices.npy", self.test_idx)
+        else:
+            print("Saving train indices: step{}-train-indices.npy".format(step))
+            np.save("step{}-train-indices.npy".format(step), self.training_idx)
+            print("Saving test indices: step{}-test-indices.npy".format(step))
+            np.save("step{}-test-indices.npy".format(step), self.test_idx)
+
     def load_train_test_data(self, step=-1):
         if step == -1:
+            print("Loading train indices: train-indices.npy")
             training_idx = np.load("train-indices.npy")
+            print("Loading test indices: test-indices.npy")
             test_idx     = np.load("test-indices.npy")
         else:
+            print("Loading train indices: step{}-train-indices.npy".format(step))
             training_idx = np.load("step{}-train-indices.npy".format(step))
+            print("Loading test indices: step{}-test-indices.npy".format(step))
             test_idx     = np.load("step{}-test-indices.npy".format(step))
         parameters = self.parameters_data
         cost_data = self.cost_data
@@ -78,6 +95,10 @@ class BaseMLModel:
                 max_epoch = epoch
                 last_icp = icp_file
         return last_icp
+
+    # Evalaute model results
+    def EvaluateModel(self, all_files, outfile="test-output.csv"):
+        None
 
 
 

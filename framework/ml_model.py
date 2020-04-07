@@ -48,13 +48,12 @@ class DeffeMLModel:
     def GetTrainValSplit(self):
         return self.ml_model_script.GetTrainValSplit()
 
-    # Run the prediction/inference
-    def Inference(self, samples):
-        # TODO: Inference is yet to be implemented
-        return self.batch_output
+    # Get Train-Validation split 
+    def GetTrainTestSplit(self):
+        return self.ml_model_script.GetTrainTestSplit()
 
-    # Train the model
-    def Train(self, step, headers, params, cost):
+    # Initialize model parameters and costs
+    def InitializeModel(self, headers, params, cost, step=0):
         params_valid_indexes = []
         cost_metrics = []
         for index, (flag, eval_type, actual_cost) in enumerate(cost):
@@ -65,9 +64,25 @@ class DeffeMLModel:
             print("[Warning] no samples to train in this step !")
             return self.accuracy
         self.ml_model_script.Initialize(step, headers, params[params_valid_indexes,], np.array(cost_metrics))
-        self.ml_model_script.preprocess_data()
+        self.ml_model_script.PreLoadData()
+
+    # Run the prediction/inference
+    def Inference(self, samples):
+        # TODO: Inference is yet to be implemented
+        return self.batch_output
+
+    # Train the model
+    def Train(self):
         self.accuracy = self.ml_model_script.Train()
         return self.accuracy
+
+    # Evaluate model results
+    def EvaluateModel(self, all_files, outfile="test-output.csv"):
+        self.ml_model_script.EvaluateModel(all_files, outfile)
+
+    # Preload the pretrained model
+    def PreLoadData(self):
+        self.ml_model_script.PreLoadData()
 
 def GetObject(framework):
     obj = DeffeMLModel(framework)

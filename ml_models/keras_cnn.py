@@ -71,12 +71,20 @@ class KerasCNN(BaseMLModel):
         self.nodes = int(self.args.nodes)
         self.convs = int(self.args.convs)
         self.validation_split = float(self.args.validation_split)
+        if self.framework.args.validation_split != '':
+            self.validation_split = float(self.framework.args.validation_split)
+        self.train_test_split = float(self.args.train_test_split)
+        if self.framework.args.train_test_split != '':
+            self.train_test_split = float(self.framework.args.train_test_split)
         self.tl_freeze_layers = self.args.tl_freeze_layers
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
     def GetTrainValSplit(self):
         return self.validation_split
+
+    def GetTrainTestSplit(self):
+        return self.train_test_split
 
     def ReadArguments(self):
         arg_string = self.config.ml_arguments
@@ -190,10 +198,16 @@ class KerasCNN(BaseMLModel):
     def DisableICP(self, flag=True):
         self.disable_icp = flag
 
-    def preprocess_data(self):
-        BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.orig_cost_data, self.args.train_test_split, self.validation_split)
-        if self.args.tl_samples and self.step != self.step_start:
-            all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step-1)))
+    def PreLoadData(self, step_cp=True):
+        BaseMLModel.PreLoadData(self, self.step, self.parameters_data, self.cost_data, self.orig_cost_data, self.train_test_split, self.validation_split)
+        if step_cp:
+            if self.args.tl_samples and self.step != self.step_start:
+                all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step-1)))
+                last_cp = BaseMLModel.get_last_cp_model(self, all_files)
+                if last_cp != '':
+                    self.load_model(last_cp)
+        else:
+            all_files = glob.glob(os.path.join(checkpoint_dir, "*weights-improvement-*.hdf5"))
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != '':
                 self.load_model(last_cp)
@@ -247,8 +261,11 @@ class KerasCNN(BaseMLModel):
                 fh.write(str(epoch)+", "+str(loss)+", "+str(acc))
                 #print('\nTesting loss: {}, acc: {}\n'.format(loss, acc))
 
+        BaseMLModel.save_train_test_data(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
+        print("Train count:"+str(x_train.shape[0]))
+        print("Test count:"+str(x_test.shape[0]))
         # Train the model by slicing the data into "batches"
         # of size "batch_size", and repeatedly iterating over
         # the entire dataset for a given number of "epochs"
@@ -318,9 +335,44 @@ class KerasCNN(BaseMLModel):
 
         # Generate predictions (probabilities -- the output of the last layer)
         # on new data using `predict`
-        return (0.0, 0.0)
+        all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step)))
+        last_cp = BaseMLModel.get_last_cp_model(self, all_files)
+        return self.GetStats(last_cp)
 
-    def evaluate_model(self, all_files, outfile="test-output.csv"):
+    def GetStats(self, icp_file):
+        epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
+        loss_re = re.compile(r'-loss([^-]*)-')
+        valloss_re = re.compile(r'-valloss(.*)\.hdf5')
+        step_re = re.compile(r'step([^-]*)-')
+        traincount_re = re.compile(r'-train([^-]*)-')
+        valcount_re = re.compile(r'val([0-9][^-]*)-')
+        epoch_flag = epoch_re.search(icp_file)
+        loss_flag = loss_re.search(icp_file)
+        valloss_flag = valloss_re.search(icp_file)
+        step_flag = step_re.search(icp_file)
+        traincount_flag = traincount_re.search(icp_file)
+        valcount_flag = valcount_re.search(icp_file)
+        epoch=0 #loss0.4787-valloss0.4075.hdf5a
+        train_loss = 0.0
+        val_loss = 0.0
+        traincount = 0
+        valcount = 0
+        step = -1 
+        if epoch_flag:
+            epoch = int(epoch_flag.group(1)) 
+        if loss_flag:
+            train_loss = float(loss_flag.group(1)) 
+        if valloss_flag:
+            val_loss = float(valloss_flag.group(1)) 
+        if step_flag:
+            step = int(step_flag.group(1))
+        if traincount_flag:
+            traincount = int(float(traincount_flag.group(1)))
+        if valcount_flag:
+            valcount = int(float(valcount_flag.group(1)))
+        return (step, epoch, train_loss, val_loss, traincount, valcount)
+
+    def EvaluateModel(self, all_files, outfile="test-output.csv"):
         epoch_re = re.compile(r'weights-improvement-([0-9]+)-')
         loss_re = re.compile(r'-loss([^-]*)-')
         valloss_re = re.compile(r'-valloss(.*)\.hdf5')
@@ -328,52 +380,34 @@ class KerasCNN(BaseMLModel):
         step_re = re.compile(r'step([^-]*)-')
         traincount_re = re.compile(r'-train([^-]*)-')
         valcount_re = re.compile(r'val([0-9][^-]*)-')
+        print("Train count:"+str(self.x_train.shape[0]))
+        print("Test count:"+str(self.x_test.shape[0]))
         with open(outfile, "w") as fh:
             hdrs = [ "Epoch", "TrainLoss", "ValLoss", "TestLoss" ]
             print("Calculating test accuracies "+str(len(all_files)))
             for index, icp_file in enumerate(all_files):
-                epoch_flag = epoch_re.search(icp_file)
-                loss_flag = loss_re.search(icp_file)
-                valloss_flag = valloss_re.search(icp_file)
-                step_flag = step_re.search(icp_file)
-                traincount_flag = traincount_re.search(icp_file)
-                valcount_flag = valcount_re.search(icp_file)
-                epoch=0 #loss0.4787-valloss0.4075.hdf5a
-                train_loss = 0.0
-                val_loss = 0.0
-                traincount = 0
-                valcount = 0
-                step = -1 
-                if epoch_flag:
-                    epoch = int(epoch_flag.group(1)) 
-                if loss_flag:
-                    train_loss = float(loss_flag.group(1)) 
-                if valloss_flag:
-                    val_loss = float(valloss_flag.group(1)) 
-                if step_flag:
-                    step = int(step_flag.group(1))
-                if traincount_flag:
-                    traincount = int(float(traincount_flag.group(1)))
-                if valcount_flag:
-                    valcount = int(float(valcount_flag.group(1)))
+                (step, epoch, train_loss, val_loss, traincount, valcount) = self.GetStats(icp_file)
                 self.model.load_weights(icp_file)
-                if self.args.load_train_test:
+                if self.args.load_train_test or self.framework.args.load_train_test:
                     self.load_train_test_data(step)
-                x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
+                x_test, y_test, z_test = self.x_test, self.y_test, self.z_test   
+                if x_test.size == 0:
+                    x_test, y_test, z_test = self.x_train, self.y_train, self.z_train
                 keras.losses.custom_loss = self.loss_function
-                loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
+                loss, acc = self.model.evaluate(x_test, y_test, verbose=0)
                 if fh != None:
                     if index == 0:
-                        if step_flag:
+                        if step != -1:
                             hdrs.append("Step")
                             hdrs.append("TrainCount")
                             hdrs.append("ValCount")
                         fh.write(", ".join(hdrs)+"\n")
                     data = [str(epoch), str(train_loss), str(val_loss), str(loss)]
-                    if step_flag:
+                    if step != -1:
                         data.extend([str(step), str(traincount), str(valcount)])
                     fh.write(", ".join(data)+"\n")
-                #print('Testing epoch:{} train_loss: {}, val_loss: {}, test_loss: {}\n'.format(epoch, train_loss, val_loss, loss))
+                    fh.flush()
+                print('Testing epoch:{} train_loss: {}, val_loss: {}, test_loss: {}'.format(epoch, train_loss, val_loss, loss))
             fh.close()
 
 

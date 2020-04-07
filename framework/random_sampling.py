@@ -69,7 +69,7 @@ class DeffeRandomSampling:
         self._exhausted = False
         
         assert n_train>1, 'Bummer: number of training has to be >1'
-        assert n_val>1, 'Bummer: number of validation has to be >1'
+        #assert n_val>1, 'Bummer: number of validation has to be >1'
         assert n_val+n_train<=self._len, 'Bummer: input sequence is too small: {} + {} < {}'.format(
             n_train, n_val, self._len)
         
@@ -97,8 +97,12 @@ class DeffeRandomSampling:
         if self._exhausted:
             return False
         
+        if self._pos >= self._len:
+            self._exhausted = True
+            return False
+
         new_pos = self._pos + self._n_val
-        if new_pos > self._len:
+        if new_pos >= self._len:
             #print('Insufficient remaining samples in sequence, truncating num of new samples from {} to {}'.format(
             #    self._n_val, new_pos-self._len ))
             new_pos = self._len

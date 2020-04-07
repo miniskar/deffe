@@ -34,6 +34,9 @@ class SKlearnRF(BaseMLModel):
     def GetTrainValSplit(self):
         return float(self.args.train_test_split)
 
+    def GetTrainTestSplit(self):
+        return float(self.args.train_test_split)
+
     def ReadArguments(self):
         arg_string = self.config.ml_arguments
         args = self.parser.parse_args(shlex.split(arg_string))
@@ -74,8 +77,8 @@ class SKlearnRF(BaseMLModel):
         rf_dict['alpha'] = alpha
         self.rf_dict = rf_dict
 
-    def preprocess_data(self):
-        BaseMLModel.preprocess_data(self, self.parameters_data, self.cost_data, self.cost_data, self.args.train_test_split, 0.20)
+    def PreLoadData(self):
+        BaseMLModel.PreLoadData(self, self.step, self.parameters_data, self.cost_data, self.cost_data, self.GetTrainTestSplit(), 0.20)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
         y_train = np.log(y_train.reshape((y_train.shape[0], )))
@@ -91,6 +94,7 @@ class SKlearnRF(BaseMLModel):
         return None
 
     def Train(self):
+        BaseMLModel.save_train_test_data(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
 
@@ -137,7 +141,7 @@ class SKlearnRF(BaseMLModel):
             if obj_pred_test != None:
                 y_test_data = self.compute_error(y_test, obj_pred_test)
                 z_test_data = self.compute_error(z_test, np.exp(obj_pred_test))
-        return (y_train_data[0], y_test_data[0])
+        return (self.step, 0, y_train_data[0], y_test_data[0], x_train.shape[0], x_test.shape[0])
         
     def compute_error(self, test, pred):
         all_errors = np.zeros(pred.shape)
