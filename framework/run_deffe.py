@@ -150,18 +150,16 @@ class DeffeFramework:
 
             # Iterate the exploration until it is completed
             while(not self.exploration.IsCompleted()):
-                if step != 0:
-                    flag = self.sampling.StepWithInc(inc)
+                if step != 0 or self.args.step_start != '':
+                    linc = inc
+                    if self.args.step_start != '' and step < int(self.args.step_start):
+                        linc = int(self.args.step_start) - step
+                        step = step + linc
+                    flag = self.sampling.StepWithInc(linc)
                     if not flag:
                         break
-                if self.args.step_start != '':
-                    if step < int(self.args.step_start):
-                        step = step + inc
-                        continue
-                if self.args.step_end != '':
-                    if step >= int(self.args.step_end):
-                        step = step + inc
-                        break
+                if self.args.step_end != '' and step >= int(self.args.step_end):
+                    break
                 print("***** Step {} *****".format(step))
                 samples = self.sampling.GetBatch()
                 parameter_values = None

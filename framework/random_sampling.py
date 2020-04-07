@@ -81,17 +81,36 @@ class DeffeRandomSampling:
         self._pos = self._n_train + self._n_val
         #print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
 
-    """
-       Take one step, generate the sequence of training and validation sets
-            if rc = True, sequence has not been exhausted
-               rc = False, no more unexplored values in the sequnece
-    """
-    def StepWithInc(self, inc):
-        for i in range(inc):
-            self.Step()
 
     def IsCompleted(self):
         return self._exhausted
+
+    """
+       Take step with increment, generate the sequence of training and validation sets
+            if rc = True, sequence has not been exhausted
+               rc = False, no more unexplored values in the sequnece
+    """
+    def StepWithInc(self, inc=1):
+        if self._exhausted:
+            return False
+        if self._pos >= self._len:
+            self._exhausted = True
+            return False
+        new_pos = self._pos
+        for i in range(inc):
+            new_pos = new_pos + self._n_val
+            self._step = self._step + 1 
+        if new_pos >= self._len:
+            new_pos = self._len
+        new_val = self._seq[ self._pos: new_pos ]
+        tmp = len(self._val_idx)//2
+        if tmp != 0:
+            self._train_idx = np.concatenate((self._train_idx, self._val_idx[range(0,tmp)]), axis=None)
+            self._val_idx = np.concatenate((self._val_idx[range(tmp,len(self._val_idx))], new_val), axis=None)
+        self._pos = new_pos
+        print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
+        return True
+    
 
     def Step(self):
         if self._exhausted:
