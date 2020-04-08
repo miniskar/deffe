@@ -63,6 +63,7 @@ class KerasCNN(BaseMLModel):
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
         self.step = -1
+        self.prev_step = -1
         self.step_start = framework.args.step_start
         self.step_end= framework.args.step_end
         self.epochs = int(self.args.epochs)
@@ -112,6 +113,7 @@ class KerasCNN(BaseMLModel):
 
     def Initialize(self, step, headers, parameters_data, cost_data, name="network"):
         args = self.args
+        self.prev_step = self.step
         self.step = step
         print("Headers: "+str(headers))
         self.parameters_data = parameters_data
@@ -198,14 +200,13 @@ class KerasCNN(BaseMLModel):
     def DisableICP(self, flag=True):
         self.disable_icp = flag
 
-    def PreLoadData(self, step_cp=True):
+    def PreLoadData(self):
         BaseMLModel.PreLoadData(self, self.step, self.parameters_data, self.cost_data, self.orig_cost_data, self.train_test_split, self.validation_split)
-        if step_cp:
-            if self.args.tl_samples and self.step != self.step_start:
-                all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step-1)))
-                last_cp = BaseMLModel.get_last_cp_model(self, all_files)
-                if last_cp != '':
-                    self.load_model(last_cp)
+        if self.args.tl_samples and self.step != self.step_start:
+            all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.prev_step)))
+            last_cp = BaseMLModel.get_last_cp_model(self, all_files)
+            if last_cp != '':
+                self.load_model(last_cp)
         else:
             all_files = glob.glob(os.path.join(checkpoint_dir, "*weights-improvement-*.hdf5"))
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
