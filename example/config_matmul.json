@@ -44,7 +44,7 @@
             "name" : "matmul_size",
             "map" : "options",
             "groups" : "matmul",
-            "values" : [16, 32, 64, 128, 256]
+            "values" : [16, 32, 64, 128, 256, 512]
         },
         {
             "name" : "kmeans_objects",

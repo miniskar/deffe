@@ -78,6 +78,9 @@ class DeffeMLModel:
         # TODO: Inference is yet to be implemented
         return self.batch_output
 
+    def InferenceAll(self, output_file):
+        self.ml_model_script.InferenceAll(output_file)
+
     # Train the model
     def Train(self):
         self.accuracy = self.ml_model_script.Train()

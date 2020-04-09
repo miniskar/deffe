@@ -76,7 +76,7 @@ $ cd .. ;
 ```
 
 ## How to extend Deffe?
-Every customizable class in Deffe follows the below bare minimal methods.
+All classes in Deffe have the below bare minimal methods.
 ```
 import os
 import argparse

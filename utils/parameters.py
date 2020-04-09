@@ -105,6 +105,7 @@ class Parameters:
                 maxp = np.max(np.array(param_values).astype('float'))
                 #print("1MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
                 self.UpdateMinMaxRange(param, minp, maxp)
+        #print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
         return (self.selected_params, self.selected_pruned_params, total_permutations)
 
     def IsParameterNumber(self, param_values):
@@ -131,12 +132,15 @@ class Parameters:
         return out_dim_list
 
     def UpdateMinMaxRange(self, param, minp, maxp):
+        #print("Options update:"+param.map)
+        #print("Before Options:"+str(self.GetMinMaxToJSonData()))
         if param.map in self.min_list_params:
             minp = min(minp, self.min_list_params[param.map])
         if param.map in self.max_list_params:
             maxp = max(maxp, self.max_list_params[param.map])
         self.min_list_params[param.map] = minp
         self.max_list_params[param.map] = maxp
+        #print("Before Options:"+str(self.GetMinMaxToJSonData()))
 
     def GetMinMaxToJSonData(self):
         data = {}

@@ -69,6 +69,20 @@ class DeffeEvaluate:
                 valid_indexes.append(index)
         #TODO
 
+    def WriteSamplesToCSV(self):
+        n_samples = min(20, self.param_data.shape[0])
+        org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
+        x_train = self.param_data[org_seq,]
+        y_train = self.cost_data[org_seq,]
+        y_train = y_train.reshape((y_train.shape[0],))
+        out_data_hash = {}
+        x_train_tr = x_train.transpose()
+        for index, hdr in enumerate(self.param_hdrs):
+            out_data_hash[hdr] = x_train_tr[index].tolist()
+        out_data_hash['cpu_cycles'] = y_train.tolist()
+        df = pd.DataFrame(out_data_hash)
+        df.to_csv("random-samples.csv", index=False, sep=',', encoding='utf-8')
+        
     # Initialize method should be called for every new instance of new batch of samples.
     # Parameters to be passed: Parameters list, Pruned parameters list, Cost metrics names, and also 
     # if any preload_file (Pre-Evaluated results)
@@ -88,7 +102,6 @@ class DeffeEvaluate:
             param_hdrs.append(param.name.lower())
             param_hash[param.name.lower()] = pdata
             param_hash[param.map.lower()] = pdata
-        self.param_hdrs = param_hdrs
         self.param_hash = param_hash
         if preload_file == None:
             return
@@ -97,7 +110,7 @@ class DeffeEvaluate:
         pd_data = pd.read_csv(preload_file, dtype='str', delimiter=r'\s*,\s*', engine='python')
         np_data = pd_data.values.astype('str')
         np_hdrs = np.char.lower(np.array(list(pd_data.columns)).astype('str'))
-        preload_data = np_data[1:]
+        preload_data = np_data[0:]
         trans_data = preload_data.transpose()
         self.np_param_valid_indexes = []
         self.np_param_hdrs = []
@@ -128,6 +141,7 @@ class DeffeEvaluate:
             if tp_data not in self.param_data_hash:
                 self.param_data_hash[tp_data] = cost_data[index]
                 valid_indexes.append(index)
+        self.param_hdrs = self.np_param_hdrs
         self.param_data = param_data[valid_indexes,]
         self.cost_data = cost_data[valid_indexes,]
         print("Valid data items:"+str(self.param_data.shape[0]))
@@ -165,6 +179,7 @@ class DeffeEvaluate:
                 elif param.map in np_param_hdrs_hash:
                     self.param_extract_indexes[np_param_hdrs_hash[param.map]] = pindex
         self.np_param_hdrs_hash = np_param_hdrs_hash
+        self.WriteSamplesToCSV()
 
     # Get parameters full list which includes the parameters used only for ML model and unused parameters
     def GetParamsFullList(self, np_params):

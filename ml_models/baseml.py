@@ -118,6 +118,12 @@ class BaseMLModel:
                 last_icp = icp_file
         return last_icp
 
+    def Train(self):
+        None
+
+    def InferenceAll(self, output_file):
+        None
+
     # Evalaute model results
     def EvaluateModel(self, all_files, outfile="test-output.csv"):
         None

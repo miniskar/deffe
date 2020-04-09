@@ -108,43 +108,44 @@ class DeffeFramework:
         # Iterate through multiple explorations list as per the configuration
         for explore_groups in self.config.GetExploration().exploration_list:
             # extract the parameters and cost metrics in that exploration list
+            no_train_flag = False
+            evaluate_flag = False
             (param_list, pruned_param_list, n_samples)  = self.parameters.Initialize(explore_groups.groups)
             headers = self.parameters.GetHeaders(param_list)
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
+            only_preloaded_data_exploration = self.args.only_preloaded_data_exploration
+            full_exploration = self.args.full_exploration 
+            load_data_file = explore_groups.pre_evaluated_data
+            if self.args.input != '':
+                load_data_file = self.args.input
+                only_preloaded_data_exploration = True
+                no_train_flag = True
+            if self.args.inference_only:
+                full_exploration = True
             # Initialize the evaluate, extract and ML models
-            self.evaluate.Initialize(param_list, pruned_param_list, self.config.GetCosts(), explore_groups.pre_evaluated_data)
+            self.evaluate.Initialize(param_list, pruned_param_list, self.config.GetCosts(), load_data_file)
             self.extract.Initialize(param_list, self.config.GetCosts())
             # Initialize the random sampling
             init_n_train = self.init_n_train
             init_n_val = self.init_n_val
             # Preload the data if anything is configured
-            if self.args.only_preloaded_data_exploration:
+            if only_preloaded_data_exploration:
                 n_samples = len(self.evaluate.param_data_hash) 
-                if self.args.model_extract_dir != '' or self.args.full_exploration:
+                if self.args.model_extract_dir != '' or full_exploration:
                     train_test_percentage = self.model.GetTrainTestSplit()
                     init_n_train = int(n_samples * train_test_percentage)
                     init_n_val = n_samples - init_n_train
                 if self.args.model_extract_dir != '':
-                    self.sampling.Initialize(n_samples, init_n_train, init_n_val)
-                    # Get Full batch of samples for evaluation of model
-                    samples = self.sampling.GetBatch()
-                    parameter_values = self.evaluate.GetPreEvaluatedParameters(samples, param_list)
-                    pruned_parameter_values = self.parameters.GetPrunedSelectedValues(parameter_values, pruned_param_list)
-                    parameters_normalize = self.parameters.GetNormalizedParameters(np.array(pruned_parameter_values), pruned_param_list)
-                    eval_output = self.evaluate.Run(parameter_values)
-                    batch_output = self.extract.Run(parameter_values, param_list, eval_output)
-                    self.model.InitializeModel(samples, pruned_headers, parameters_normalize, batch_output, 0)
-                    all_files = glob.glob(os.path.join(self.args.model_extract_dir, "*.hdf5"))
-                    self.model.EvaluateModel(all_files, self.args.model_stats_output)
-                    continue
-
+                    no_train_flag = True
+                    evaluate_flag = True
             self.sampling.Initialize(n_samples, init_n_train, init_n_val)
 
             # Initialize writing of output log files
-            self.config.WriteFile(explore_groups.name+"-minmax.json", self.parameters.GetMinMaxToJSonData())
-            self.evaluation_table.WriteHeaderInCSV(explore_groups.evaluation_table, self.evaluate.param_hdrs+self.config.GetCosts())
-            self.ml_predict_table.WriteHeaderInCSV(explore_groups.ml_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
-            self.evaluation_predict_table.WriteHeaderInCSV(explore_groups.evaluation_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
+            if not no_train_flag:
+                self.config.WriteFile(explore_groups.name+"-minmax.json", self.parameters.GetMinMaxToJSonData())
+                self.evaluation_table.WriteHeaderInCSV(explore_groups.evaluation_table, self.evaluate.param_hdrs+self.config.GetCosts())
+                self.ml_predict_table.WriteHeaderInCSV(explore_groups.ml_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
+                self.evaluation_predict_table.WriteHeaderInCSV(explore_groups.evaluation_predict_table, self.evaluate.param_hdrs+self.config.GetCosts())
             step = 0
             inc = int(self.args.step_inc)
 
@@ -165,13 +166,13 @@ class DeffeFramework:
                 parameter_values = None
                 parameters_normalize = None
                 # Check if the data point already exist in pre-computed data 
-                if self.args.only_preloaded_data_exploration:
+                if only_preloaded_data_exploration:
                     parameter_values = self.evaluate.GetPreEvaluatedParameters(samples, param_list)
                     pruned_parameter_values = self.parameters.GetPrunedSelectedValues(parameter_values, pruned_param_list)
                     parameters_normalize = self.parameters.GetNormalizedParameters(np.array(pruned_parameter_values), pruned_param_list)
                 else:
                     parameter_values = self.parameters.GetParameters(samples, param_list)
-                    parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=True, with_normalize=False)
+                    parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=True, with_normalize=True)
                 # Check if model is already ready
                 if self.IsModelReady():
                     batch_output = self.model.Inference(parameters_normalize)
@@ -179,11 +180,18 @@ class DeffeFramework:
                     eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(parameter_values, param_list, eval_output)
                     self.model.InitializeModel(samples, pruned_headers, parameters_normalize, batch_output, step)
-                    stats_data = self.model.Train()
-                    print("Stats: (Step, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "+str(stats_data))
-                self.WriteExplorationOutput(parameter_values, batch_output)
+                    if not no_train_flag:
+                        stats_data = self.model.Train()
+                        print("Stats: (Step, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "+str(stats_data))
+                    if self.args.inference_only:
+                        self.model.InferenceAll(self.args.output)
+                        break
+                if not no_train_flag:
+                    self.WriteExplorationOutput(parameter_values, batch_output)
                 step = step + inc
-
+            if evaluate_flag:
+                all_files = glob.glob(os.path.join(self.args.model_extract_dir, "*.hdf5"))
+                self.model.EvaluateModel(all_files, self.args.model_stats_output)
 # Initialize parser command line arguments                   
 def InitParser(parser):
     parser.add_argument('-config', dest='config', default="config.json")
@@ -195,6 +203,9 @@ def InitParser(parser):
     parser.add_argument('-step-end', dest='step_end', default='')
     parser.add_argument('-epochs', dest='epochs', default='-1')
     parser.add_argument('-batch-size', dest='batch_size', default='-1')
+    parser.add_argument('-inference-only', dest='inference_only', action='store_true')
+    parser.add_argument('-input', dest='input', default='')
+    parser.add_argument('-output', dest='output', default='')
     parser.add_argument('-model-extract-dir', dest='model_extract_dir', default='')
     parser.add_argument('-model-stats-output', dest='model_stats_output', default='test-output.csv')
     parser.add_argument('-full-exploration', dest='full_exploration', action='store_true')
