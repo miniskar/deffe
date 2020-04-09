@@ -60,12 +60,19 @@ $ cd .. ;
     $ source setup.source
     $ cd example/experiments/full_explore/log/kmeans 
     $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_kmeans.json -only-preloaded-data-exploration -epochs 20000 -batch-size 4096 -full-exploration -train-test-split 0.7 -validation-split 0.23 -loss custom_mean_abs_log_loss
+
 * Command to generate stats. It will load the same training and testing indices used for ML model 
     $ python3 $DEFFE_DIR/framework/run_deffe.py -model-extract-dir checkpoints -config $DEFFE_DIR/example/config_kmeans.json  -only-preloaded-data-exploration -train-test-split 0.7 -validation-split 0.23 -load-train-test -loss custom_mean_abs_exp_loss
-* Output: 
-        Intermediate checkpoint files directory: example/experiments/full_explore/log/kmeans/checkpoints
-        Training and Test indexes used: step0-train-indices.npy, step0-test-indices.npy
-        Output statistics in file: test-output.csv in the format (Epoch, TrainLoss, ValLoss, TestLoss, Step, TrainCount, ValCount)
+
+* Output files: 
+    ** Intermediate checkpoint files directory: example/experiments/full_explore/log/kmeans/checkpoints
+    ** Training and Test indexes used: step<int>-train-indices.npy, step<int>-val-indices.npy, which have training and validation indexes used for training for that step
+    ** Output statistics in file: test-output.csv in the format (Epoch, TrainLoss, ValLoss, TestLoss, Step, TrainCount, ValCount)
+* Try sample parameters:
+    ** Input test-model.csv
+    ** Command given below
+       $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_kmeans.json -input test-model.csv -icp kmeans.hdf5 -output output-prediction.csv
+    ** Output output-prediction.csv
 ```
 
 ## How to extend Deffe?

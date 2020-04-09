@@ -54,7 +54,8 @@ class SKlearnRF(BaseMLModel):
         parser.add_argument('-train-test-split', dest='train_test_split', default="1.00")
         return parser
 
-    def Initialize(self, step, headers, parameters_data, cost_data, name="network"):
+    def Initialize(self, step, headers, parameters_data, cost_data, train_indexes, val_indexes, name="network"):
+        BaseMLModel.Initialize(self, headers, parameters_data, cost_data, train_indexes, val_indexes)
         args = self.args
         self.step = step
         print("Headers: "+str(headers))
@@ -78,7 +79,7 @@ class SKlearnRF(BaseMLModel):
         self.rf_dict = rf_dict
 
     def PreLoadData(self):
-        BaseMLModel.PreLoadData(self, self.step, self.parameters_data, self.cost_data, self.cost_data, self.GetTrainTestSplit(), 0.20)
+        BaseMLModel.PreLoadData(self, self.step, self.GetTrainTestSplit(), 0.20)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
         y_train = np.log(y_train.reshape((y_train.shape[0], )))
@@ -94,7 +95,7 @@ class SKlearnRF(BaseMLModel):
         return None
 
     def Train(self):
-        BaseMLModel.save_train_test_data(self, self.step)
+        BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
 

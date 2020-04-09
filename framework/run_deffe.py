@@ -133,7 +133,7 @@ class DeffeFramework:
                     parameters_normalize = self.parameters.GetNormalizedParameters(np.array(pruned_parameter_values), pruned_param_list)
                     eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(parameter_values, param_list, eval_output)
-                    self.model.InitializeModel(pruned_headers, parameters_normalize, batch_output, 0)
+                    self.model.InitializeModel(samples, pruned_headers, parameters_normalize, batch_output, 0)
                     all_files = glob.glob(os.path.join(self.args.model_extract_dir, "*.hdf5"))
                     self.model.EvaluateModel(all_files, self.args.model_stats_output)
                     continue
@@ -178,7 +178,7 @@ class DeffeFramework:
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(parameter_values, param_list, eval_output)
-                    self.model.InitializeModel(pruned_headers, parameters_normalize, batch_output, step)
+                    self.model.InitializeModel(samples, pruned_headers, parameters_normalize, batch_output, step)
                     stats_data = self.model.Train()
                     print("Stats: (Step, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "+str(stats_data))
                 self.WriteExplorationOutput(parameter_values, batch_output)
@@ -201,6 +201,7 @@ def InitParser(parser):
     parser.add_argument('-train-test-split', dest='train_test_split', default="")
     parser.add_argument('-validation-split', dest='validation_split', default="")
     parser.add_argument('-load-train-test', dest='load_train_test', action='store_true')
+    parser.add_argument('-icp', dest='icp', default="")
     parser.add_argument('-loss', dest='loss', default='')
     
 # Main function

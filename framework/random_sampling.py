@@ -12,6 +12,8 @@ import os
 import numpy as np
 from numpy import random
 import pdb
+import argparse
+import shlex
 
 class DeffeRandomSampling:
     """
@@ -52,17 +54,40 @@ class DeffeRandomSampling:
         self._exhausted = False
         self._n_samples = 0
         self._shuffle = True
+        self.parser = self.AddArgumentsToParser()
+        self.args = self.ReadArguments()
 
+    # Read arguments provided in JSON configuration file
+    def ReadArguments(self):
+        arg_string = self.config.arguments
+        args = self.parser.parse_args(shlex.split(arg_string))
+        return args
+    
+    # Add command line arguments to parser
+    def AddArgumentsToParser(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-custom-samples', nargs="*", action='store', dest='custom_samples', default="")
+        return parser
+    
     def Initialize(self, n_samples, n_train, n_val, shuffle=True):
+        self.custom_samples = []
+        self.custom_samples_index = 0
+        if self.args.custom_samples != '':
+            self.custom_samples = [ int(s) for s in self.args.custom_samples ]
         self._n_samples = n_samples
         self._shuffle = shuffle
-        org_seq = np.random.choice(n_samples, size=n_samples, replace=False)
-        #org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
+        #org_seq = np.random.choice(n_samples, size=n_samples, replace=False)
+        #n_samples is the permutation count of all parameters, which can be very high
+        #Hence, generate samples of maximum 1000000 for training.
+        org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
         self._seq = org_seq
+        if shuffle:
+            np.random.shuffle( self._seq )
+
         self._n_train = n_train
         self._n_val = n_val
         self._pos = 0
-        self._len = len(org_seq)
+        self._len = len(self._seq)
         self._step = 0
         self._train_idx = []
         self._val_idx = []
@@ -73,9 +98,6 @@ class DeffeRandomSampling:
         assert n_val+n_train<=self._len, 'Bummer: input sequence is too small: {} + {} < {}'.format(
             n_train, n_val, self._len)
         
-        if shuffle:
-            np.random.shuffle( self._seq )
-
         self._train_idx = self._seq[0:self._n_train]
         self._val_idx = self._seq[self._n_train: self._n_train+self._n_val]
         self._pos = self._n_train + self._n_val
@@ -93,6 +115,24 @@ class DeffeRandomSampling:
     def StepWithInc(self, inc=1):
         if self._exhausted:
             return False
+        if len(self.custom_samples) != 0:
+            if self.custom_samples_index >= len(self.custom_samples):
+                self._exhausted = True
+                return False
+            total_count = self.custom_samples[self.custom_samples_index] 
+            prev_count = len(self._train_idx)+len(self._val_idx)
+            train_count = int(total_count * 0.7)
+            val_count = total_count - train_count
+            all_idx = None
+            if total_count > prev_count:
+                new_val = self._seq[prev_count:total_count]
+                all_idx = np.concatenate((self._train_idx, self._val_idx, new_val), axis=None)
+            else:
+                all_idx = self._seq[:total_count]
+            self._train_idx = all_idx[:train_count]
+            self._val_idx = all_idx[train_count:]
+            self.custom_samples_index = self.custom_samples_index + 1
+            return True
         if self._pos >= self._len:
             self._exhausted = True
             return False

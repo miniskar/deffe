@@ -124,7 +124,8 @@ class TorchCNN(BaseMLModel):
         logging.info('{}'.format( nn_struct))
         return nn, network_topo
 
-    def Initialize(self, step, headers, parameters_data, cost_data, name="network"):
+    def Initialize(self, step, headers, parameters_data, , train_indexes, val_indexes, cost_data, name="network"):
+        BaseMLModel.Initialize(self, headers, parameters_data, cost_data, train_indexes, val_indexes)
         args = self.args
         self.prev_step = self.step
         self.step = step
@@ -179,7 +180,7 @@ class TorchCNN(BaseMLModel):
         self.disable_icp = flag
 
     def PreLoadData(self):
-        BaseMLModel.PreLoadData(self, self.step, self.parameters_data, self.cost_data, self.orig_cost_data, self.train_test_split, self.validation_split)
+        BaseMLModel.PreLoadData(self, self.step, self.train_test_split, self.validation_split)
         if self.args.tl_samples and self.step != self.step_start:
             all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.pth".format(self.prev_step)))
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
@@ -235,7 +236,7 @@ class TorchCNN(BaseMLModel):
         return self.loss_function(ground_truth, pred)
 
     def Train(self):
-        BaseMLModel.save_train_test_data(self, self.step)
+        BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test
         n_train = int(x_train.shape[0]*(1.0-self.validation_split))
@@ -362,33 +363,10 @@ class TorchCNN(BaseMLModel):
             hdrs = [ "Epoch", "TrainLoss", "ValLoss", "TestLoss" ]
             print("Calculating test accuracies "+str(len(all_files)))
             for index, icp_file in enumerate(all_files):
-                epoch_flag = epoch_re.search(icp_file)
-                loss_flag = loss_re.search(icp_file)
-                valloss_flag = valloss_re.search(icp_file)
-                step_flag = step_re.search(icp_file)
-                traincount_flag = traincount_re.search(icp_file)
-                valcount_flag = valcount_re.search(icp_file)
-                epoch=0 #loss0.4787-valloss0.4075.hdf5a
-                train_loss = 0.0
-                val_loss = 0.0
-                traincount = 0
-                valcount = 0
-                step = -1 
-                if epoch_flag:
-                    epoch = int(epoch_flag.group(1)) 
-                if loss_flag:
-                    train_loss = float(loss_flag.group(1)) 
-                if valloss_flag:
-                    val_loss = float(valloss_flag.group(1)) 
-                if step_flag:
-                    step = int(step_flag.group(1))
-                if traincount_flag:
-                    traincount = int(float(traincount_flag.group(1)))
-                if valcount_flag:
-                    valcount = int(float(valcount_flag.group(1)))
+                (step, epoch, train_loss, val_loss, traincount, valcount) = self.GetStats(icp_file)
                 self.model.load_weights(icp_file)
                 if self.args.load_train_test or self.framework.args.load_train_test:
-                    self.load_train_test_data(step)
+                    self.LoadTrainValTestData(step)
                 x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test   
                 if x_test.size == 0:

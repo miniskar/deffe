@@ -53,17 +53,24 @@ class DeffeMLModel:
         return self.ml_model_script.GetTrainTestSplit()
 
     # Initialize model parameters and costs
-    def InitializeModel(self, headers, params, cost, step=0):
+    def InitializeModel(self, samples, headers, params, cost, step=0):
         params_valid_indexes = []
         cost_metrics = []
+        indexes = samples[0].tolist() + samples[1].tolist()
+        valid_train_indexes = []
+        valid_val_indexes = []
         for index, (flag, eval_type, actual_cost) in enumerate(cost):
             if flag == self.framework.valid_flag:
                 params_valid_indexes.append(index)
                 cost_metrics.append(actual_cost)
+                if index < len(samples[0]):
+                    valid_train_indexes.append(indexes[index])
+                else:
+                    valid_val_indexes.append(indexes[index])
         if len(params_valid_indexes) == 0:
             print("[Warning] no samples to train in this step !")
             return self.accuracy
-        self.ml_model_script.Initialize(step, headers, params[params_valid_indexes,], np.array(cost_metrics))
+        self.ml_model_script.Initialize(step, headers, params[params_valid_indexes,], np.array(cost_metrics), np.array(valid_train_indexes), np.array(valid_val_indexes))
         self.ml_model_script.PreLoadData()
 
     # Run the prediction/inference

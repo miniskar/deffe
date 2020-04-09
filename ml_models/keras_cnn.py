@@ -77,9 +77,12 @@ class KerasCNN(BaseMLModel):
         self.train_test_split = float(self.args.train_test_split)
         if self.framework.args.train_test_split != '':
             self.train_test_split = float(self.framework.args.train_test_split)
-        self.tl_freeze_layers = self.args.tl_freeze_layers
+        self.tl_freeze_layers = int(self.args.tl_freeze_layers)
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
+        self.icp = self.args.icp
+        if self.framework.args.icp != '':
+            self.icp = self.framework.args.icp 
 
     def GetTrainValSplit(self):
         return self.validation_split
@@ -99,7 +102,7 @@ class KerasCNN(BaseMLModel):
         parser.add_argument('-icp', dest='icp', default="")
         parser.add_argument('-epochs', dest='epochs', default="50")
         parser.add_argument('-batch-size', dest='batch_size', default="256")
-        parser.add_argument('-tl_freeze_layers', dest='tl_freeze_layers', default="-1")
+        parser.add_argument('-freeze-layers', dest='tl_freeze_layers', default="-1")
         parser.add_argument('-convs', dest='convs', default="2")
         parser.add_argument('-tl-samples', dest='tl_samples', action='store_true')
         parser.add_argument('-no-run', dest='no_run', action='store_true')
@@ -111,14 +114,11 @@ class KerasCNN(BaseMLModel):
         parser.add_argument('-last-layer-nodes', dest='last_layer_nodes', default="32")
         return parser
 
-    def Initialize(self, step, headers, parameters_data, cost_data, name="network"):
+    def Initialize(self, step, headers, parameters_data, cost_data, train_indexes, val_indexes, name="network"):
+        BaseMLModel.Initialize(self, headers, parameters_data, cost_data, train_indexes, val_indexes)
         args = self.args
         self.prev_step = self.step
         self.step = step
-        print("Headers: "+str(headers))
-        self.parameters_data = parameters_data
-        self.cost_data = cost_data
-        self.orig_cost_data = cost_data 
         self.n_out_fmaps = 1
         #self.nodes = 128
         self.train_count = 0
@@ -127,6 +127,10 @@ class KerasCNN(BaseMLModel):
         self.n_in_fmaps = parameters_data.shape[1]
         last_layer_nodes = int(args.last_layer_nodes)
         self.name = name
+        batch_size = int(args.batch_size)
+        if self.framework.args.batch_size != '-1':
+            batch_size = int(self.framework.args.batch_size)
+        self.batch_size = min(self.parameters_data.shape[0], batch_size)
         if self.convs==0:
             inputs = keras.Input(shape=(self.n_in_fmaps,), name='parameters')
             x = inputs
@@ -174,10 +178,6 @@ class KerasCNN(BaseMLModel):
             self.loss_function = custom_mean_abs_exp_loss
         keras.losses.custom_loss = self.loss_function
         self.model = self.get_compiled_model(self.model, loss=self.loss_function, optimizer='adam', metrics=["mse"])
-        batch_size = int(args.batch_size)
-        if self.framework.args.batch_size != '-1':
-            batch_size = int(self.framework.args.batch_size)
-        self.batch_size = min(self.parameters_data.shape[0], batch_size)
         self.disable_icp = False
 
     def get_compiled_model(self, model, loss='categorical_crossentropy', optimizer = keras.optimizers.RMSprop(learning_rate=1e-3), metrics=['accuracy']):
@@ -201,7 +201,7 @@ class KerasCNN(BaseMLModel):
         self.disable_icp = flag
 
     def PreLoadData(self):
-        BaseMLModel.PreLoadData(self, self.step, self.parameters_data, self.cost_data, self.orig_cost_data, self.train_test_split, self.validation_split)
+        BaseMLModel.PreLoadData(self, self.step, self.train_test_split, self.validation_split)
         if self.args.tl_samples and self.step != self.step_start:
             all_files = glob.glob(os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.prev_step)))
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
@@ -262,7 +262,7 @@ class KerasCNN(BaseMLModel):
                 fh.write(str(epoch)+", "+str(loss)+", "+str(acc))
                 #print('\nTesting loss: {}, acc: {}\n'.format(loss, acc))
 
-        BaseMLModel.save_train_test_data(self, self.step)
+        BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
         print("Train count:"+str(x_train.shape[0]))
@@ -272,10 +272,10 @@ class KerasCNN(BaseMLModel):
         # the entire dataset for a given number of "epochs"
         if self.args.no_run:
             return
-        if self.args.evaluate and self.args.icp != "":
-            print("Loading checkpoint file:"+self.args.icp)
+        if self.args.evaluate and self.icp != "":
+            print("Loading checkpoint file:"+self.icp)
             keras.losses.custom_loss = self.loss_function
-            self.model.load_weights(self.args.icp)
+            self.model.load_weights(self.icp)
             print('\n# Evaluate on test data')
             self.evaluate(x_train, y_train, z_train, "training")
             self.evaluate(x_test, y_test, z_test, "test")
@@ -283,10 +283,10 @@ class KerasCNN(BaseMLModel):
             print("Train Loss: "+str(loss))
             loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
             print("Test Loss: "+str(loss))
-        elif self.args.icp != "" and not self.disable_icp:
-            print("Loading checkpoint file:"+self.args.icp)
+        elif self.icp != "" and not self.disable_icp:
+            print("Loading checkpoint file:"+self.icp)
             keras.losses.custom_loss = self.loss_function
-            self.model.load_weights(self.args.icp)
+            self.model.load_weights(self.icp)
             #self.model = keras.models.load_model(self.args.icp)
             #print('\n# Evaluate on test data')
             #self.evaluate(x_train, y_train, z_train, "training")
@@ -300,7 +300,7 @@ class KerasCNN(BaseMLModel):
             callbacks_list = [model_checkpoint]
             print('# Fit model on training data')
             if self.tl_freeze_layers != "-1":
-                for layer in self.model.layers[:int(self.args.tl_freeze_layers)]:
+                for layer in self.model.layers[:self.tl_freeze_layers]:
                     print("Frozen Layer: "+layer.name)
                     layer.trainable = False
             history = self.model.fit(x_train, y_train,
@@ -381,8 +381,6 @@ class KerasCNN(BaseMLModel):
         step_re = re.compile(r'step([^-]*)-')
         traincount_re = re.compile(r'-train([^-]*)-')
         valcount_re = re.compile(r'val([0-9][^-]*)-')
-        print("Train count:"+str(self.x_train.shape[0]))
-        print("Test count:"+str(self.x_test.shape[0]))
         with open(outfile, "w") as fh:
             hdrs = [ "Epoch", "TrainLoss", "ValLoss", "TestLoss" ]
             print("Calculating test accuracies "+str(len(all_files)))
@@ -390,8 +388,10 @@ class KerasCNN(BaseMLModel):
                 (step, epoch, train_loss, val_loss, traincount, valcount) = self.GetStats(icp_file)
                 self.model.load_weights(icp_file)
                 if self.args.load_train_test or self.framework.args.load_train_test:
-                    self.load_train_test_data(step)
+                    self.LoadTrainValTestData(step)
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test   
+                print("Train count:"+str(self.x_train.shape[0]))
+                print("Test count:"+str(self.x_test.shape[0]))
                 if x_test.size == 0:
                     x_test, y_test, z_test = self.x_train, self.y_train, self.z_train
                 keras.losses.custom_loss = self.loss_function

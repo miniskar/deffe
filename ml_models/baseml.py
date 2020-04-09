@@ -17,7 +17,20 @@ class BaseMLModel:
     def __init__(self):
         None
 
-    def PreLoadData(self, step, parameters, cost_data, orig_cost_data, train_test_split, validation_split):
+    def Initialize(self, headers, parameters, cost_data, train_indexes, val_indexes):
+        print("Headers: "+str(headers))
+        orig_cost_data = cost_data
+        self.headers = headers
+        self.parameters_data = parameters
+        self.cost_data = cost_data
+        self.orig_cost_data = orig_cost_data 
+        self.train_actual_indexes = train_indexes
+        self.val_actual_indexes = val_indexes
+
+    def PreLoadData(self, step, train_test_split, validation_split, shuffle=False):
+        parameters = self.parameters_data
+        cost_data = self.cost_data
+        orig_cost_data = self.orig_cost_data
         train_count = int(parameters.shape[0]*train_test_split)
         test_count = parameters.shape[0] - train_count
         print("Init Total count:"+str(parameters.shape[0]))
@@ -26,7 +39,9 @@ class BaseMLModel:
         self.train_count = train_count
         self.val_count = int(train_count * validation_split)
         self.test_count = test_count
-        indices = np.random.permutation(parameters.shape[0])
+        indices = range(parameters.shape[0])
+        if shuffle:
+            indices = np.random.permutation(parameters.shape[0])
         training_idx = indices[:train_count]
         test_idx = indices[train_count:]
         #print("Tr_indices:"+str(training_idx))
@@ -44,35 +59,42 @@ class BaseMLModel:
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
 
-    def save_train_test_data(self, step=-1):
+    def SaveTrainValTestData(self, step=-1):
         if step == -1:
             print("Saving train indices: train-indices.npy")
-            np.save("train-indices.npy", self.training_idx)
-            print("Saving test indices: train-indices.npy")
-            np.save("test-indices.npy", self.test_idx)
+            np.save("train-indices.npy", self.train_actual_indexes)
+            print("Saving val indices: val-indices.npy")
+            np.save("val-indices.npy", self.val_actual_indexes)
         else:
             print("Saving train indices: step{}-train-indices.npy".format(step))
-            np.save("step{}-train-indices.npy".format(step), self.training_idx)
-            print("Saving test indices: step{}-test-indices.npy".format(step))
-            np.save("step{}-test-indices.npy".format(step), self.test_idx)
+            np.save("step{}-train-indices.npy".format(step), self.train_actual_indexes)
+            print("Saving val indices: step{}-val-indices.npy".format(step))
+            np.save("step{}-val-indices.npy".format(step), self.val_actual_indexes)
 
-    def load_train_test_data(self, step=-1):
+    def LoadTrainValTestData(self, step=-1):
         if step == -1:
             print("Loading train indices: train-indices.npy")
-            training_idx = np.load("train-indices.npy")
-            print("Loading test indices: test-indices.npy")
-            test_idx     = np.load("test-indices.npy")
+            train_actual_indexes = np.load("train-indices.npy")
+            print("Loading val indices: val-indices.npy")
+            val_actual_indexes = np.load("val-indices.npy")
         else:
             print("Loading train indices: step{}-train-indices.npy".format(step))
-            training_idx = np.load("step{}-train-indices.npy".format(step))
-            print("Loading test indices: step{}-test-indices.npy".format(step))
-            test_idx     = np.load("step{}-test-indices.npy".format(step))
+            train_actual_indexes = np.load("step{}-train-indices.npy".format(step))
+            print("Loading val indices: step{}-val-indices.npy".format(step))
+            val_actual_indexes = np.load("step{}-val-indices.npy".format(step))
         parameters = self.parameters_data
         cost_data = self.cost_data
         orig_cost_data = self.orig_cost_data
+        train_val_indexes = np.concatenate((self.train_actual_indexes, self.val_actual_indexes), axis=None)
+        index_hash = { target_index:index for index, target_index in enumerate(train_val_indexes) }
+        train_val_indexes = np.concatenate((train_actual_indexes, val_actual_indexes), axis=None)
+        training_idx = [ index_hash[index] for index in train_val_indexes ]
         x_train = parameters[training_idx,:].astype('float')
         y_train = cost_data[training_idx,:].astype('float')
         z_train = orig_cost_data[training_idx,:].astype('float') 
+        # Get all remaining data other than traininga
+        all_indexes = range(parameters.shape[0])
+        test_idx = np.delete(all_indexes, training_idx)
         x_test = parameters[test_idx,:].astype('float')
         y_test = cost_data[test_idx,:].astype('float')
         z_test = orig_cost_data[test_idx,:].astype('float') 
