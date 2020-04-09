@@ -1,15 +1,16 @@
 ## Copyright 2020 UT-Battelle, LLC.  See LICENSE.txt for more information.
 ###
- # @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
- #         miniskarnr@ornl.gov
- # 
- # Modification:
- #              Baseline code
- # Date:        Apr, 2020
- #**************************************************************************
+# @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
+#         miniskarnr@ornl.gov
+#
+# Modification:
+#              Baseline code
+# Date:        Apr, 2020
+# **************************************************************************
 ###
 import threading
 import time
+
 
 class ThreadObject:
     """ 
@@ -25,7 +26,7 @@ class ThreadObject:
         self.method = method
         self.arguments = arguments
         self.thread = threading.Thread(target=self.Run, args=())
-        self.thread.daemon = True                            # Daemonize thread
+        self.thread.daemon = True  # Daemonize thread
         if start_flag:
             self.Start()
 
@@ -36,7 +37,7 @@ class ThreadObject:
         """ Thread runs forever """
         while not self.stop_thread:
             # Do something
-            print('Doing something imporant in the background')
+            print("Doing something imporant in the background")
             self.method(*self.arguments)
 
     def Join(self):
@@ -47,13 +48,15 @@ class ThreadObject:
         if join_flag:
             self.Join()
 
+
 def example_run(arg1, arg2):
     time.sleep(1)
-    
+
+
 if __name__ == "__main__":
     example = ThreadObject(example_run, ("Hello", "World"))
     time.sleep(3)
-    print('Checkpoint')
+    print("Checkpoint")
     time.sleep(4)
-    print('Bye')
+    print("Bye")
     example.Stop()
