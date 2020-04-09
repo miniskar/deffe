@@ -172,7 +172,7 @@ class DeffeFramework:
                     parameters_normalize = self.parameters.GetNormalizedParameters(np.array(pruned_parameter_values), pruned_param_list)
                 else:
                     parameter_values = self.parameters.GetParameters(samples, param_list)
-                    parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=True, with_normalize=True)
+                    parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=False, with_normalize=True)
                 # Check if model is already ready
                 if self.IsModelReady():
                     batch_output = self.model.Inference(parameters_normalize)

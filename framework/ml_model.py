@@ -69,7 +69,7 @@ class DeffeMLModel:
                     valid_val_indexes.append(indexes[index])
         if len(params_valid_indexes) == 0:
             print("[Warning] no samples to train in this step !")
-            return self.accuracy
+            return 
         self.ml_model_script.Initialize(step, headers, params[params_valid_indexes,], np.array(cost_metrics), np.array(valid_train_indexes), np.array(valid_val_indexes))
         self.ml_model_script.PreLoadData()
 

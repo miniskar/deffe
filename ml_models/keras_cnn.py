@@ -83,6 +83,7 @@ class KerasCNN(BaseMLModel):
         self.icp = self.args.icp
         if self.framework.args.icp != '':
             self.icp = self.framework.args.icp 
+        self.no_run = self.args.no_run or self.framework.args.no_run
 
     def GetTrainValSplit(self):
         return self.validation_split
@@ -289,12 +290,14 @@ class KerasCNN(BaseMLModel):
         BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
+        if len(x_train) == 0:
+            return
         print("Train count:"+str(x_train.shape[0]))
         print("Test count:"+str(x_test.shape[0]))
         # Train the model by slicing the data into "batches"
         # of size "batch_size", and repeatedly iterating over
         # the entire dataset for a given number of "epochs"
-        if self.args.no_run:
+        if self.no_run:
             return
         if self.args.evaluate and self.icp != "":
             print("Loading checkpoint file:"+self.icp)
