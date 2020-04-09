@@ -9,7 +9,13 @@ Deffe framework is implemented fully in python and it is configured through json
 
 The above figures shows the main blocks and their corresponding python files in the Deffe framework.
 
-## Dependency 
+## Hardware Dependency 
+```
+1. Need GPU to train the machine learning model
+2. Need SLURM environment if to run evaluate (RISCV-GEM5) simulations
+```
+
+## Software Dependency 
 The following package dependencies to be installed.
 ```
 1. Python3
@@ -130,7 +136,15 @@ $ cd .. ;
     ** Output test-output.csv
 
 ```
-
+### Bash scripts in the below directories to run above configurations
+```
+example/experiments/transfer_learning_samples/exp/kmeans/run.sh
+example/experiments/transfer_learning_samples/log/kmeans/run.sh
+example/experiments/transfer_learning_samples_across_kernels/exp/matmul/run.sh
+example/experiments/transfer_learning_samples_across_kernels/log/matmul/run.sh
+example/experiments/full_explore/exp/kmeans/run.sh
+example/experiments/full_explore/log/kmeans/run.sh
+```
 
 ## How to extend Deffe?
 All classes in Deffe have the below bare minimal methods.
