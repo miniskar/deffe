@@ -250,7 +250,6 @@ class KerasCNN(BaseMLModel):
         keras.losses.custom_loss = self.loss_function
         self.model.load_weights(self.icp)
         n_samples = 20
-        org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
         x_train = self.x_train
         y_train = self.y_train
         y_train = y_train.reshape((y_train.shape[0],))

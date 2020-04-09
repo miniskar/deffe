@@ -70,10 +70,10 @@ class DeffeEvaluate:
         #TODO
 
     def WriteSamplesToCSV(self):
-        n_samples = min(20, self.param_data.shape[0])
-        org_seq = np.random.choice(n_samples, size=min(1000000, n_samples), replace=False)
+        n_samples = self.param_data.shape[0]
+        org_seq = np.random.choice(n_samples, size=min(20, n_samples), replace=False)
         x_train = self.param_data[org_seq,]
-        y_train = self.cost_data[org_seq,]
+        y_train =  self.cost_data[org_seq,]
         y_train = y_train.reshape((y_train.shape[0],))
         out_data_hash = {}
         x_train_tr = x_train.transpose()
@@ -179,7 +179,7 @@ class DeffeEvaluate:
                 elif param.map in np_param_hdrs_hash:
                     self.param_extract_indexes[np_param_hdrs_hash[param.map]] = pindex
         self.np_param_hdrs_hash = np_param_hdrs_hash
-        self.WriteSamplesToCSV()
+        #self.WriteSamplesToCSV()
 
     # Get parameters full list which includes the parameters used only for ML model and unused parameters
     def GetParamsFullList(self, np_params):
