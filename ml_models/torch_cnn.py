@@ -78,6 +78,7 @@ class TorchCNN(BaseMLModel):
         self.tl_freeze_layers = self.args.tl_freeze_layers
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
+        self.no_run = self.args.no_run or self.framework.args.no_run
 
     def GetTrainValSplit(self):
         return self.validation_split
@@ -247,11 +248,16 @@ class TorchCNN(BaseMLModel):
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test
         n_train = int(x_train.shape[0]*(1.0-self.validation_split))
-        n_val = int(x_train.shape[0]*self.validation_split)
+        n_val = x_train.shape[0] - n_train
         print("Train count:"+str(n_train))
         print("Val count:"+str(n_val))
         print("Test count:"+str(x_test.shape[0]))
+        if len(x_train) == 0:
+            return
+        if self.no_run:
+            return
         full_set = TensorDataset(torch.Tensor(x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))), torch.Tensor(y_train))
+        pdb.set_trace()
         train_set, val_set = torch.utils.data.random_split(full_set, [n_train, n_val])
         train_loader = DataLoader(train_set, batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)
         val_loader = DataLoader(val_set, batch_size=self.GetBatchSize(), shuffle=True, num_workers=4, pin_memory=True)

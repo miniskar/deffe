@@ -72,7 +72,6 @@ class DeffeMLModel:
                         valid_val_indexes.append(indexes[index])
             if len(params_valid_indexes) == 0:
                 print("[Warning] no samples to train in this step !")
-                return 
         else:
             params_valid_indexes = range(len(indexes))
             valid_train_indexes = samples[0].tolist()

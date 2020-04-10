@@ -21,7 +21,7 @@ The following package dependencies to be installed.
 1. Python3
 2. Graphviz 
 3. Install the below packages with PIP 
-   keras, tensorflow, tensorflow-gpu, scikit-learn xlsxwriter matplotlib pandas pydot tensorflow-gpu
+   $ pip3 install keras tensorflow tensorflow-gpu scikit-learn xlsxwriter matplotlib pandas pydot tensorflow-gpu tqdm torchsummary
 ```
 
 ## How to run Deffe?
