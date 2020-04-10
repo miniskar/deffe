@@ -193,18 +193,20 @@ class DeffeFramework:
                         np.array(pruned_parameter_values), pruned_param_list
                     )
                 else:
-                    parameter_values = self.parameters.GetParameters( \
-                        samples, param_list \
+                    parameter_values = self.parameters.GetParameters(
+                        samples, param_list
                     )
-                    parameters_normalize = self.parameters.GetParameters( \
-                        samples, \
-                        pruned_param_list, \
-                        with_indexing=False, \
-                        with_normalize=True \
+                    parameters_normalize = self.parameters.GetParameters(
+                        samples,
+                        pruned_param_list,
+                        with_indexing=False,
+                        with_normalize=True,
                     )
                 # Check if model is already ready
                 if self.IsModelReady():
-                    self.model.InitializeModel(samples, pruned_headers, parameters_normalize, None, step)
+                    self.model.InitializeModel(
+                        samples, pruned_headers, parameters_normalize, None, step
+                    )
                     batch_output = self.model.Inference(self.args.output)
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
