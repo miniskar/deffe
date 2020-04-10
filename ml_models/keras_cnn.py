@@ -89,8 +89,8 @@ class KerasCNN(BaseMLModel):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
         self.icp = self.args.icp
-        if self.framework.args.icp != '':
-            self.icp = self.framework.args.icp 
+        if self.framework.args.icp != "":
+            self.icp = self.framework.args.icp
         self.no_run = self.args.no_run or self.framework.args.no_run
 
     def GetTrainValSplit(self):
@@ -310,14 +310,14 @@ class KerasCNN(BaseMLModel):
         # print(tags+" MeanAct: ", np.mean(estimation_act_error), "MaxAct: ", np.max(estimation_act_error), "MinAct: ", np.min(estimation_act_error))
 
     # Inference on samples, which is type of model specific
-    def Inference(self, outfile=''):
+    def Inference(self, outfile=""):
         self.model.load_weights(self.icp)
-        predictions = self.model.predict(self.x_train, \
-                           batch_size=self.GetBatchSize())
+        predictions = self.model.predict(self.x_train, batch_size=self.GetBatchSize())
         if outfile != None:
-            BaseMLModel.WritePredictionsToFile(self, \
-                           self.x_train, self.y_train, predictions, outfile)
-        return predictions.reshape((predictions.shape[0],)) 
+            BaseMLModel.WritePredictionsToFile(
+                self, self.x_train, self.y_train, predictions, outfile
+            )
+        return predictions.reshape((predictions.shape[0],))
 
     # Load the model from the hdf5
     def load_model(self, model_name):
@@ -339,11 +339,11 @@ class KerasCNN(BaseMLModel):
 
         BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
-        x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test   
+        x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
         if len(x_train) == 0:
             return
-        print("Train count:"+str(x_train.shape[0]))
-        print("Test count:"+str(x_test.shape[0]))
+        print("Train count:" + str(x_train.shape[0]))
+        print("Test count:" + str(x_test.shape[0]))
         # Train the model by slicing the data into "batches"
         # of size "batch_size", and repeatedly iterating over
         # the entire dataset for a given number of "epochs"

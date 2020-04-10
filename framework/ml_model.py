@@ -77,19 +77,24 @@ class DeffeMLModel:
             valid_train_indexes = samples[0].tolist()
             valid_val_indexes = samples[1].tolist()
         cost_metrics = np.array(cost_metrics)
-        self.ml_model_script.Initialize(step, headers, \
-                params[params_valid_indexes,], \
-                cost_metrics, \
-                np.array(valid_train_indexes), \
-                np.array(valid_val_indexes))
+        self.ml_model_script.Initialize(
+            step,
+            headers,
+            params[params_valid_indexes,],
+            cost_metrics,
+            np.array(valid_train_indexes),
+            np.array(valid_val_indexes),
+        )
         self.ml_model_script.PreLoadData()
 
     # Run the prediction/inference
-    def Inference(self, output_file=''):
+    def Inference(self, output_file=""):
         all_output = self.ml_model_script.Inference(output_file)
         cost = []
         for output in all_output:
-            cost.append((self.framework.valid_flag, self.framework.predicted_flag, output))
+            cost.append(
+                (self.framework.valid_flag, self.framework.predicted_flag, output)
+            )
         return all_output
 
     # Train the model
