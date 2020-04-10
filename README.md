@@ -6,7 +6,7 @@ Deffe framework is implemented fully in python and it is configured through json
 
 ## Deffe framework component diagram
 <img src="docs/deffe-block-diagram.svg" alt="Diagram"
-	title="Block Diagram" width="150" height="100" />
+	title="Block Diagram" width="500" />
 
 The above figures shows the main blocks and their corresponding python files in the Deffe framework.
 
