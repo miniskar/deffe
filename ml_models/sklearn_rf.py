@@ -58,6 +58,7 @@ class SKlearnRF(BaseMLModel):
         BaseMLModel.Initialize(self, headers, parameters_data, cost_data, train_indexes, val_indexes)
         args = self.args
         self.step = step
+        self.headers = headers
         print("Headers: "+str(headers))
         self.parameters_data = parameters_data
         self.cost_data = cost_data
@@ -77,6 +78,7 @@ class SKlearnRF(BaseMLModel):
         rf_dict['n_jobs'] = rf_n_jobs
         rf_dict['alpha'] = alpha
         self.rf_dict = rf_dict
+        self.model = RandomForestRegressor(n_estimators=rf_n_estimators, max_depth=rf_max_depth, random_state=rf_random_state, n_jobs=rf_n_jobs)
 
     def PreLoadData(self):
         BaseMLModel.PreLoadData(self, self.step, self.GetTrainTestSplit(), 0.20)
@@ -91,8 +93,13 @@ class SKlearnRF(BaseMLModel):
         self.y_test = y_test
         self.z_test = z_test
 
-    def Inference(self):
-        return None
+    # Inference on samples, which is type of model specific
+    def Inference(self, outfile=''):
+        self.model.load_weights(self.icp)
+        predictions = self.model.predict(self.x_train)
+        if outfile != None:
+            BaseMLModel.WritePredictionsToFile(self, self.x_train, self.y_train, predictions, outfile)
+        return predictions.reshape((predictions.shape[0],)) 
 
     def Train(self):
         BaseMLModel.SaveTrainValTestData(self, self.step)
@@ -106,8 +113,7 @@ class SKlearnRF(BaseMLModel):
         max_depth = rf_dict['max_depth']
         n_jobs = rf_dict['n_jobs']
         alpha = rf_dict['alpha']
-
-        rf = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth, random_state=random_state, n_jobs=n_jobs)
+        rf = self.model
 
         obj_train = y_train
         if self.args.real_objective:

@@ -11,8 +11,10 @@
 import numpy as np
 import re
 import pdb
+import pandas as pd
 
 checkpoint_dir = "checkpoints"
+
 class BaseMLModel:
     def __init__(self):
         None
@@ -51,11 +53,16 @@ class BaseMLModel:
         self.training_idx = training_idx
         self.test_idx = test_idx
         x_train = parameters[training_idx,:].astype('float')
-        y_train = cost_data[training_idx,:].astype('float')
-        z_train = orig_cost_data[training_idx,:].astype('float') 
         x_test = parameters[test_idx,:].astype('float')
-        y_test = cost_data[test_idx,:].astype('float')
-        z_test = orig_cost_data[test_idx,:].astype('float') 
+        y_train = np.array([])
+        z_train = np.array([])
+        y_test = np.array([])
+        z_test = np.array([])
+        if cost_data.size != 0:
+            y_train = cost_data[training_idx,:].astype('float')
+            z_train = orig_cost_data[training_idx,:].astype('float') 
+            y_test = cost_data[test_idx,:].astype('float')
+            z_test = orig_cost_data[test_idx,:].astype('float') 
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
 
@@ -121,8 +128,25 @@ class BaseMLModel:
     def Train(self):
         None
 
-    def InferenceAll(self, output_file):
-        None
+    def WritePredictionsToFile(self, x_train, y_train, predictions, outfile):
+        print("Loading checkpoint file:"+self.icp)
+        predictions = np.exp(predictions.reshape((predictions.shape[0],)))
+        out_data_hash = {}
+        x_train_tr = x_train.transpose()
+        for index, hdr in enumerate(self.headers):
+            out_data_hash[hdr] = x_train_tr[index].tolist()
+        out_data_hash['predicted'] = predictions.tolist()
+        if y_train.size != 0:
+            y_train = y_train.reshape((y_train.shape[0],))
+            error = np.abs(y_train - predictions)
+            error_percent = error / y_train
+            out_data_hash['original_cost'] = y_train.tolist()
+            out_data_hash['error'] = error.tolist()
+            out_data_hash['error-percent'] = error_percent.tolist()
+            print("Error: "+str(np.mean(error_percent)))
+        df = pd.DataFrame(out_data_hash)
+        df.to_csv(outfile, index=False, sep=',', encoding='utf-8')
+        return None
 
     # Evalaute model results
     def EvaluateModel(self, all_files, outfile="test-output.csv"):

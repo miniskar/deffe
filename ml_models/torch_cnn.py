@@ -124,11 +124,12 @@ class TorchCNN(BaseMLModel):
         logging.info('{}'.format( nn_struct))
         return nn, network_topo
 
-    def Initialize(self, step, headers, parameters_data, , train_indexes, val_indexes, cost_data, name="network"):
+    def Initialize(self, step, headers, parameters_data, cost_data, train_indexes, val_indexes, name="network"):
         BaseMLModel.Initialize(self, headers, parameters_data, cost_data, train_indexes, val_indexes)
         args = self.args
         self.prev_step = self.step
         self.step = step
+        self.headers = headers
         print("Headers: "+str(headers))
         self.parameters_data = parameters_data
         self.cost_data = cost_data
@@ -221,9 +222,15 @@ class TorchCNN(BaseMLModel):
         print(tags+" Mean: ", np.mean(estimation_error), "Max: ", np.max(estimation_error), "Min: ", np.min(estimation_error))
         #print(tags+" MeanAct: ", np.mean(estimation_act_error), "MaxAct: ", np.max(estimation_act_error), "MinAct: ", np.min(estimation_act_error))
 
-    def Inference(self):
-        return None
+    # Inference on samples, which is type of model specific
+    def Inference(self, outfile=''):
+        self.model.load_weights(self.icp)
+        predictions = self.model.predict(self.x_train, batch_size=self.GetBatchSize())
+        if outfile != None:
+            BaseMLModel.WritePredictionsToFile(self, self.x_train, self.y_train, predictions, outfile)
+        return predictions.reshape((predictions.shape[0],)) 
 
+    # Load the model from the hdf5
     def load_model(self, model_name):
         print("Loading the checkpoint: "+model_name)
         #load model weights
@@ -371,7 +378,7 @@ class TorchCNN(BaseMLModel):
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test   
                 if x_test.size == 0:
                     x_test, y_test, z_test = self.x_train, self.y_train, self.z_train
-                keras.losses.custom_loss = self.loss_function
+                torch.losses.custom_loss = self.loss_function
                 loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
                 if fh != None:
                     if index == 0:

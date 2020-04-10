@@ -243,33 +243,15 @@ class KerasCNN(BaseMLModel):
         print(tags+" Mean: ", np.mean(estimation_error), "Max: ", np.max(estimation_error), "Min: ", np.min(estimation_error))
         #print(tags+" MeanAct: ", np.mean(estimation_act_error), "MaxAct: ", np.max(estimation_act_error), "MinAct: ", np.min(estimation_act_error))
 
-    def Inference(self):
-        return None
-
-    def InferenceAll(self, out_file):
-        print("Loading checkpoint file:"+self.icp)
-        keras.losses.custom_loss = self.loss_function
+    # Inference on samples, which is type of model specific
+    def Inference(self, outfile=''):
         self.model.load_weights(self.icp)
-        n_samples = 20
-        x_train = self.x_train
-        y_train = self.y_train
-        y_train = y_train.reshape((y_train.shape[0],))
-        predictions = self.model.predict(x_train, batch_size=self.GetBatchSize())
-        predictions = np.exp(predictions.reshape((predictions.shape[0],)))
-        error = np.abs(y_train - predictions)
-        error_percent = error / y_train
-        out_data_hash = {}
-        x_train_tr = x_train.transpose()
-        for index, hdr in enumerate(self.headers):
-            out_data_hash[hdr] = x_train_tr[index].tolist()
-        out_data_hash['original_cost'] = y_train.tolist()
-        out_data_hash['predicted'] = predictions.tolist()
-        out_data_hash['error'] = error.tolist()
-        out_data_hash['error-percent'] = error_percent.tolist()
-        df = pd.DataFrame(out_data_hash)
-        df.to_csv(out_file, index=False, sep=',', encoding='utf-8')
-        return None
+        predictions = self.model.predict(self.x_train, batch_size=self.GetBatchSize())
+        if outfile != None:
+            BaseMLModel.WritePredictionsToFile(self, self.x_train, self.y_train, predictions, outfile)
+        return predictions.reshape((predictions.shape[0],)) 
 
+    # Load the model from the hdf5
     def load_model(self, model_name):
         print("Loading the checkpoint: "+model_name)
         keras.losses.custom_loss = self.loss_function

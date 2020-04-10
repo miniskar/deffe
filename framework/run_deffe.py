@@ -175,7 +175,8 @@ class DeffeFramework:
                     parameters_normalize = self.parameters.GetParameters(samples, pruned_param_list, with_indexing=False, with_normalize=True)
                 # Check if model is already ready
                 if self.IsModelReady():
-                    batch_output = self.model.Inference(parameters_normalize)
+                    self.model.InitializeModel(samples, pruned_headers, parameters_normalize, None, step)
+                    batch_output = self.model.Inference(self.args.output)
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(parameter_values, param_list, eval_output)
@@ -184,7 +185,7 @@ class DeffeFramework:
                         stats_data = self.model.Train()
                         print("Stats: (Step, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "+str(stats_data))
                     if self.args.inference_only:
-                        self.model.InferenceAll(self.args.output)
+                        self.model.Inference(self.args.output)
                         break
                 if not no_train_flag:
                     self.WriteExplorationOutput(parameter_values, batch_output)
