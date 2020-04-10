@@ -5,8 +5,7 @@ Deffe's machine learning model tries to learn from the evaluated design points. 
 Deffe framework is implemented fully in python and it is configured through json file. The json file has configuration of problem with parameters, cost metrics, evaluate procedure, prediction method, sampling technique and exploration algorithm. It provides great flexibility to users to add their custom python modules for the above tasks. 
 
 ## Deffe framework component diagram
-![block diagram][diagram]
-[diagram]: docs/deffe-block-diagram.svg
+![block diagram](docs/deffe-block-diagram.svg)
 
 The above figures shows the main blocks and their corresponding python files in the Deffe framework.
 
