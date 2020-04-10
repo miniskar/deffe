@@ -79,6 +79,10 @@ $ cd .. ;
     ** Command given below
        $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_kmeans.json -input test-model.csv -icp kmeans.hdf5 -output output-prediction.csv -inference-only
     ** Output test-output.csv
+    ** Input ../../../../output_kmeans_deffe.csv 
+    ** Command given below
+       $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_kmeans.json -icp kmeans.hdf5  -input ../../../../output_kmeans_deffe.csv  -output test-output-full.csv -inference-only
+    ** Output test-output-full.csv
 ```
 
 ### Run Deffe with K-means with pre-evaluated data set but passed as set of samples and enabled transfer learning across samples
@@ -106,6 +110,10 @@ $ cd .. ;
     ** Command given below
        $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_kmeans_tl_samples.json -input test-model.csv -icp kmeans.hdf5 -output output-prediction.csv -inference-only
     ** Output test-output.csv
+    ** Input ../../../../output_kmeans_deffe.csv 
+    ** Command given below
+       $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_kmeans_tl_samples.json -icp kmeans.hdf5  -input ../../../../output_kmeans_deffe.csv  -output test-output-full.csv -inference-only
+    ** Output test-output-full.csv
 ```
 
 ### Run Deffe with Matmul with pre-evaluated data set but passed as set of samples and enabled transfer learning across samples and also enabled transfer learning from kmeans. 
@@ -134,6 +142,10 @@ $ cd .. ;
     ** Command given below
        $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_matmul_tl_samples.json -icp matmul.hdf5  -input test-input.csv -output test-output.csv -inference-only
     ** Output test-output.csv
+    ** Input ../../../../output_matmul_deffe.csv 
+    ** Command given below
+       $ python3 $DEFFE_DIR/framework/run_deffe.py -config $DEFFE_DIR/example/config_matmul_tl_samples.json -icp matmul.hdf5  -input ../../../../output_matmul_deffe.csv  -output test-output-full.csv -inference-only
+    ** Output test-output-full.csv
 
 ```
 ### Bash scripts in the below directories to run above configurations
