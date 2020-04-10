@@ -199,7 +199,7 @@ class DeffeFramework:
                     parameters_normalize = self.parameters.GetParameters( \
                         samples, \
                         pruned_param_list, \
-                        with_indexing=False, \ 
+                        with_indexing=False, \
                         with_normalize=True \
                     )
                 # Check if model is already ready
