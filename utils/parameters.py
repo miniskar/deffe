@@ -1,26 +1,44 @@
 ## Copyright 2020 UT-Battelle, LLC.  See LICENSE.txt for more information.
 ###
- # @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
- #         miniskarnr@ornl.gov
- # 
- # Modification:
- #              Baseline code
- # Date:        Apr, 2020
- #**************************************************************************
+# @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
+#         miniskarnr@ornl.gov
+#
+# Modification:
+#              Baseline code
+# Date:        Apr, 2020
+# **************************************************************************
 ###
 import os
 import pdb
 import numpy as np
 import re
 
+
 def IsNumber(x):
-    allowed_types = [float, int, np.float64, np.float32, np.float16, np.int64, np.int32, np.int16, np.int8, np.uint64, np.uint32, np.uint16, np.uint8]
+    allowed_types = [
+        float,
+        int,
+        np.float64,
+        np.float32,
+        np.float16,
+        np.int64,
+        np.int32,
+        np.int16,
+        np.int8,
+        np.uint64,
+        np.uint32,
+        np.uint16,
+        np.uint8,
+    ]
     if type(x) in allowed_types:
         return True
     return False
 
+
 def IsFloat(x):
-    float_pattern = '^[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?$'
+    float_pattern = (
+        "^[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?$"
+    )
     float_re = re.compile(float_pattern, re.VERBOSE)
     if IsNumber(x):
         return True
@@ -28,6 +46,7 @@ def IsFloat(x):
         return True
     else:
         return False
+
 
 class Parameters:
     def __init__(self, config, framework):
@@ -101,11 +120,11 @@ class Parameters:
         for (param, param_values, pindex) in self.selected_params:
             is_numbers = self.IsParameterNumber(param_values)
             if is_numbers:
-                minp = np.min(np.array(param_values).astype('float'))
-                maxp = np.max(np.array(param_values).astype('float'))
-                #print("1MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
+                minp = np.min(np.array(param_values).astype("float"))
+                maxp = np.max(np.array(param_values).astype("float"))
+                # print("1MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
                 self.UpdateMinMaxRange(param, minp, maxp)
-        #print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
+        # print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
         return (self.selected_params, self.selected_pruned_params, total_permutations)
 
     def IsParameterNumber(self, param_values):
@@ -121,7 +140,7 @@ class Parameters:
         return [param[indexes,] for param in parameters]
 
     def GetPermutationSelection(self, nd_index):
-        index = len(self.selected_params)-1
+        index = len(self.selected_params) - 1
         out_dim_list = []
         for (param, param_values, pindex) in reversed(self.selected_params):
             dim_index = int(nd_index / self.indexing[index])
@@ -132,15 +151,15 @@ class Parameters:
         return out_dim_list
 
     def UpdateMinMaxRange(self, param, minp, maxp):
-        #print("Options update:"+param.map)
-        #print("Before Options:"+str(self.GetMinMaxToJSonData()))
+        # print("Options update:"+param.map)
+        # print("Before Options:"+str(self.GetMinMaxToJSonData()))
         if param.map in self.min_list_params:
             minp = min(minp, self.min_list_params[param.map])
         if param.map in self.max_list_params:
             maxp = max(maxp, self.max_list_params[param.map])
         self.min_list_params[param.map] = minp
         self.max_list_params[param.map] = maxp
-        #print("Before Options:"+str(self.GetMinMaxToJSonData()))
+        # print("Before Options:"+str(self.GetMinMaxToJSonData()))
 
     def GetMinMaxToJSonData(self):
         data = {}
@@ -158,7 +177,7 @@ class Parameters:
                     data[param.map]["min"] = self.min_list_params[param.map]
                 if param.map in self.max_list_params:
                     data[param.map]["max"] = self.max_list_params[param.map]
-        return data 
+        return data
 
     # Make sure that all values in the numpy 2d array are values
     def GetNormalizedParameters(self, nparams, selected_params=None):
@@ -167,21 +186,37 @@ class Parameters:
         min_list = []
         max_list = []
         for (param, param_values, pindex) in selected_params:
-            min_list.append(self.min_list_params[param.map]) 
+            min_list.append(self.min_list_params[param.map])
             max_list.append(self.max_list_params[param.map])
-        min_list = np.array(min_list).astype('float')
-        max_list = np.array(max_list).astype('float')
-        nparams_out = nparams.astype('float')
+        min_list = np.array(min_list).astype("float")
+        max_list = np.array(max_list).astype("float")
+        nparams_out = nparams.astype("float")
         nparams_out = (nparams_out - min_list) / (max_list - min_list)
         if not self.framework.args.bounds_no_check:
-            if (nparams_out< 0.0).any():
-                print("Error: Some data in the sample normalization is negative. Please define the ranges properly")
-                print([index for index,param in enumerate(nparams_out) if (param<0.0).any()])
+            if (nparams_out < 0.0).any():
+                print(
+                    "Error: Some data in the sample normalization is negative. Please define the ranges properly"
+                )
+                print(
+                    [
+                        index
+                        for index, param in enumerate(nparams_out)
+                        if (param < 0.0).any()
+                    ]
+                )
                 pdb.set_trace()
                 None
-            if (nparams_out> 1.0).any():
-                print("Error: Some data in the sample normalization is > 1.0. Please define the ranges properly")
-                print([index for index, param in enumerate(nparams_out) if (param>1.0).any()])
+            if (nparams_out > 1.0).any():
+                print(
+                    "Error: Some data in the sample normalization is > 1.0. Please define the ranges properly"
+                )
+                print(
+                    [
+                        index
+                        for index, param in enumerate(nparams_out)
+                        if (param > 1.0).any()
+                    ]
+                )
                 pdb.set_trace()
                 None
         return nparams_out
@@ -203,25 +238,37 @@ class Parameters:
             nparams = np.concatenate((nparams, [np.array(param_sel_list)]))
         return nparams
 
-    def GetParameters(self, samples, selected_params=None, with_indexing=False, with_normalize=False):
+    def GetParameters(
+        self, samples, selected_params=None, with_indexing=False, with_normalize=False
+    ):
         if selected_params == None:
             selected_params = self.selected_params
-        nparams = self.GetNumpyParameters(samples, selected_params, with_indexing=with_indexing)
+        nparams = self.GetNumpyParameters(
+            samples, selected_params, with_indexing=with_indexing
+        )
         if with_normalize:
             nparams = self.GetNormalizedParameters(nparams, selected_params)
         return nparams
 
     def GetPrunedSelectedParams(self, param_list):
-        return [(param, pvalues, pindex) for (param, pvalues, pindex) in param_list if len(pvalues) > 1]
+        return [
+            (param, pvalues, pindex)
+            for (param, pvalues, pindex) in param_list
+            if len(pvalues) > 1
+        ]
 
     def GetHeaders(self, param_list):
         return [param.name for (param, pvalues, pindex) in param_list]
 
     def CreateRunScript(self, script, run_dir, param_pattern, param_dict):
-        with open(script, "r") as rfh, open(os.path.join(run_dir, os.path.basename(script)), "w") as wfh:
+        with open(script, "r") as rfh, open(
+            os.path.join(run_dir, os.path.basename(script)), "w"
+        ) as wfh:
             lines = rfh.readlines()
             for line in lines:
-                wline = param_pattern.sub(lambda m: param_dict[re.escape(m.group(0))], line)
+                wline = param_pattern.sub(
+                    lambda m: param_dict[re.escape(m.group(0))], line
+                )
                 wfh.write(wline)
             rfh.close()
             wfh.close()
@@ -232,19 +279,21 @@ class Parameters:
         param_hash = {}
         index = 0
         for (param, param_values, pindex) in param_list:
-            param_key = "${"+param.name+"}"
+            param_key = "${" + param.name + "}"
             if index >= len(param_val):
                 pdb.set_trace()
                 None
             param_hash[param_key] = param_val[index]
-            param_key = "${"+param.map+"}"
+            param_key = "${" + param.map + "}"
             if param.name != param.map:
                 if param_key in param_hash:
-                    print("[Error] Multiple map_name(s):"+param.map+" used in the evaluation")
+                    print(
+                        "[Error] Multiple map_name(s):"
+                        + param.map
+                        + " used in the evaluation"
+                    )
                 param_hash[param_key] = param_val[index]
             index = index + 1
         param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
         param_pattern = re.compile("|".join(param_dict.keys()))
         return (param_pattern, param_hash, param_dict)
-            
-
