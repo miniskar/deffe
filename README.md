@@ -1,11 +1,30 @@
-This repository has the sources for Deffe framework, which is intended for design space exploration with exploration and machine learning based prediction capabilities. The state of the art design space exploration tools evaluate the design points (samples) and identify the optimal design points based on the cost metrics. However, the evaluation of design points are time consuming and may require heavy computation for some problems. Deffe will help for such problems. 
+# Deffe: Data-Efficient Framework for Exploration
+This repository has the sources for Deffe framework, which is intended
+for design space exploration with exploration and machine learning
+based prediction capabilities. The state of the art design space
+exploration tools evaluate the design points (samples) and identify
+the optimal design points based on the cost metrics. However, the
+evaluation of design points are time consuming and may require heavy
+computation for some problems. Deffe will help for such problems.
 
-Deffe's machine learning model tries to learn from the evaluated design points. Once after learning for some time, Deffe's machine learning model inference can predict the cost metrics with ~98% accuracy, which can be used for fast design space exploration. It needs less than 5% of the samples to get the near-accurate machine learning prediction model and can save huge time in the design space exploration. 
+Deffe's machine learning model tries to learn from the evaluated
+design points. Once after learning for some time, Deffe's machine
+learning model inference can predict the cost metrics with ~98%
+accuracy, which can be used for fast design space exploration. It
+needs less than 5% of the samples to get the near-accurate machine
+learning prediction model and can save huge time in the design space
+exploration.
 
-Deffe framework is implemented fully in python and it is configured through json file. The json file has configuration of problem with parameters, cost metrics, evaluate procedure, prediction method, sampling technique and exploration algorithm. It provides great flexibility to users to add their custom python modules for the above tasks. 
+Deffe framework is implemented fully in python and it is configured
+through json file. The json file has configuration of problem with
+parameters, cost metrics, evaluate procedure, prediction method,
+sampling technique and exploration algorithm. It provides great
+flexibility to users to add their custom python modules for the above
+tasks.
 
 ## Deffe framework component diagram
-![header image](docs/deffe-block-diagram.svg)
+<img src="docs/deffe-block-diagram.svg" alt="Diagram"
+	title="Block Diagram" width="500" />
 
 The above figures shows the main blocks and their corresponding python files in the Deffe framework.
 
@@ -21,7 +40,7 @@ The following package dependencies to be installed.
 1. Python3
 2. Graphviz 
 3. Install the below packages with PIP 
-   keras, tensorflow, tensorflow-gpu, scikit-learn xlsxwriter matplotlib pandas pydot tensorflow-gpu
+   $ pip3 install keras tensorflow tensorflow-gpu scikit-learn xlsxwriter matplotlib pandas pydot tensorflow-gpu tqdm torchsummary
 ```
 
 ## How to run Deffe?

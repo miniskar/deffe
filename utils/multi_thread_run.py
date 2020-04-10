@@ -1,15 +1,15 @@
 ## Copyright 2020 UT-Battelle, LLC.  See LICENSE.txt for more information.
 ###
- # @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
- #         miniskarnr@ornl.gov
- # 
- # Modification:
- #              Baseline code
- # Date:        Apr, 2020
- #**************************************************************************
+# @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
+#         miniskarnr@ornl.gov
+#
+# Modification:
+#              Baseline code
+# Date:        Apr, 2020
+# **************************************************************************
 ###
 import os
-import multiprocessing 
+import multiprocessing
 from multiprocessing.pool import ThreadPool
 import subprocess
 import time
@@ -25,17 +25,17 @@ class MultiThreadBatchRun:
         None
 
     def RunCommand(self, index, cmd):
-        #os.system(cmd)
+        # os.system(cmd)
         start = time.time()
-        print("Index:"+str(index)+" Cmd:"+cmd)
+        print("Index:" + str(index) + " Cmd:" + cmd)
         os.system(cmd)
         end = time.time()
         self.results[index] = 1
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
-        print("Lapsed time:"+str(lapsed_time))
+        print("Lapsed time:" + str(lapsed_time))
 
     def Run(self, cmds, is_popen=False):
-        #print("Start running commands now:"+str(is_popen))
+        # print("Start running commands now:"+str(is_popen))
         for index, cmd in enumerate(cmds):
             self.results.append(0)
             if self.framework == None or not self.framework.args.no_run:
@@ -43,7 +43,7 @@ class MultiThreadBatchRun:
             else:
                 print(cmd)
             self.index = self.index + 1
-        #print("Jobs submitted")
+        # print("Jobs submitted")
 
     def Clear(self):
         self.index = 0
@@ -62,8 +62,9 @@ class MultiThreadBatchRun:
         self.pool.close()
         self.pool.join()
 
+
 if __name__ == "__main__":
-    cmds = [ "sh /home/nqx/RISCV/Deffe.Feb24.2020/utils/samp.sh" for i in range(10)]
+    cmds = ["sh /home/nqx/RISCV/Deffe.Feb24.2020/utils/samp.sh" for i in range(10)]
     mt = MultiThreadBatchRun(5)
     mt.Run(cmds, is_popen=True)
     mt.Run(cmds)

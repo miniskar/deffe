@@ -1,18 +1,19 @@
 ## Copyright 2020 UT-Battelle, LLC.  See LICENSE.txt for more information.
 ###
- # @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
- #         miniskarnr@ornl.gov
- # 
- # Modification:
- #              Baseline code
- # Date:        Apr, 2020
- #**************************************************************************
+# @author Narasinga Rao Miniskar, Frank Liu, Dwaipayan Chakraborty, Jeffrey Vetter
+#         miniskarnr@ornl.gov
+#
+# Modification:
+#              Baseline code
+# Date:        Apr, 2020
+# **************************************************************************
 ###
 import os
 import numpy as np
 import pdb
 import argparse
 import shlex
+
 
 class DeffeMLModel:
     def __init__(self, framework):
@@ -33,22 +34,22 @@ class DeffeMLModel:
         arg_string = self.config.arguments
         args = self.parser.parse_args(shlex.split(arg_string))
         return args
-    
+
     # Add command line arguments to parser
     def AddArgumentsToParser(self):
         parser = argparse.ArgumentParser()
         return parser
-    
+
     # Check if model is ready
     def IsModelReady(self):
         # TODO: This method is yet to be implemented
         return False
 
-    # Get Train-Validation split 
+    # Get Train-Validation split
     def GetTrainValSplit(self):
         return self.ml_model_script.GetTrainValSplit()
 
-    # Get Train-Validation split 
+    # Get Train-Validation split
     def GetTrainTestSplit(self):
         return self.ml_model_script.GetTrainTestSplit()
 
@@ -71,25 +72,29 @@ class DeffeMLModel:
                         valid_val_indexes.append(indexes[index])
             if len(params_valid_indexes) == 0:
                 print("[Warning] no samples to train in this step !")
-                return 
         else:
             params_valid_indexes = range(len(indexes))
             valid_train_indexes = samples[0].tolist()
             valid_val_indexes = samples[1].tolist()
         cost_metrics = np.array(cost_metrics)
-        self.ml_model_script.Initialize(step, headers, \
-                params[params_valid_indexes,], \
-                cost_metrics, \
-                np.array(valid_train_indexes), \
-                np.array(valid_val_indexes))
+        self.ml_model_script.Initialize(
+            step,
+            headers,
+            params[params_valid_indexes,],
+            cost_metrics,
+            np.array(valid_train_indexes),
+            np.array(valid_val_indexes),
+        )
         self.ml_model_script.PreLoadData()
 
     # Run the prediction/inference
-    def Inference(self, output_file=''):
+    def Inference(self, output_file=""):
         all_output = self.ml_model_script.Inference(output_file)
         cost = []
         for output in all_output:
-            cost.append((self.framework.valid_flag, self.framework.predicted_flag, output))
+            cost.append(
+                (self.framework.valid_flag, self.framework.predicted_flag, output)
+            )
         return all_output
 
     # Train the model
@@ -104,6 +109,7 @@ class DeffeMLModel:
     # Preload the pretrained model
     def PreLoadData(self):
         self.ml_model_script.PreLoadData()
+
 
 def GetObject(framework):
     obj = DeffeMLModel(framework)
