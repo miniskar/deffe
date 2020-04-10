@@ -92,6 +92,7 @@ class KerasCNN(BaseMLModel):
         if self.framework.args.icp != "":
             self.icp = self.framework.args.icp
         self.no_run = self.args.no_run or self.framework.args.no_run
+        self.disable_icp = False
 
     def GetTrainValSplit(self):
         return self.validation_split
@@ -210,7 +211,6 @@ class KerasCNN(BaseMLModel):
         self.model = self.get_compiled_model(
             self.model, loss=self.loss_function, optimizer="adam", metrics=["mse"]
         )
-        self.disable_icp = False
 
     def get_compiled_model(
         self,
@@ -247,6 +247,7 @@ class KerasCNN(BaseMLModel):
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != "":
                 self.load_model(last_cp)
+                self.disable_icp = True
         else:
             all_files = glob.glob(
                 os.path.join(checkpoint_dir, "*weights-improvement-*.hdf5")
@@ -254,6 +255,7 @@ class KerasCNN(BaseMLModel):
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != "":
                 self.load_model(last_cp)
+                self.disable_icp = True
 
     def evaluate(self, x_test, y_test, z_test, tags=""):
         if x_test.size == 0:
@@ -311,7 +313,7 @@ class KerasCNN(BaseMLModel):
 
     # Inference on samples, which is type of model specific
     def Inference(self, outfile=""):
-        self.model.load_weights(self.icp)
+        self.load_model(self.icp)
         predictions = self.model.predict(self.x_train, batch_size=self.GetBatchSize())
         if outfile != None:
             BaseMLModel.WritePredictionsToFile(
@@ -351,8 +353,7 @@ class KerasCNN(BaseMLModel):
             return
         if self.args.evaluate and self.icp != "":
             print("Loading checkpoint file:" + self.icp)
-            keras.losses.custom_loss = self.loss_function
-            self.model.load_weights(self.icp)
+            self.load_model(self.icp)
             print("\n# Evaluate on test data")
             self.evaluate(x_train, y_train, z_train, "training")
             self.evaluate(x_test, y_test, z_test, "test")
@@ -361,9 +362,7 @@ class KerasCNN(BaseMLModel):
             loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
             print("Test Loss: " + str(loss))
         elif self.icp != "" and not self.disable_icp:
-            print("Loading checkpoint file:" + self.icp)
-            keras.losses.custom_loss = self.loss_function
-            self.model.load_weights(self.icp)
+            self.load_model(self.icp)
             # self.model = keras.models.load_model(self.args.icp)
             # print('\n# Evaluate on test data')
             # self.evaluate(x_train, y_train, z_train, "training")
@@ -490,7 +489,7 @@ class KerasCNN(BaseMLModel):
                     traincount,
                     valcount,
                 ) = self.GetStats(icp_file)
-                self.model.load_weights(icp_file)
+                self.load_model(icp_file)
                 if self.args.load_train_test or self.framework.args.load_train_test:
                     self.LoadTrainValTestData(step)
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
