@@ -306,12 +306,12 @@ class TorchCNN(BaseMLModel):
     def Train(self):
         BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
-        x_test, y_test, z_test    = self.x_test, self.y_test, self.z_test
-        n_train = int(x_train.shape[0]*(1.0-self.validation_split))
-        n_val = x_train.shape[0] - n_train
-        print("Train count:"+str(n_train))
-        print("Val count:"+str(n_val))
-        print("Test count:"+str(x_test.shape[0]))
+        x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
+        n_train = int(x_train.shape[0] * (1.0 - self.validation_split))
+        n_val = int(x_train.shape[0] * self.validation_split)
+        print("Train count:" + str(n_train))
+        print("Val count:" + str(n_val))
+        print("Test count:" + str(x_test.shape[0]))
         if len(x_train) == 0:
             return
         if self.no_run:
@@ -324,7 +324,7 @@ class TorchCNN(BaseMLModel):
         train_loader = DataLoader(
             train_set,
             batch_size=self.GetBatchSize(),
-            shuffle=True,
+            sshuffle=True,
             num_workers=4,
             pin_memory=True,
         )

@@ -103,6 +103,8 @@ class BaseMLModel:
             (train_actual_indexes, val_actual_indexes), axis=None
         )
         training_idx = [index_hash[index] for index in train_val_indexes]
+        self.x_all = parameters.astype("float")
+        self.y_all = cost_data.astype("float")
         x_train = parameters[training_idx, :].astype("float")
         y_train = cost_data[training_idx, :].astype("float")
         z_train = orig_cost_data[training_idx, :].astype("float")
