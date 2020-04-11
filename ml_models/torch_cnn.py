@@ -219,6 +219,7 @@ class TorchCNN(BaseMLModel):
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != "":
                 self.load_model(last_cp)
+                self.disable_icp = True
         else:
             all_files = glob.glob(
                 os.path.join(checkpoint_dir, "*weights-improvement-*.hdf5")
@@ -226,6 +227,7 @@ class TorchCNN(BaseMLModel):
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != "":
                 self.load_model(last_cp)
+                self.disable_icp = True
 
     def evaluate(self, x_test, y_test, z_test, tags=""):
         if x_test.size == 0:
@@ -283,7 +285,7 @@ class TorchCNN(BaseMLModel):
 
     # Inference on samples, which is type of model specific
     def Inference(self, outfile=""):
-        self.model.load_weights(self.icp)
+        self.load_model(self.icp)
         predictions = self.model.predict(self.x_train, batch_size=self.GetBatchSize())
         if outfile != None:
             BaseMLModel.WritePredictionsToFile(
@@ -354,6 +356,8 @@ class TorchCNN(BaseMLModel):
                 self.step, n_train, n_val, n_train + n_val
             )
         )
+        if self.icp != "" and not self.disable_icp:
+            self.load_model(self.icp)
         # save_indices(dt_string, self.step, train_idx, val_idx, test_idx)
         lr = 0.0010
         momentum = 0.9
@@ -524,7 +528,7 @@ class TorchCNN(BaseMLModel):
                     traincount,
                     valcount,
                 ) = self.GetStats(icp_file)
-                self.model.load_weights(icp_file)
+                self.load_model(icp_file)
                 if self.args.load_train_test or self.framework.args.load_train_test:
                     self.LoadTrainValTestData(step)
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
