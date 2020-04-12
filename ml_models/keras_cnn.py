@@ -478,7 +478,7 @@ class KerasCNN(BaseMLModel):
         traincount_re = re.compile(r"-train([^-]*)-")
         valcount_re = re.compile(r"val([0-9][^-]*)-")
         with open(outfile, "w") as fh:
-            hdrs = ["Epoch", "TrainLoss", "ValLoss", "TestLoss"]
+            hdrs = ["Epoch", "TrainLoss", "ValLoss", "TestLoss", "AllLoss"]
             print("Calculating test accuracies " + str(len(all_files)))
             for index, icp_file in enumerate(all_files):
                 (
@@ -489,15 +489,21 @@ class KerasCNN(BaseMLModel):
                     traincount,
                     valcount,
                 ) = self.GetStats(icp_file)
+                #if val_loss > 0.06:
+                #    continue
                 self.load_model(icp_file)
                 if self.args.load_train_test or self.framework.args.load_train_test:
                     self.LoadTrainValTestData(step)
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
                 print("Train count:" + str(self.x_train.shape[0]))
                 print("Test count:" + str(self.x_test.shape[0]))
+                keras.losses.custom_loss = self.loss_function
+                all_loss = 0.0
+                all_acc = 0.0
                 if x_test.size == 0:
                     x_test, y_test, z_test = self.x_train, self.y_train, self.z_train
-                keras.losses.custom_loss = self.loss_function
+                else:
+                    all_loss, all_acc = self.model.evaluate(self.x_all, self.y_all, verbose=0)
                 loss, acc = self.model.evaluate(x_test, y_test, verbose=0)
                 if fh != None:
                     if index == 0:
@@ -506,9 +512,10 @@ class KerasCNN(BaseMLModel):
                             hdrs.append("TrainCount")
                             hdrs.append("ValCount")
                         fh.write(", ".join(hdrs) + "\n")
-                    data = [str(epoch), str(train_loss), str(val_loss), str(loss)]
+                    data = [str(epoch), str(train_loss), str(val_loss), str(loss), str(all_loss)]
                     if step != -1:
                         data.extend([str(step), str(traincount), str(valcount)])
+                    print("Extracted data:"+str(data))
                     fh.write(", ".join(data) + "\n")
                     fh.flush()
                 print(
