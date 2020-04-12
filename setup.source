@@ -1,0 +1,6 @@
+SCRIPT_FILE=${BASH_SOURCE[0]}
+SCRIPT=$(readlink -f $SCRIPT_FILE)
+export DEFFE_DIR=$(dirname -- ${SCRIPT})
+echo "*********************** Deffe *********************"
+echo "DEFFE_DIR: $DEFFE_DIR"
+echo "***************************************************"
