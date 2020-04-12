@@ -533,22 +533,32 @@ class TorchCNN(BaseMLModel):
                     self.LoadTrainValTestData(step)
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
                 x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
+                torch.losses.custom_loss = self.loss_function
+                all_loss = 0.0
+                all_acc = 0.0
                 if x_test.size == 0:
                     x_test, y_test, z_test = self.x_train, self.y_train, self.z_train
-                torch.losses.custom_loss = self.loss_function
+                else:
+                    all_loss, all_acc = self.model.evaluate(self.x_all, self.y_all, verbose=0)
                 loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
                 if fh != None:
                     if index == 0:
-                        if step_flag:
+                        if step != -1:
                             hdrs.append("Step")
                             hdrs.append("TrainCount")
                             hdrs.append("ValCount")
                         fh.write(", ".join(hdrs) + "\n")
-                    data = [str(epoch), str(train_loss), str(val_loss), str(loss)]
-                    if step_flag:
+                    data = [str(epoch), str(train_loss), str(val_loss), str(loss), str(all_loss)]
+                    if step != -1:
                         data.extend([str(step), str(traincount), str(valcount)])
                     fh.write(", ".join(data) + "\n")
-                # print('Testing epoch:{} train_loss: {}, val_loss: {}, test_loss: {}\n'.format(epoch, train_loss, val_loss, loss))
+                    fh.flush()
+                print(
+                    "Testing epoch:{} train_loss: {}, val_loss: {}, test_loss: {}, all_loss: {}"
+                        .format(
+                            epoch, train_loss, val_loss, loss
+                    )
+                )
             fh.close()
 
 
