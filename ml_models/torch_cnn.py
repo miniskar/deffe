@@ -556,7 +556,7 @@ class TorchCNN(BaseMLModel):
                 print(
                     "Testing epoch:{} train_loss: {}, val_loss: {}, test_loss: {}, all_loss: {}"
                         .format(
-                            epoch, train_loss, val_loss, loss
+                            epoch, train_loss, val_loss, loss, all_loss
                     )
                 )
             fh.close()
