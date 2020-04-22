@@ -267,6 +267,7 @@ def InitParser(parser):
     parser.add_argument("-train-test-split", dest="train_test_split", default="")
     parser.add_argument("-validation-split", dest="validation_split", default="")
     parser.add_argument("-load-train-test", dest="load_train_test", action="store_true")
+    parser.add_argument("-no-slurm", dest="no_slurm", action="store_true")
     parser.add_argument("-icp", dest="icp", default="")
     parser.add_argument("-loss", dest="loss", default="")
 

@@ -55,6 +55,7 @@ RUN git clone https://gem5.googlesource.com/public/gem5 /home/gem5
 RUN ls -al
 RUN pwd
 WORKDIR /home/gem5
+ENV GEM5_DIR /home/gem5
 RUN scons -j8 build/RISCV/gem5.opt 
 RUN ls -al
 WORKDIR /home/deffe

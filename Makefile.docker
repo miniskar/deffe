@@ -1,0 +1,25 @@
+.PHONY: build run
+
+APT_FILE="apt.conf"
+PROXY_FILE="proxy.conf"
+APT_CONF="${HOME}/$(APT_FILE)"
+PROXY_CONF="${HOME}/$(PROXY_FILE)"
+APT_EXISTS=$(shell [ -e $(APT_CONF) ] && echo 1 || echo 0 )
+PROXY_EXISTS=$(shell [ -e $(PROXY_CONF) ] && echo 1 || echo 0 )
+build:
+	@if [ "x$(PROXY_EXISTS)" = "x1" ]; then \
+    cp $(PROXY_CONF) . ; \
+    else \
+    touch $(PROXY_FILE); \
+    fi
+	@if [ "x$(APT_EXISTS)" = "x1" ]; then \
+	cp $(APT_CONF) . ; \
+    else \
+    touch $(APT_FILE); \
+	fi
+	docker build . -f Dockerfile -t deffe:dev
+
+run:
+	docker run -it --rm \
+		--mount source=deffe-workspace,target=/workspace \
+		deffe:dev

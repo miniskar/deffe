@@ -34,6 +34,7 @@ The above figures shows the main blocks and their corresponding python files in 
 ## Hardware Dependencies 
 1. GPU to train the machine learning model
 2. SLURM environment if to run evaluate (RISCV-GEM5) simulations
+    - Installation of GEM5 is given in http://learning.gem5.org/book/part1/building.html
 
 ## Software Dependencies
 1. Python
@@ -51,6 +52,13 @@ The above figures shows the main blocks and their corresponding python files in 
     - tqdm 
     - torchsummary
 
+## Docker support
+Docker support is provided for Deffe.  Set ap
+```bash
+$ cd docker ;
+$ make -f Makefile.docker build ; 
+$ make -f Makefile.docker run ;
+```
 
 ## How to run Deffe?
 An example Deffe configuration for RISCV design space exploration along with their associated files are placed in <b>example</b> directory. 

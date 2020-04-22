@@ -29,6 +29,9 @@ class DeffeEvaluate:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetEvaluate()
+        self.slurm_flag = self.config.slurm
+        if self.framework.args.no_slurm:
+            self.slurm_flag = False
         if not os.path.exists(self.config.sample_evaluate_script):
             self.config.sample_evaluate_script = os.path.join(
                 self.framework.config_dir, self.config.sample_evaluate_script
@@ -293,7 +296,7 @@ class DeffeEvaluate:
             fh.close()
         self.counter = self.counter + 1
         out = ((run_dir, self.config.sample_evaluate_script), cmd)
-        if self.config.slurm:
+        if self.slurm_flag:
             slurm_script_filename = os.path.join(run_dir, "slurm_evaluate.sh")
             self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
             slurm_script_cmd = self.framework.slurm.GetSlurmJobCommand(

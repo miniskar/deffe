@@ -20,6 +20,9 @@ class DeffeExtract:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetExtract()
+        self.slurm_flag = self.config.slurm
+        if self.framework.args.no_slurm:
+            self.slurm_flag = False
         if not os.path.exists(self.config.sample_extract_script):
             self.config.sample_extract_script = os.path.join(
                 self.framework.config_dir, self.config.sample_extract_script
@@ -89,7 +92,7 @@ class DeffeExtract:
             elif flag == self.framework.evaluate_flag:
                 cmd = self.GetExtractCommand(output, param_pattern, param_dict)
                 (run_dir, eval_script_filename) = output
-                if self.config.slurm:
+                if self.slurm_flag:
                     slurm_script_filename = os.path.join(run_dir, "slurm_extract.sh")
                     self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
                     cmd = self.framework.slurm.GetSlurmJobCommand(slurm_script_filename)
