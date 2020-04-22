@@ -5,6 +5,9 @@ if [ -f "app.source" ]; then
 source app.source
 fi
 export RUN_DIR=/home/nqx/RISCV
+if [[ -z "${GEM5_DIR}" ]]; then
+export GEM5_DIR=${RUN_DIR}/gem5
+fi
 if [[ -z "${APP_BINARY}" ]]; then
 echo "[Warning] Environment variable APP_BINARY is not set"
 export APP_BINARY=$RUN_DIR/Benchmarks/mt-all-matmul/build.64.newlib/RISCVProject
@@ -32,8 +35,8 @@ l1d_size=16
 l1i_size=16
 l2_size=128
 cacheline=64
-$RUN_DIR/gem5.cos/build/RISCV/gem5.opt \
-    $RUN_DIR/gem5/configs/example/se.py \
+$GEM5_DIR/build/RISCV/gem5.opt \
+    $GEM5_DIR/configs/example/se.py \
     --cmd=${binary} \
     --cpu-type=TimingSimpleCPU \
     --options="${commandline_option}" \

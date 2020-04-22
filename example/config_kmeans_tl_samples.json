@@ -62,25 +62,25 @@
             "name" : "matmul_binary",
             "map" : "binary",
             "groups" : "matmul",
-            "values" : "/home/nqx/RISCV/Benchmarks/mt-all-matmul/build.64.newlib/RISCVProject"
+            "values" : "$DEFFE_DIR/example/mt-all-matmul-riscv-binary"
         },
         {
             "name" : "kmeans_binary",
             "map" : "binary",
             "groups" : "kmeans",
-            "values" : "/home/nqx/RISCV/Benchmarks/kmeans_serial/build.64.linux/RISCVProject"
+            "values" : "$DEFFE_DIR/example/kmeans-riscv-binary"
         },
         {
             "name" : "nw_binary",
             "map" : "binary",
             "groups" : "nw",
-            "values" : "/home/nqx/RISCV/Benchmarks/nw/build.64.linux/RISCVProject"
+            "values" : "$DEFFE_DIR/example/nw-riscv-binary"
         },
         {
             "name" : "kmeans_input",
             "map" : "input",
             "groups" : "kmeans",
-            "values" : "/home/nqx/RISCV/Benchmarks/rodinia_3.1/data/kmeans/kdd_cup"
+            "values" : "$DEFFE_DIR/example/kdd_cup"
         },
         {
             "name" : "kmeans_command",

@@ -45,7 +45,8 @@ class DeffeConfigValues:
                 sub_values = [str(i) for i in range(start, end, inc)]
                 values_extract.extend(sub_values)
             else:
-                values_extract.append(value)
+                pdb.set_trace()
+                values_extract.append(os.path.expandvars(value))
         return values_extract
 
 

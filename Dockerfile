@@ -7,7 +7,8 @@ ENV http_proxy "http://proxy.ftpn.ornl.gov:3128"
 ENV https_proxy "http://proxy.ftpn.ornl.gov:3128"
 
 # Install tools for development.
-RUN apt-get update 
+RUN apt-get update --fix-missing
+
 RUN apt-get install -y \
   python3 \
   python3-pip \
@@ -17,6 +18,15 @@ RUN apt-get install -y \
   cmake \
   wget \
   ack-grep \
+  scons \
+  build-essential \
+  python3-dev \
+  python-dev \
+  m4 \
+  libprotobuf-dev \
+  python-protobuf \
+  protobuf-compiler \
+  libgoogle-perftools-dev \
   graphviz 
 
 # Install a supported version of pyparsing for Xenon.
@@ -32,13 +42,19 @@ RUN pip3 install keras \
         tqdm \
         torchsummary
 
-
 # Environment variables for gem5-aladdin
 ENV SHELL /bin/bash
-RUN mkdir -p /workspace
-COPY . /workspace/deffe/
-WORKDIR /workspace/deffe
-ENV DEFFE_DIR /workspace/deffe
-RUN ls -al
-WORKDIR /workspace/deffe/example
+RUN mkdir -p /home
+
+COPY . /home/deffe/
+WORKDIR /home/deffe
+ENV DEFFE_DIR /home/deffe
+WORKDIR /home/deffe/example
 RUN python3 $DEFFE_DIR/framework/run_deffe.py -h 
+RUN git clone https://gem5.googlesource.com/public/gem5 /home/gem5
+RUN ls -al
+RUN pwd
+WORKDIR /home/gem5
+RUN scons -j8 build/RISCV/gem5.opt 
+RUN ls -al
+WORKDIR /home/deffe
