@@ -69,6 +69,14 @@ $ python3 ../framework/run_deffe.py -config config_small.json
 $ cd .. ;
 ```
 
+An example Deffe configuration for RISCV design space exploration (without slurm) along with their associated files are placed in <b>example</b> directory. 
+```bash
+$ source setup.source
+$ cd example ; 
+$ python3 ../framework/run_deffe.py -config config_small.json -no-slurm
+$ cd .. ;
+```
+
 The run_deffe.py file can show all command line options with the below command.
 ```bash
 $ cd example ;
