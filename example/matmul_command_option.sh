@@ -1,4 +1,4 @@
 echo "Creating command file"
-cat <<EOT > commandline_option.txt
+cat <<EOT > cmd_options_file.txt
 ${matmul_size}
 EOT

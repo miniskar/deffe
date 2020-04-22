@@ -25,8 +25,8 @@ echo "Application options: ${APP_OPTS}"
 
 binary=${APP_BINARY}
 commandline_option=${APP_OPTS}
-if [ -f "commandline_option.txt" ]; then
-commandline_option=`cat commandline_option.txt`
+if [ -f "cmd_options_file.txt" ]; then
+commandline_option=`cat cmd_options_file.txt`
 fi
 l1d_ways=2
 l1i_ways=2
@@ -47,25 +47,3 @@ $GEM5_DIR/build/RISCV/gem5.opt \
     --l1i_assoc=${l1i_ways} --l1i_size=${l1i_size}kB \
     --l2_assoc=${l2_ways} --l2_size=${l2_size}kB \
     --cacheline_size=${cacheline} | tee output-gem5.log
-
-CHISEL_BASE=chisel
-export PATH=/home/nqx/RISCV/gem5-mcpat-riscv/gem5-mcpat-parser:/home/nqx/install/bin:$PATH  && \
-            /home/nqx/RISCV/gem5-mcpat-riscv/compute  \
-            m5out/stats.txt  m5out/config.ini  /home/nqx/RISCV/gem5-mcpat-riscv/template.xml \
-            cfg_mcpat.xml  /home/nqx/RISCV/gem5-mcpat-riscv/gem5-mcpat-parser/gem5-mcpat-parser \
-            /home/nqx/RISCV/gem5-mcpat-riscv/mcpat/mcpat 5 mcpat.txt \
-            /home/nqx/RISCV/gem5-mcpat-riscv/parsefix  | tee output-mcpat.log 
-
-#CHISEL_BASE=/home/nqx/RISCV/chipyard.Oct14.2019
-#CHISEL_TARGET=$PWD/chipyard
-#sh copy_chisel.sh $CHISEL_BASE $CHISEL_TARGET
-#source /home/nqx/RISCV/chipyard.Oct14.2019/env.sh && \
-#           source /home/nqx/RISCV/yosys.cos/setup.source && \
-#           echo `which java` && \
-#           export SBT_OPTS="-Dscala.concurrent.context.maxThreads=1" && \
-#           time python /home/nqx/RISCV/gem5-mcpat-riscv/get_area.py  \
-#           -l1d_assoc=L1D_ASC -l1d_size=L1D_SIZE \
-#           -l1i_assoc=L1I_ASC -l1i_size=L1I_SIZE \
-#           -l2_assoc=L2_ASC   -l2_size=L2_SIZE \
-#           -base_dir=$CHISEL_TARGET \
-#           -cacheline_size=CACHELINE | tee output-yosys.log
