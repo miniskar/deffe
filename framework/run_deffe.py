@@ -146,21 +146,22 @@ class DeffeFramework:
 
             # Initialize writing of output log files
             if not no_train_flag:
+                hdrs_write_list = [d[0].name for d in param_list] 
                 self.config.WriteFile(
                     explore_groups.name + "-minmax.json",
                     self.parameters.GetMinMaxToJSonData(),
                 )
                 self.evaluation_table.WriteHeaderInCSV(
                     explore_groups.evaluation_table,
-                    self.evaluate.param_hdrs + self.config.GetCosts(),
+                    hdrs_write_list + self.config.GetCosts(),
                 )
                 self.ml_predict_table.WriteHeaderInCSV(
                     explore_groups.ml_predict_table,
-                    self.evaluate.param_hdrs + self.config.GetCosts(),
+                    hdrs_write_list + self.config.GetCosts(),
                 )
                 self.evaluation_predict_table.WriteHeaderInCSV(
                     explore_groups.evaluation_predict_table,
-                    self.evaluate.param_hdrs + self.config.GetCosts(),
+                    hdrs_write_list + self.config.GetCosts(),
                 )
             step = 0
             inc = int(self.args.step_inc)
