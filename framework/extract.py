@@ -72,6 +72,8 @@ class DeffeExtract:
         if os.path.exists(file_path):
             with open(file_path, "r") as fh:
                 lines = fh.readlines()
+                if len(lines) == 0:
+                    return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
                 return (
                     self.framework.valid_flag,
                     np.array([RemoveWhiteSpaces(lines[0]),]).astype("str"),
