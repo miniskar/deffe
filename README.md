@@ -37,7 +37,7 @@ The above figures shows the main blocks and their corresponding python files in 
     - Installation of GEM5 is given in http://learning.gem5.org/book/part1/building.html
 
 ## Software Dependencies
-1. Python
+1. Python-3
 2. Graphviz 
 3. ML packages in Python 
     - keras 
@@ -166,7 +166,7 @@ $ cd .. ;
     $ source setup.source
     $ cd example/experiments/transfer_learning_samples/log/kmeans 
     $ python3 $DEFFE_DIR/framework/run_deffe.py \
-    -config $DEFFE_DIR/example \ config_kmeans_tl_samples.json \
+    -config $DEFFE_DIR/example/config_kmeans_tl_samples.json \
     -only-preloaded-data-exploration -epochs 1000 -batch-size 256 \
     -train-test-split 1.0 -validation-split 0.23 
 
