@@ -75,7 +75,7 @@ class DeffeExtract:
                 if len(lines) == 0:
                     return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
                 return (
-                    self.framework.valid_flag,
+                    self.framework.valid_flag, flag,
                     np.array([RemoveWhiteSpaces(lines[0]),]).astype("str"),
                 )
         return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
