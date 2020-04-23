@@ -43,7 +43,7 @@ The above figures shows the main blocks and their corresponding python files in 
     - keras 
     - tensorflow 
     - tensorflow-gpu 
-    - pytorch
+    - torch
     - scikit-learn 
     - xlsxwriter 
     - matplotlib 
