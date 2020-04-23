@@ -48,9 +48,14 @@ The above figures shows the main blocks and their corresponding python files in 
     - xlsxwriter 
     - matplotlib 
     - pandas 
+    - pathlib
     - pydot 
     - tqdm 
     - torchsummary
+    ```bash
+    Install all required packages from requirements.txt file in the repository.
+    $ pip3 install -r requirements.txt
+    ```
 
 ## Docker support
 Docker support is provided for Deffe. Set proxy settings in Docker file and also in apt.conf file appropriately.

@@ -38,6 +38,7 @@ RUN pip3 install keras \
         xlsxwriter \
         matplotlib \
         pandas \
+        pathlib \
         pydot \
         tqdm \
         torchsummary
