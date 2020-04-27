@@ -60,7 +60,6 @@ The above figures shows the main blocks and their corresponding python files in 
 ## Docker support
 Docker support is provided for Deffe. Set proxy settings in Docker file and also in apt.conf file appropriately.
 ```bash
-$ cd docker ;
 $ make -f Makefile.docker build ; 
 $ make -f Makefile.docker run ;
 ```
