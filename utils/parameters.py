@@ -12,7 +12,7 @@ import os
 import pdb
 import numpy as np
 import re
-
+import sys
 
 def IsNumber(x):
     allowed_types = [
@@ -141,6 +141,9 @@ class Parameters:
 
     def EncodePermutation(self, rec, np_hdrs):
         sel_param_values = { k:re.sub(r'\.0$', '', rec[index]) for index, k in enumerate(np_hdrs) }
+        return self.EncodePermutationHash(sel_param_values)
+
+    def EncodePermutationHash(self, sel_param_values):
         index = len(self.selected_params) - 1
         perm_index = 0
         for (param, param_values, pindex) in reversed(self.selected_params):
@@ -205,7 +208,8 @@ class Parameters:
         max_list = np.array(max_list).astype("float")
         nparams_out = nparams.astype("float")
         nparams_out = (nparams_out - min_list) / (max_list - min_list)
-        if not self.framework.args.bounds_no_check:
+        if self.framework != None and \
+            not self.framework.args.bounds_no_check:
             if (nparams_out < 0.0).any():
                 print(
                     "Error: Some data in the sample normalization is negative. Please define the ranges properly"
@@ -310,3 +314,26 @@ class Parameters:
         param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
         param_pattern = re.compile("|".join(param_dict.keys()))
         return (param_pattern, param_hash, param_dict)
+
+
+if __name__ == "__main__":
+    framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    framework_env = os.getenv("DEFFE_DIR")
+    if framework_env == None:
+        os.environ["DEFFE_DIR"] = framework_path
+    sys.path.insert(0, os.getenv("DEFFE_DIR"))
+    sys.path.insert(0, os.path.join(framework_path, "framework"))
+    sys.path.insert(0, os.path.join(framework_path, "utils"))
+    from read_config import *
+    config = DeffeConfig("config_small_sampling.json")
+    explore_groups = config.GetExploration().exploration_list[0].groups
+    params = Parameters(config, None)
+    params.Initialize(explore_groups)
+    val = params.GetPermutationSelection(1234)
+    val_hash = { param.name:param_values[val[index]] 
+        for index, (param, param_values, pindex) in enumerate(params.selected_params) }
+    print(val_hash)
+    index = params.EncodePermutationHash(val_hash)
+    if index != 1234:
+        print("Error")
+    print(index)
