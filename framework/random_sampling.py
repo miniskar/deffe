@@ -124,9 +124,7 @@ class DeffeRandomSampling:
                 sys.exit(1)
             np_records = sample_mat.values.astype("str")
             np_hdrs = np.char.lower(np.array(list(sample_mat.columns)).astype("str"))
-            self._seq = [ self.parameters.EncodePermutation(rec, np_hdrs) for rec in np_records ]
-            pdb.set_trace()
-            None
+            self._seq = np.array([ self.parameters.EncodePermutation(rec, np_hdrs) for rec in np_records ]).astype("int")
         if self._shuffle:
             np.random.shuffle(self._seq)
         return
@@ -150,6 +148,11 @@ class DeffeRandomSampling:
         self._val_idx = []
         self._exhausted = False
 
+        if n_val+n_train > self._len:
+            n_val = int(self._len * 0.30)
+            n_train = self._len - n_val
+            self._n_train = n_train
+            self._n_val = n_val
         assert n_train > 1, "Bummer: number of training has to be >1"
         # assert n_val>1, 'Bummer: number of validation has to be >1'
         assert (
@@ -214,40 +217,6 @@ class DeffeRandomSampling:
                 (self._val_idx[range(tmp, len(self._val_idx))], new_val), axis=None
             )
         self._pos = new_pos
-        print(
-            "Training: "
-            + str(len(self._train_idx))
-            + " Val: "
-            + str(len(self._val_idx))
-        )
-        return True
-
-    def Step(self):
-        if self._exhausted:
-            return False
-
-        if self._pos >= self._len:
-            self._exhausted = True
-            return False
-
-        new_pos = self._pos + self._n_val
-        if new_pos >= self._len:
-            # print('Insufficient remaining samples in sequence, truncating num of new samples from {} to {}'.format(
-            #    self._n_val, new_pos-self._len ))
-            new_pos = self._len
-            self._exhausted = True
-
-        new_val = self._seq[self._pos : new_pos]
-        tmp = len(self._val_idx) // 2
-        if tmp != 0:
-            self._train_idx = np.concatenate(
-                (self._train_idx, self._val_idx[range(0, tmp)]), axis=None
-            )
-            self._val_idx = np.concatenate(
-                (self._val_idx[range(tmp, len(self._val_idx))], new_val), axis=None
-            )
-        self._pos = new_pos
-        self._step = self._step + 1
         print(
             "Training: "
             + str(len(self._train_idx))
