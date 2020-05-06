@@ -10,6 +10,7 @@
 ###
 import os
 import numpy as np
+from doepy import build
 from numpy import random
 import pdb
 import argparse
@@ -75,24 +76,70 @@ class DeffeRandomSampling:
             dest="custom_samples",
             default="",
         )
+        parser.add_argument("-method", dest="method", default='random')
         return parser
 
-    def Initialize(self, n_samples, n_train, n_val, shuffle=True):
+    def GenerateSamples(self):
+        param_dict =  { param.name : param_values 
+            for (param, param_values, pindex) in 
+                self.parameters.selected_pruned_params }
+        n_samples = self._n_samples
+        max_samples = min(1000000, self._n_samples)
+        sampling_method = self.args.method
+        if sampling_method == 'random':
+            # _n_samples is the permutation count of all parameters, which can be very high
+            # Hence, generate samples of maximum 1000000 for training.
+            org_seq = np.random.choice(
+                n_samples, size=max_samples, replace=False)
+            self._seq = org_seq
+        else:
+            sample_mat = None
+            if sampling_method == 'frac_fact_res':
+                sample_mat = build.frac_fact_res(param_dict)
+            elif sampling_method == 'plackett_burman':
+                sample_mat = build.plackett_burman(param_dict)
+            elif sampling_method == 'box_behnken':
+                sample_mat = build.box_behnken(param_dict)
+            elif sampling_method == 'central_composite_ccf':
+                sample_mat = build.central_composite(param_dict, face='ccf')
+            elif sampling_method == 'central_composite_cci':
+                sample_mat = build.central_composite(param_dict, face='cci')
+            elif sampling_method == 'central_composite_ccc':
+                sample_mat = build.central_composite(param_dict, face='ccc')
+            elif sampling_method == 'lhs':
+                sample_mat = build.lhs(param_dict, num_samples=n_samples)
+            elif sampling_method == 'space_filling_lhs':
+                sample_mat = build.space_filling_lhs(param_dict, num_samples=n_samples)
+            elif sampling_method == 'random_k_means':
+                sample_mat = build.random_k_means(param_dict, num_samples=n_samples)
+            elif sampling_method == 'maximin':
+                sample_mat = build.maximin(param_dict, num_samples=n_samples)
+            elif sampling_method == 'halton':
+                sample_mat = build.halton(param_dict, num_samples=n_samples)
+            elif sampling_method == 'uniform_random':
+                sample_mat = build.uniform_random(param_dict, num_samples=n_samples)
+            else:
+                print("[Error] Unknown method:{} of sampling!".
+                        format(sampling))               
+                sys.exit(1)
+            np_records = sample_mat.values.astype("str")
+            np_hdrs = np.char.lower(np.array(list(sample_mat.columns)).astype("str"))
+            self._seq = [ self.parameters.EncodePermutation(rec, np_hdrs) for rec in np_records ]
+            pdb.set_trace()
+            None
+        if self._shuffle:
+            np.random.shuffle(self._seq)
+        return
+
+    def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True):
         self.custom_samples = []
+        self.parameters = parameters
         self.custom_samples_index = 0
         if self.args.custom_samples != "":
             self.custom_samples = [int(s) for s in self.args.custom_samples]
         self._n_samples = n_samples
         self._shuffle = shuffle
-        # org_seq = np.random.choice(n_samples, size=n_samples, replace=False)
-        # n_samples is the permutation count of all parameters, which can be very high
-        # Hence, generate samples of maximum 1000000 for training.
-        org_seq = np.random.choice(
-            n_samples, size=min(1000000, n_samples), replace=False
-        )
-        self._seq = org_seq
-        if shuffle:
-            np.random.shuffle(self._seq)
+        self.GenerateSamples()
 
         self._n_train = n_train
         self._n_val = n_val

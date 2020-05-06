@@ -142,7 +142,7 @@ class DeffeFramework:
                 if self.args.model_extract_dir != "":
                     no_train_flag = True
                     evaluate_flag = True
-            self.sampling.Initialize(n_samples, init_n_train, init_n_val)
+            self.sampling.Initialize(self.parameters, n_samples, init_n_train, init_n_val)
 
             # Initialize writing of output log files
             if not no_train_flag:

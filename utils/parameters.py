@@ -139,6 +139,19 @@ class Parameters:
             indexes.append(pindex)
         return [param[indexes,] for param in parameters]
 
+    def EncodePermutation(self, rec, np_hdrs):
+        sel_param_values = { k:re.sub(r'\.0$', '', rec[index]) for index, k in enumerate(np_hdrs) }
+        index = len(self.selected_params) - 1
+        perm_index = 0
+        for (param, param_values, pindex) in reversed(self.selected_params):
+            val_index = 0 
+            if param.name in sel_param_values:
+                val = sel_param_values[param.name]
+                val_index = param_values.index(val)
+            perm_index = perm_index + val_index * self.indexing[index]
+            index = index - 1
+        return perm_index
+
     def GetPermutationSelection(self, nd_index):
         index = len(self.selected_params) - 1
         out_dim_list = []

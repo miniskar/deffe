@@ -34,6 +34,7 @@ RUN pip3 install keras \
         tensorflow \
         tensorflow-gpu \
         torch \
+        doepy \
         scikit-learn \
         xlsxwriter \
         matplotlib \

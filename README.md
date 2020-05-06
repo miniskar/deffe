@@ -44,6 +44,7 @@ The above figures shows the main blocks and their corresponding python files in 
     - tensorflow 
     - tensorflow-gpu 
     - torch
+    - doepy
     - scikit-learn 
     - xlsxwriter 
     - matplotlib 

@@ -35,7 +35,7 @@ def get_samples_arch_deffe(app_params, n_samples = 100, sampling_method = 'lhs')
         print("ERROR: INVALID SAMPLING METHOD")
         return
 
-    level_dict = {'l1d_ways':[0, 8],
+    param_dict = {'l1d_ways':[0, 8],
     'l1i_ways':[0, 8],
     'l2_ways':[0, 8],
     'l1d_size':[0, 64],
@@ -52,40 +52,40 @@ def get_samples_arch_deffe(app_params, n_samples = 100, sampling_method = 'lhs')
     'cacheline': [16, 32, 64, 128]}
 
     if sampling_method == 'frac_fact_res':
-        sample_mat = build.frac_fact_res(level_dict)
+        sample_mat = build.frac_fact_res(param_dict)
 
     if sampling_method == 'plackett_burman':
-        sample_mat = build.plackett_burman(level_dict)
+        sample_mat = build.plackett_burman(param_dict)
 
     if sampling_method == 'box_behnken':
-        sample_mat = build.box_behnken(level_dict)
+        sample_mat = build.box_behnken(param_dict)
 
     if sampling_method == 'central_composite_ccf':
-        sample_mat = build.central_composite(level_dict, face='ccf')
+        sample_mat = build.central_composite(param_dict, face='ccf')
 
     if sampling_method == 'central_composite_cci':
-        sample_mat = build.central_composite(level_dict, face='cci')
+        sample_mat = build.central_composite(param_dict, face='cci')
 
     if sampling_method == 'central_composite_ccc':
-        sample_mat = build.central_composite(level_dict, face='ccc')
+        sample_mat = build.central_composite(param_dict, face='ccc')
 
     if sampling_method == 'lhs':
-        sample_mat = build.lhs(level_dict, num_samples=n_samples)
+        sample_mat = build.lhs(param_dict, num_samples=n_samples)
 
     if sampling_method == 'space_filling_lhs':
-        sample_mat = build.space_filling_lhs(level_dict, num_samples=n_samples)
+        sample_mat = build.space_filling_lhs(param_dict, num_samples=n_samples)
 
     if sampling_method == 'random_k_means':
-        sample_mat = build.random_k_means(level_dict, num_samples=n_samples)
+        sample_mat = build.random_k_means(param_dict, num_samples=n_samples)
 
     if sampling_method == 'maximin':
-        sample_mat = build.maximin(level_dict, num_samples=n_samples)
+        sample_mat = build.maximin(param_dict, num_samples=n_samples)
 
     if sampling_method == 'halton':
-        sample_mat = build.halton(level_dict, num_samples=n_samples)
+        sample_mat = build.halton(param_dict, num_samples=n_samples)
 
     if sampling_method == 'uniform_random':
-        sample_mat = build.uniform_random(level_dict, num_samples=n_samples)
+        sample_mat = build.uniform_random(param_dict, num_samples=n_samples)
 
     sample_mat = bin_arch_params(sample_mat, param_vals) # integer-valued discrete samples
 
