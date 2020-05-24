@@ -76,6 +76,7 @@ class DeffeRandomSampling:
             dest="custom_samples",
             default="",
         )
+        parser.add_argument("-fixed-samples", dest="fixed_samples", default='-1')
         parser.add_argument("-method", dest="method", default='random')
         return parser
 
@@ -141,6 +142,8 @@ class DeffeRandomSampling:
 
         self._n_train = n_train
         self._n_val = n_val
+        if self.args.fixed_samples != "-1":
+            self._n_val = 0
         self._pos = 0
         self._len = len(self._seq)
         self._step = 0
@@ -153,7 +156,7 @@ class DeffeRandomSampling:
             n_train = self._len - n_val
             self._n_train = n_train
             self._n_val = n_val
-        assert n_train > 1, "Bummer: number of training has to be >1"
+        assert n_train >= 1, "Bummer: number of training has to be >1"
         # assert n_val>1, 'Bummer: number of validation has to be >1'
         assert (
             n_val + n_train <= self._len
@@ -203,7 +206,10 @@ class DeffeRandomSampling:
             return False
         new_pos = self._pos
         for i in range(inc):
-            new_pos = new_pos + self._n_val
+            if int(self.args.fixed_samples) != -1:
+                new_pos = new_pos + self._n_val
+            else:
+                new_pos = new_pos + int(self.args.fixed_samples)
             self._step = self._step + 1
         if new_pos >= self._len:
             new_pos = self._len

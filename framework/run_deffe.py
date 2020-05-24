@@ -45,7 +45,7 @@ class DeffeFramework:
         config = DeffeConfig(self.args.config)
         self.config = config
         self.config_dir = os.path.dirname(self.config.json_file)
-        self.init_n_train = 100
+        self.init_n_train = int(self.args.init_batch_samples) 
         self.init_n_val = 2 * self.init_n_train
         self.InitializePythonPaths()
         self.predicted_flag = 0
@@ -145,24 +145,24 @@ class DeffeFramework:
             self.sampling.Initialize(self.parameters, n_samples, init_n_train, init_n_val)
 
             # Initialize writing of output log files
+            hdrs_write_list = [d[0].name for d in param_list] 
+            self.config.WriteFile(
+                explore_groups.name + "-minmax.json",
+                self.parameters.GetMinMaxToJSonData(),
+            )
+            self.evaluation_table.WriteHeaderInCSV(
+                explore_groups.evaluation_table,
+                hdrs_write_list + self.config.GetCosts(),
+            )
             if not no_train_flag:
-                hdrs_write_list = [d[0].name for d in param_list] 
-                self.config.WriteFile(
-                    explore_groups.name + "-minmax.json",
-                    self.parameters.GetMinMaxToJSonData(),
-                )
-                self.evaluation_table.WriteHeaderInCSV(
-                    explore_groups.evaluation_table,
-                    hdrs_write_list + self.config.GetCosts(),
-                )
                 self.ml_predict_table.WriteHeaderInCSV(
                     explore_groups.ml_predict_table,
                     hdrs_write_list + self.config.GetCosts(),
                 )
-                self.evaluation_predict_table.WriteHeaderInCSV(
-                    explore_groups.evaluation_predict_table,
-                    hdrs_write_list + self.config.GetCosts(),
-                )
+            self.evaluation_predict_table.WriteHeaderInCSV(
+                explore_groups.evaluation_predict_table,
+                hdrs_write_list + self.config.GetCosts(),
+            )
             step = 0
             inc = int(self.args.step_inc)
 
@@ -214,14 +214,14 @@ class DeffeFramework:
                     batch_output = self.extract.Run(
                         parameter_values, param_list, eval_output
                     )
-                    self.model.InitializeModel(
-                        samples,
-                        pruned_headers,
-                        parameters_normalize,
-                        batch_output,
-                        step,
-                    )
                     if not no_train_flag:
+                        self.model.InitializeModel(
+                            samples,
+                            pruned_headers,
+                            parameters_normalize,
+                            batch_output,
+                            step,
+                        )
                         stats_data = self.model.Train()
                         print(
                             "Stats: (Step, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "
@@ -230,8 +230,7 @@ class DeffeFramework:
                     if self.args.inference_only:
                         self.model.Inference(self.args.output)
                         break
-                if not no_train_flag:
-                    self.WriteExplorationOutput(parameter_values, batch_output)
+                self.WriteExplorationOutput(parameter_values, batch_output)
                 step = step + inc
             if evaluate_flag:
                 all_files = glob.glob(
@@ -268,6 +267,7 @@ def InitParser(parser):
     )
     parser.add_argument("-train-test-split", dest="train_test_split", default="")
     parser.add_argument("-validation-split", dest="validation_split", default="")
+    parser.add_argument("-init-batch-samples", dest="init_batch_samples", default="100")
     parser.add_argument("-load-train-test", dest="load_train_test", action="store_true")
     parser.add_argument("-no-slurm", dest="no_slurm", action="store_true")
     parser.add_argument("-icp", dest="icp", default="")
