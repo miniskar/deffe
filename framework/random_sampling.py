@@ -49,6 +49,7 @@ class DeffeRandomSampling:
         self._seq = np.arange(1)
         self._n_train = 0
         self._n_val = 0
+        self._previous_pos = 0
         self._pos = 0
         self._len = 0
         self._step = 0
@@ -144,6 +145,7 @@ class DeffeRandomSampling:
         self._n_val = n_val
         if self.args.fixed_samples != "-1":
             self._n_val = 0
+        self._previous_pos = 0
         self._pos = 0
         self._len = len(self._seq)
         self._step = 0
@@ -200,13 +202,15 @@ class DeffeRandomSampling:
             self._train_idx = all_idx[:train_count]
             self._val_idx = all_idx[train_count:]
             self.custom_samples_index = self.custom_samples_index + 1
+            self._previous_pos = self._pos
+            self._pos = len(self._train_idx)+len(self._val_idx)
             return True
         if self._pos >= self._len:
             self._exhausted = True
             return False
         new_pos = self._pos
         for i in range(inc):
-            if int(self.args.fixed_samples) != -1:
+            if int(self.args.fixed_samples) == -1:
                 new_pos = new_pos + self._n_val
             else:
                 new_pos = new_pos + int(self.args.fixed_samples)
@@ -222,6 +226,10 @@ class DeffeRandomSampling:
             self._val_idx = np.concatenate(
                 (self._val_idx[range(tmp, len(self._val_idx))], new_val), axis=None
             )
+        else:
+            total_count = len(self._train_idx)
+            self._val_idx = self._seq[total_count:new_pos]
+        self._previous_pos = self._pos
         self._pos = new_pos
         print(
             "Training: "

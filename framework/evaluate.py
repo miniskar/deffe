@@ -221,27 +221,6 @@ class DeffeEvaluate:
             out_params.append(params)
         return out_params
 
-    # Get parameter hash for pre-loaded data
-    def GetParamHash(self, param_val):
-        param_hash = {}
-        index = 0
-        for (param, param_values, pindex) in self.param_list:
-            param_key = "${" + param.name + "}"
-            param_hash[param_key] = param_val[index]
-            param_key = "${" + param.map + "}"
-            if param.name != param.map:
-                if param_key in param_hash:
-                    print(
-                        "[Error] Multiple map_name(s):"
-                        + param.map
-                        + " used in the evaluation"
-                    )
-                param_hash[param_key] = param_val[index]
-            index = index + 1
-        param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
-        param_pattern = re.compile("|".join(param_dict.keys()))
-        return (param_pattern, param_hash, param_dict)
-
     # Create environment for evaluating one sample
     def CreateEvaluateCase(self, param_val):
         (param_pattern, param_hash, param_dict) = self.parameters.GetParamHash(
