@@ -108,7 +108,7 @@ class DeffeFramework:
         # Iterate through multiple explorations list as per the configuration
         for explore_groups in self.config.GetExploration().exploration_list:
             # extract the parameters and cost metrics in that exploration list
-            no_train_flag = False
+            no_train_flag = self.args.no_train
             evaluate_flag = False
             (param_list, pruned_param_list, n_samples) = self.parameters.Initialize(
                 explore_groups.groups
@@ -249,6 +249,7 @@ def InitParser(parser):
         action="store_true",
     )
     parser.add_argument("-no-run", dest="no_run", action="store_true")
+    parser.add_argument("-no-train", dest="no_train", action="store_true")
     parser.add_argument("-bounds-no-check", dest="bounds_no_check", action="store_true")
     parser.add_argument("-step-increment", dest="step_inc", default="1")
     parser.add_argument("-step-start", dest="step_start", default="")

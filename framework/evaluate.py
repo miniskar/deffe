@@ -122,6 +122,8 @@ class DeffeEvaluate:
             return
         if not os.path.exists(preload_file):
             preload_file = os.path.join(self.framework.config_dir, preload_file)
+        if not os.path.exists(preload_file):
+            return
         pd_data = pd.read_csv(
             preload_file, dtype="str", delimiter=r"\s*,\s*", engine="python"
         )

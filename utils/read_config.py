@@ -86,19 +86,19 @@ class DeffeConfigModel:
         self.data = data
         self.ml_model_script = "keras_cnn.py"
         if data != None and "ml_model_script" in data:
-            self.ml_model_script = data["ml_model_script"]
+            self.ml_model_script = os.path.expandvars(data["ml_model_script"])
         self.output_log = "ml_model.log"
         if data != None and "output_log" in data:
-            self.output_log = data["output_log"]
+            self.output_log = os.path.expandvars(data["output_log"])
         self.pyscript = "ml_model.py"
         if data != None and "pyscript" in data:
-            self.pyscript = data["pyscript"]
+            self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
         if data != None and "arguments" in data:
-            self.arguments = data["arguments"]
+            self.arguments = os.path.expandvars(data["arguments"])
         self.ml_arguments = ""
         if data != None and "ml_arguments" in data:
-            self.ml_arguments = data["ml_arguments"]
+            self.ml_arguments = os.path.expandvars(data["ml_arguments"])
 
 
 class DeffeConfigSingleExploration:
@@ -109,21 +109,21 @@ class DeffeConfigSingleExploration:
         if data == None:
             self.groups.append("all")
         if data != None and "pre_evaluated_data" in data:
-            self.pre_evaluated_data = data["pre_evaluated_data"]
+            self.pre_evaluated_data = os.path.expandvars(data["pre_evaluated_data"])
         if data != None and "groups" in data:
             self.groups = re.split("\s*,\s*", data["groups"])
         self.exploration_table = "deffe_exploration.csv"
         if data != None and "exploration_table" in data:
-            self.exploration_table = data["exploration_table"]
+            self.exploration_table = os.path.expandvars(data["exploration_table"])
         self.evaluation_table = "deffe_evaluation.csv"
         if data != None and "evaluation_table" in data:
-            self.evaluation_table = data["evaluation_table"]
+            self.evaluation_table = os.path.expandvars(data["evaluation_table"])
         self.ml_predict_table = "deffe_prediction.csv"
         if data != None and "ml_predict_table" in data:
-            self.ml_predict_table = data["ml_predict_table"]
+            self.ml_predict_table = os.path.expandvars(data["ml_predict_table"])
         self.evaluation_predict_table = "deffe_eval_predict.csv"
         if data != None and "evaluation_predict_table" in data:
-            self.evaluation_predict_table = data["evaluation_predict_table"]
+            self.evaluation_predict_table = os.path.expandvars(data["evaluation_predict_table"])
 
 
 class DeffeConfigExploration:
@@ -131,13 +131,13 @@ class DeffeConfigExploration:
         self.data = data
         self.pyscript = "exploration.py"
         if data != None and "pyscript" in data:
-            self.pyscript = data["pyscript"]
+            self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
         if data != None and "arguments" in data:
-            self.arguments = data["arguments"]
+            self.arguments = os.path.expandvars(data["arguments"])
         self.output_log = "exploration.log"
         if data != None and "output_log" in data:
-            self.output_log = data["output_log"]
+            self.output_log = os.path.expandvars(data["output_log"])
         self.exploration_list = []
         if data != None and "explore" in data:
             self.exploration_list = [
@@ -153,13 +153,13 @@ class DeffeConfigSampling:
         self.data = data
         self.output_log = "sampling.log"
         if data != None and "output_log" in data:
-            self.output_log = data["output_log"]
+            self.output_log = os.path.expandvars(data["output_log"])
         self.pyscript = "random_sampling.py"
         if data != None and "pyscript" in data:
-            self.pyscript = data["pyscript"]
+            self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
         if data != None and "arguments" in data:
-            self.arguments = data["arguments"]
+            self.arguments = os.path.expandvars(data["arguments"])
 
 
 class DeffeConfigEvaluate:
@@ -167,16 +167,16 @@ class DeffeConfigEvaluate:
         self.data = data
         self.pyscript = "evaluate.py"
         if data != None and "pyscript" in data:
-            self.pyscript = data["pyscript"]
+            self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
         if data != None and "arguments" in data:
-            self.arguments = data["arguments"]
+            self.arguments = os.path.expandvars(data["arguments"])
         self.batch_size = "20"
         if data != None and "batch_size" in data:
             self.batch_size = data["batch_size"]
         self.output_log = "evaluate.log"
         if data != None and "output_log" in data:
-            self.output_log = data["output_log"]
+            self.output_log = os.path.expandvars(data["output_log"])
         self.slurm = False
         if data != None and "slurm" in data and data["slurm"].lower() == "true":
             self.slurm = True
@@ -185,7 +185,7 @@ class DeffeConfigEvaluate:
             self.batch = int(data["batch"])
         self.sample_evaluate_script = "evaluate.sh"
         if data != None and "sample_evaluate_script" in data:
-            self.sample_evaluate_script = data["sample_evaluate_script"]
+            self.sample_evaluate_script = os.path.expandvars(data["sample_evaluate_script"])
 
 
 class DeffeConfigExtract:
@@ -193,25 +193,25 @@ class DeffeConfigExtract:
         self.data = data
         self.pyscript = "extract.py"
         if data != None and "pyscript" in data:
-            self.pyscript = data["pyscript"]
+            self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
         if data != None and "arguments" in data:
-            self.arguments = data["arguments"]
+            self.arguments = os.path.expandvars(data["arguments"])
         self.batch_size = "20"
         if data != None and "batch_size" in data:
             self.batch_size = data["batch_size"]
         self.output_log = "extract.log"
         if data != None and "output_log" in data:
-            self.output_log = data["output_log"]
+            self.output_log = os.path.expandvars(data["output_log"])
         self.sample_extract_script = "extract.sh"
         if data != None and "sample_extract_script" in data:
-            self.sample_extract_script = data["sample_extract_script"]
+            self.sample_extract_script = os.path.expandvars(data["sample_extract_script"])
         self.slurm = False
         if data != None and "slurm" in data and data["slurm"].lower() == "true":
             self.slurm = True
         self.cost_output = "results.out"
         if data != None and "cost_output" in data:
-            self.cost_output = data["cost_output"]
+            self.cost_output = os.path.expandvars(data["cost_output"])
 
 
 class DeffeConfigFramework:
@@ -219,10 +219,10 @@ class DeffeConfigFramework:
         self.data = data
         self.output_log = "framework.log"
         if data != None and "output_log" in data:
-            self.output_log = data["output_log"]
+            self.output_log = os.path.expandvars(data["output_log"])
         self.run_directory = "run"
         if data != None and "run_directory" in data:
-            self.run_directory = data["run_directory"]
+            self.run_directory = os.path.expandvars(data["run_directory"])
 
 
 class DeffeConfigSlurm:
@@ -239,7 +239,7 @@ class DeffeConfigSlurm:
             self.constraint = data["constraint"]
         self.pyscript = "deffe_slurm.py"
         if data != None and "pyscript" in data:
-            self.pyscript = data["pyscript"]
+            self.pyscript = os.path.expandvars(data["pyscript"])
         self.user_script_configured = False
         if (
             data != None
@@ -270,7 +270,12 @@ class DeffeConfig:
 
     def GetPythonPaths(self):
         if self.data != None and "python_path" in self.data:
-            return self.data["python_path"]
+            py_list = self.data["python_path"]
+            if type(py_list) == list:
+                py_list = [os.path.expandvars(v) for v in py_list]
+            else:
+                py_list = os.path.expandvars(py_list)
+            return py_list
         return []
 
     def GetKnobs(self):
