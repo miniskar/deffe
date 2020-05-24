@@ -234,7 +234,7 @@ class DeffeConfigSlurm:
         self.cpus_per_task = "1"
         if data != None and "cpus_per_task" in data:
             self.cpus_per_task = str(data["cpus_per_task"])
-        self.constriant = "x86_64,centos"
+        self.constraint = "x86_64,centos"
         if data != None and "constraint" in data:
             self.constraint = data["constraint"]
         self.pyscript = "deffe_slurm.py"
@@ -248,19 +248,35 @@ class DeffeConfigSlurm:
         ):
             self.user_script_configured = True
 
-
 class DeffeConfig:
     def __init__(self, file_name=None):
         self.data = None
         self.json_file = file_name
         if file_name != None:
-            self.ReadFile(file_name)
+            self.data = self.ReadFile(file_name)
 
     def ReadFile(self, filename):
+        def Merge(dict1, dict2): 
+            res = {**dict1, **dict2} 
+            return res 
         self.file_name = filename
+        if not os.path.exists(filename):
+            print("[Error] Json file:{} not available!".format(filename))
+            return None
         with open(filename) as infile:
-            self.data = json.load(infile)
-            return self.data
+            data = json.load(infile)
+            if data != None and 'include' in data:
+                includes = data['include']
+                if type(includes) == list:
+                    for inc_file in includes:
+                        inc_data = self.ReadFile(inc_file)
+                        if inc_data != None:
+                            data = Merge(data, inc_data)
+                else:
+                    inc_data = self.ReadFile(includes)
+                    if inc_data != None:
+                        data = Merge(data, inc_data)
+            return data
         return None
 
     def WriteFile(self, filename, data):

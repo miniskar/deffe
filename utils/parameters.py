@@ -296,20 +296,30 @@ class Parameters:
         param_hash = {}
         index = 0
         for (param, param_values, pindex) in param_list:
-            param_key = "${" + param.name + "}"
+            param_key1 = "${" + param.name + "}"
+            param_key2 = "$" + param.name
             if index >= len(param_val):
                 pdb.set_trace()
                 None
-            param_hash[param_key] = param_val[index]
-            param_key = "${" + param.map + "}"
+            param_hash[param_key1] = param_val[index]
+            param_hash[param_key2] = param_val[index]
+            param_key1 = "${" + param.map + "}"
+            param_key2 = "$" + param.map
             if param.name != param.map:
-                if param_key in param_hash:
+                if param_key1 in param_hash:
                     print(
                         "[Error] Multiple map_name(s):"
                         + param.map
                         + " used in the evaluation"
                     )
-                param_hash[param_key] = param_val[index]
+                param_hash[param_key1] = param_val[index]
+                if param_key2 in param_hash:
+                    print(
+                        "[Error] Multiple map_name(s):"
+                        + param.map
+                        + " used in the evaluation"
+                    )
+                param_hash[param_key2] = param_val[index]
             index = index + 1
         param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
         param_pattern = re.compile("|".join(param_dict.keys()))
