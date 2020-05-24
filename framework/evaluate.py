@@ -118,6 +118,8 @@ class DeffeEvaluate:
             param_hash[param.name.lower()] = pdata
             param_hash[param.map.lower()] = pdata
         self.param_hash = param_hash
+        for (param, param_values, pindex) in self.param_list:
+            self.param_extract_indexes.append(pindex)
         if preload_file == None:
             return
         if not os.path.exists(preload_file):
@@ -187,8 +189,6 @@ class DeffeEvaluate:
                 unused_params_list.append(param.name)
                 self.unused_params_values.append(param_values[0])
         if count != len(self.np_param_hdrs):
-            for (param, param_values, pindex) in self.param_list:
-                self.param_extract_indexes.append(pindex)
             return
         self.rev_param_list = self.np_param_hdrs + unused_params_list
         self.param_extract_indexes = [index for index in range(len(self.np_param_hdrs))]
@@ -272,7 +272,7 @@ class DeffeEvaluate:
                 + os.getcwd()
                 + " ; "
             )
-        with open(os.path.join(run_dir, "evaluate.sh"), "w") as fh:
+        with open(os.path.join(run_dir, "_sample_evaluate.sh"), "w") as fh:
             fh.write(cmd)
             fh.close()
         self.counter = self.counter + 1
@@ -286,6 +286,14 @@ class DeffeEvaluate:
             out = ((run_dir, slurm_script_filename), slurm_script_cmd)
         return out
 
+    def GetParamValKey(self, param_val):
+        param_hash_key = tuple(param_val[self.param_extract_indexes].tolist())
+        return param_hash_key
+
+    def PushEvaluatedData(self, param_val, data):
+        param_hash_key = self.GetParamValKey(param_val)
+        self.param_data_hash[param_hash_key] = data
+
     # Run method will evaluate the set of parameters
     # ** If it is available in the pre-loaded data, it returns that value
     # ** Else, it evaluate in traditional way
@@ -293,11 +301,11 @@ class DeffeEvaluate:
         eval_output = []
         mt = MultiThreadBatchRun(self.batch_size, self.framework)
         for param_val in parameters:
-            param_hash_key = tuple(param_val[self.param_extract_indexes].tolist())
+            param_hash_key = self.GetParamValKey(param_val)
             if param_hash_key in self.param_data_hash:
                 eval_output.append(
                     (
-                        self.framework.predicted_flag,
+                        self.framework.pre_evaluated_flag,
                         self.param_data_hash[param_hash_key],
                     )
                 )

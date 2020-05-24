@@ -95,7 +95,7 @@ class DeffeMLModel:
             cost.append(
                 (self.framework.valid_flag, self.framework.predicted_flag, output)
             )
-        return all_output
+        return cost
 
     # Train the model
     def Train(self):

@@ -66,7 +66,7 @@ class DeffeExtract:
         )
         return cmd
 
-    def GetResult(self, flag, eval_output):
+    def GetResult(self, flag, param_val, eval_output):
         (run_dir, evaluate_script) = eval_output
         file_path = os.path.join(run_dir, self.config.cost_output)
         if os.path.exists(file_path):
@@ -74,9 +74,11 @@ class DeffeExtract:
                 lines = fh.readlines()
                 if len(lines) == 0:
                     return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
+                result = np.array([RemoveWhiteSpaces(lines[0]),]).astype("str")
+                self.framework.evaluate.PushEvaluatedData(param_val, result)
                 return (
                     self.framework.valid_flag, flag,
-                    np.array([RemoveWhiteSpaces(lines[0]),]).astype("str"),
+                    result,
                 )
         return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
 
@@ -86,10 +88,11 @@ class DeffeExtract:
         mt = MultiThreadBatchRun(self.batch_size, self.framework)
 
         for index, (flag, output) in enumerate(eval_output):
-            (param_pattern, param_hash, param_dict) = self.parameters.GetParamHash(
-                param_val[index], self.param_list
-            )
-            if flag == self.framework.predicted_flag:
+            (param_pattern, param_hash, param_dict) = \
+                    self.parameters.GetParamHash(
+                            param_val[index], self.param_list
+                    )
+            if flag == self.framework.pre_evaluated_flag:
                 batch_output.append((self.framework.valid_flag, flag, output))
             elif flag == self.framework.evaluate_flag:
                 cmd = self.GetExtractCommand(output, param_pattern, param_dict)
@@ -110,7 +113,7 @@ class DeffeExtract:
         mt.Close()
         for index, (flag, output) in enumerate(eval_output):
             if flag == self.framework.evaluate_flag:
-                batch_output[index] = self.GetResult(flag, output)
+                batch_output[index] = self.GetResult(flag, param_val[index], output)
         return batch_output
 
 

@@ -49,7 +49,8 @@ class DeffeFramework:
         self.init_n_val = 2 * self.init_n_train
         self.InitializePythonPaths()
         self.predicted_flag = 0
-        self.evaluate_flag = 1
+        self.pre_evaluated_flag = 1
+        self.evaluate_flag = 2
         self.valid_flag = 1
         self.not_valid_flag = 0
         self.fr_config = self.config.GetFramework()
@@ -91,7 +92,7 @@ class DeffeFramework:
             if eval_type == self.evaluate_flag:
                 self.evaluation_table.WriteDataInCSV(param_val + cost_metrics)
                 self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
-            if eval_type == self.predicted_flag:
+            elif eval_type == self.predicted_flag:
                 self.ml_predict_table.WriteDataInCSV(param_val + cost_metrics)
                 self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
 
@@ -228,8 +229,7 @@ class DeffeFramework:
                             + str(stats_data)
                         )
                     if self.args.inference_only:
-                        self.model.Inference(self.args.output)
-                        break
+                        batch_output = self.model.Inference(self.args.output)
                 self.WriteExplorationOutput(parameter_values, batch_output)
                 step = step + inc
             if evaluate_flag:
