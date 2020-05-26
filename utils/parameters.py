@@ -56,6 +56,7 @@ class Parameters:
         self.framework = framework
         self.min_list_params = {}
         self.max_list_params = {}
+        self.is_values_string = {}
 
     # Entry method to get all permutations
     def Initialize(self, explore_groups):
@@ -124,7 +125,15 @@ class Parameters:
                 maxp = np.max(np.array(param_values).astype("float"))
                 # print("1MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
                 self.UpdateMinMaxRange(param, minp, maxp)
+                self.is_values_string[param.map] = False
+            else:
+                minp = 0
+                maxp = len(param_values)
+                self.UpdateMinMaxRange(param, minp, maxp)
+                self.is_values_string[param.map] = True
         # print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
+        print(self.selected_pruned_params)
+        print("Total permutations:"+str(total_permutations))
         return (self.selected_params, self.selected_pruned_params, total_permutations)
 
     def IsParameterNumber(self, param_values):
@@ -201,12 +210,22 @@ class Parameters:
             selected_params = self.selected_params
         min_list = []
         max_list = []
-        for (param, param_values, pindex) in selected_params:
+        nparams_t = nparams.transpose()
+        for index, (param, param_values, pindex) in enumerate(selected_params):
+            if param.map not in self.min_list_params:
+                print("[Error] key:{} not found in min_list_params".format(param.map))
+                pdb.set_trace()
+                None
             min_list.append(self.min_list_params[param.map])
             max_list.append(self.max_list_params[param.map])
+            if self.is_values_string[param.map]:
+                val_hash = { k:cindex for cindex, k in enumerate(param_values) }
+                for cindex in range(len(nparams_t[index])):
+                    nparams_t[index][cindex] = val_hash[nparams_t[index][cindex]]
         min_list = np.array(min_list).astype("float")
         max_list = np.array(max_list).astype("float")
-        nparams_out = nparams.astype("float")
+        nparams_t = nparams_t.transpose()
+        nparams_out = nparams_t.astype("float")
         nparams_out = (nparams_out - min_list) / (max_list - min_list)
         if self.framework != None and \
             not self.framework.args.bounds_no_check:
