@@ -278,7 +278,7 @@ class DeffeEvaluate:
         self.counter = self.counter + 1
         out = ((run_dir, self.config.sample_evaluate_script), cmd)
         if self.slurm_flag:
-            slurm_script_filename = os.path.join(run_dir, "slurm_evaluate.sh")
+            slurm_script_filename = os.path.join(run_dir, "_slurm_evaluate.sh")
             self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
             slurm_script_cmd = self.framework.slurm.GetSlurmJobCommand(
                 slurm_script_filename

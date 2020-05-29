@@ -303,7 +303,7 @@ class Parameters:
             lines = rfh.readlines()
             for line in lines:
                 wline = param_pattern.sub(
-                    lambda m: param_dict[re.escape(m.group(0))], line
+                    lambda m: param_dict.get(re.escape(m.group(0)), m.group(0)), line
                 )
                 wfh.write(wline)
             rfh.close()
@@ -316,14 +316,14 @@ class Parameters:
         index = 0
         for (param, param_values, pindex) in param_list:
             param_key1 = "${" + param.name + "}"
-            param_key2 = "$" + param.name
+            param_key2 = "$" + param.name+""
             if index >= len(param_val):
                 pdb.set_trace()
                 None
             param_hash[param_key1] = param_val[index]
             param_hash[param_key2] = param_val[index]
             param_key1 = "${" + param.map + "}"
-            param_key2 = "$" + param.map
+            param_key2 = "$" + param.map+""
             if param.name != param.map:
                 if param_key1 in param_hash:
                     print(
@@ -341,7 +341,7 @@ class Parameters:
                 param_hash[param_key2] = param_val[index]
             index = index + 1
         param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
-        param_pattern = re.compile("|".join(param_dict.keys()))
+        param_pattern = re.compile(r'\$[{]?\b[a-zA-Z0-9_]+\b[}]?')
         return (param_pattern, param_hash, param_dict)
 
 
