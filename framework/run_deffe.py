@@ -8,7 +8,7 @@
 # Date:        Apr, 2020
 # **************************************************************************
 ###
-import glob, importlib, os, pathlib, sys
+import glob, os, sys
 import socket
 import pdb
 import signal
@@ -26,6 +26,7 @@ from read_config import *
 from parameters import *
 import numpy as np
 from workload_excel import *
+from deffe_utils import *
 
 # Requirements
 # * Scenario based evaluation and ml model creation
@@ -59,12 +60,12 @@ class DeffeFramework:
         self.ml_predict_table = Workload()
         self.evaluation_predict_table = Workload()
         self.parameters = Parameters(self.config, self)
-        self.model = self.LoadModule(self.config.GetModel().pyscript)
-        self.sampling = self.LoadModule(self.config.GetSampling().pyscript)
-        self.exploration = self.LoadModule(self.config.GetExploration().pyscript)
-        self.evaluate = self.LoadModule(self.config.GetEvaluate().pyscript)
-        self.extract = self.LoadModule(self.config.GetExtract().pyscript)
-        self.slurm = self.LoadModule(self.config.GetSlurm().pyscript)
+        self.model = LoadModule(self, self.config.GetModel().pyscript)
+        self.sampling = LoadModule(self, self.config.GetSampling().pyscript)
+        self.exploration = LoadModule(self, self.config.GetExploration().pyscript)
+        self.evaluate = LoadModule(self, self.config.GetEvaluate().pyscript)
+        self.extract = LoadModule(self, self.config.GetExtract().pyscript)
+        self.slurm = LoadModule(self, self.config.GetSlurm().pyscript)
         self.exploration.Initialize()
         self.model.Initialize()
 
@@ -77,12 +78,6 @@ class DeffeFramework:
             else:
                 sys.path.insert(0, path)
         # print(sys.path)
-
-    # Generic loading of python module
-    def LoadModule(self, py_file):
-        py_mod_name = pathlib.Path(py_file).stem
-        py_mod = importlib.import_module(py_mod_name)
-        return py_mod.GetObject(self)
 
     # Log exploration output into file
     def WriteExplorationOutput(self, parameter_values, batch_output):

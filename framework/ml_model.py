@@ -13,13 +13,14 @@ import numpy as np
 import pdb
 import argparse
 import shlex
+from deffe_utils import *
 
 
 class DeffeMLModel:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetModel()
-        self.ml_model_script = framework.LoadModule(self.config.ml_model_script)
+        self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
         self.accuracy = (0.0, 0.0)
         parameters = np.array([])
         cost_output = np.array([])
