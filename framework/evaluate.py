@@ -214,7 +214,7 @@ class DeffeEvaluate:
 
     # Get pre-evaluated parameters
     def GetPreEvaluatedParameters(self, samples, param_list):
-        indexes = samples[0].tolist() + samples[1].tolist()
+        indexes = samples
         out_params = []
         for nd_index in indexes:
             params = self.GetParamsFullList(self.param_data[nd_index])

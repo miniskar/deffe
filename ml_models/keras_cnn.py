@@ -21,7 +21,6 @@ import matplotlib.colors as mcolors
 import glob
 import os
 import tensorflow as tf
-from keras.utils import plot_model
 from keras.callbacks.callbacks import Callback
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
@@ -118,6 +117,7 @@ class KerasCNN(BaseMLModel):
         parser.add_argument("-batch-size", dest="batch_size", default="256")
         parser.add_argument("-freeze-layers", dest="tl_freeze_layers", default="-1")
         parser.add_argument("-convs", dest="convs", default="2")
+        parser.add_argument("-plot-model", dest="plot_model", action="store_true")
         parser.add_argument("-tl-samples", dest="tl_samples", action="store_true")
         parser.add_argument("-no-run", dest="no_run", action="store_true")
         parser.add_argument("-evaluate-only", dest="evaluate", action="store_true")
@@ -136,12 +136,11 @@ class KerasCNN(BaseMLModel):
         headers,
         parameters_data,
         cost_data,
-        train_indexes,
-        val_indexes,
+        samples,
         name="network",
     ):
         BaseMLModel.Initialize(
-            self, headers, parameters_data, cost_data, train_indexes, val_indexes
+            self, headers, parameters_data, cost_data, samples
         )
         args = self.args
         self.prev_step = self.step
@@ -188,10 +187,12 @@ class KerasCNN(BaseMLModel):
             x = layers.Dense(last_layer_nodes, activation="relu", name="dense1")(x)
             x = layers.Dense(1, activation="relu", name="dense2")(x)
             self.model = keras.Model(inputs=inputs, outputs=x)
-        self.model_name = "model.png"
-        if name != "":
-            self.model_name = name + "_model.png"
-        tf.keras.utils.plot_model(self.model, to_file=self.model_name)
+        if self.args.plot_model:
+            model_name = "model.png"
+            if name != "":
+                model_name = name + "_model.png"
+            from keras.utils import plot_model
+            tf.keras.utils.plot_model(self.model, to_file=model_name)
         self.model.summary()
         self.loss_fn = args.loss
         if self.framework.args.loss != "":
@@ -395,6 +396,8 @@ class KerasCNN(BaseMLModel):
                 for layer in self.model.layers[: self.tl_freeze_layers]:
                     print("Frozen Layer: " + layer.name)
                     layer.trainable = False
+            if len(x_train) < 2:
+                return (self.step, 0, 0.0, 0.0, len(x_train), 0)
             history = self.model.fit(
                 x_train,
                 y_train,

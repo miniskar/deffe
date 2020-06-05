@@ -22,13 +22,14 @@ class DeffeMLModel:
         self.config = framework.config.GetModel()
         self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
         self.accuracy = (0.0, 0.0)
-        parameters = np.array([])
-        cost_output = np.array([])
 
     # Initialize the members
     def Initialize(self):
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
+        self.parameters = np.array([])
+        self.cost_output = np.array([])
+        self.samples = np.array([])
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):
@@ -58,33 +59,36 @@ class DeffeMLModel:
     def InitializeModel(self, samples, headers, params, cost=None, step=0):
         params_valid_indexes = []
         cost_metrics = []
-        indexes = samples[0].tolist() + samples[1].tolist()
-        valid_train_indexes = []
-        valid_val_indexes = []
+        indexes = samples
         if cost != None:
             cost_metrics = []
             for index, (flag, eval_type, actual_cost) in enumerate(cost):
                 if flag == self.framework.valid_flag:
                     params_valid_indexes.append(index)
                     cost_metrics.append(actual_cost)
-                    if index < len(samples[0]):
-                        valid_train_indexes.append(indexes[index])
-                    else:
-                        valid_val_indexes.append(indexes[index])
             if len(params_valid_indexes) == 0:
                 print("[Warning] no samples to train in this step !")
         else:
             params_valid_indexes = range(len(indexes))
-            valid_train_indexes = samples[0].tolist()
-            valid_val_indexes = samples[1].tolist()
         cost_metrics = np.array(cost_metrics)
+        valid_indexes = np.array(samples)[params_valid_indexes,]
+        if len(self.parameters) == 0:
+            self.parameters = params[params_valid_indexes,]
+            self.cost_output = cost_metrics
+            self.samples = valid_indexes
+        else:
+            self.parameters = np.append(self.parameters, 
+                    params[params_valid_indexes,], axis=0)
+            self.cost_output = np.append(self.cost_output, 
+                    cost_metrics, axis=0)
+            self.samples = np.append(self.samples, 
+                    valid_indexes, axis=0)
         self.ml_model_script.Initialize(
             step,
             headers,
-            params[params_valid_indexes,],
-            cost_metrics,
-            np.array(valid_train_indexes),
-            np.array(valid_val_indexes),
+            self.parameters,
+            self.cost_output,
+            self.samples
         )
         self.ml_model_script.PreLoadData()
 

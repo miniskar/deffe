@@ -145,12 +145,11 @@ class TorchCNN(BaseMLModel):
         headers,
         parameters_data,
         cost_data,
-        train_indexes,
-        val_indexes,
+        samples,
         name="network",
     ):
         BaseMLModel.Initialize(
-            self, headers, parameters_data, cost_data, train_indexes, val_indexes
+            self, headers, parameters_data, cost_data, samples
         )
         args = self.args
         self.prev_step = self.step
@@ -315,6 +314,8 @@ class TorchCNN(BaseMLModel):
         print("Val count:" + str(n_val))
         print("Test count:" + str(x_test.shape[0]))
         if len(x_train) == 0:
+            return
+        if n_train <= 1 or n_val <= 1:
             return
         if self.no_run:
             return

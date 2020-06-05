@@ -261,7 +261,7 @@ class Parameters:
         if selected_params == None:
             selected_params = self.selected_params
         nparams = np.empty(shape=[0, len(selected_params)])
-        indexes = samples[0].tolist() + samples[1].tolist()
+        indexes = samples
         for nd_index in indexes:
             out_dim_list = self.GetPermutationSelection(nd_index)
             param_sel_list = []

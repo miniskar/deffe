@@ -65,12 +65,11 @@ class SKlearnRF(BaseMLModel):
         headers,
         parameters_data,
         cost_data,
-        train_indexes,
-        val_indexes,
+        samples,
         name="network",
     ):
         BaseMLModel.Initialize(
-            self, headers, parameters_data, cost_data, train_indexes, val_indexes
+            self, headers, parameters_data, cost_data, samples
         )
         args = self.args
         self.step = step

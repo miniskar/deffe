@@ -67,7 +67,6 @@ class DeffeFramework:
         self.extract = LoadModule(self, self.config.GetExtract().pyscript)
         self.slurm = LoadModule(self, self.config.GetSlurm().pyscript)
         self.exploration.Initialize()
-        self.model.Initialize()
 
     # Initialize the python paths
     def InitializePythonPaths(self):
@@ -125,6 +124,7 @@ class DeffeFramework:
                 param_list, pruned_param_list, self.config.GetCosts(), load_data_file
             )
             self.extract.Initialize(param_list, self.config.GetCosts())
+            self.model.Initialize()
             # Initialize the random sampling
             init_n_train = self.init_n_train
             init_n_val = self.init_n_val
@@ -175,7 +175,7 @@ class DeffeFramework:
                 if self.args.step_end != "" and step >= int(self.args.step_end):
                     break
                 print("***** Step {} *****".format(step))
-                samples = self.sampling.GetBatch()
+                samples = self.sampling.GetNewBatch()
                 parameter_values = None
                 parameters_normalize = None
                 # Check if the data point already exist in pre-computed data
@@ -264,6 +264,7 @@ def InitParser(parser):
     parser.add_argument("-validation-split", dest="validation_split", default="")
     parser.add_argument("-init-batch-samples", dest="init_batch_samples", default="100")
     parser.add_argument("-load-train-test", dest="load_train_test", action="store_true")
+    parser.add_argument("-hold-evaluated-data", dest="hold_evaluated_data", action="store_true")
     parser.add_argument("-no-slurm", dest="no_slurm", action="store_true")
     parser.add_argument("-icp", dest="icp", default="")
     parser.add_argument("-loss", dest="loss", default="")

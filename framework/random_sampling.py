@@ -207,6 +207,7 @@ class DeffeRandomSampling:
             return True
         if self._pos >= self._len:
             self._exhausted = True
+            self._previous_pos = self._pos
             return False
         new_pos = self._pos
         for i in range(inc):
@@ -258,8 +259,12 @@ class DeffeRandomSampling:
         )
 
     def GetBatch(self):
-        return (self.training_seq, self.val_seq)
+        samples = self.training_seq.tolist()+self.val_seq.tolist()
+        return samples
 
+    def GetNewBatch(self):
+        samples = self.training_seq.tolist()+self.val_seq.tolist()
+        return samples[self._previous_pos:]
 
 def run_test1():
     print("Test 1, n_train=2, n_val=4")
