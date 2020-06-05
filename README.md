@@ -73,6 +73,13 @@ $ cd example ;
 $ python3 ../framework/run_deffe.py -config config_small.json
 $ cd .. ;
 ```
+A bare minimal simple two parameters and one application test case is available in test directory. 
+```bash
+$ source setup.source
+$ cd test; 
+$ sh run_deffe.sh
+$ cd .. ;
+```
 
 An example Deffe configuration for RISCV design space exploration (without slurm) along with their associated files are placed in <b>example</b> directory. 
 ```bash
