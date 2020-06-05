@@ -134,7 +134,7 @@
     "evaluate" : {
         "pyscript"    : "evaluate.py",
         "arguments" : "",
-        "sample_evaluate_script" : "run_gem5_template.sh",
+        "sample_evaluate_script" : "evaluate_gem5.sh",
         "slurm"     : "True",
         "batch_size"     : "400",
         "output_log"    : "evaluate.log"

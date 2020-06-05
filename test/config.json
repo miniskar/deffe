@@ -1,0 +1,88 @@
+{
+    "python_path" : ["."],
+    "knobs" : 
+        [
+        { 
+            "name" : "param1",
+            "groups" : "set1",
+            "values" : "1-8"
+        },
+        { 
+            "name" : "param2",
+            "groups" : "set1",
+            "values" : [1,2,4] 
+        }
+    ],
+    "scenarios" : 
+        [
+        {
+            "name" : "size",
+            "map" : "options",
+            "groups" : "application1",
+            "values" : [16, 32, 64, 128, 256]
+        },
+        {
+            "name" : "size",
+            "map" : "options",
+            "groups" : "application2",
+            "values" : "100-100100-10000"
+        }
+        ],
+    "costs" : [ "exec_time" ],
+    "model" : {
+        "pyscript" : "ml_model.py",
+        "ml_model_script" : "keras_cnn.py",
+        "output_log" : "network.log",
+        "arguments" : "",
+        "ml_arguments" : "-convs 2 -loss custom_mean_abs_log_loss -tl-samples -epochs 2000 -train-test-split 1.0 -validation-split 0.4"
+    },
+    "exploration" : {
+        "pyscript" : "exploration.py",
+        "arguments" : "",
+        "output_log" : "exploration.log",
+        "explore" : 
+            [
+            {
+                "name" : "application1_explore",
+                "groups" : "set1, application1",
+                "pre_evaluated_data" : "output_application1_deffe.csv",
+                "exploration_table" : "deffe_exploration.csv",
+                "evaluation_table" : "deffe_evaluation.csv",
+                "ml_predict_table" : "deffe_prediction.csv",
+                "evaluation_predict_table" : "deffe_eval_predict.csv"
+            }
+            ]
+    },
+    "sampling" : {
+        "pyscript" : "random_sampling.py",
+        "arguments" : "",
+        "output_log" : "sampling.log"
+    },
+    "evaluate" : {
+        "pyscript"    : "evaluate.py",
+        "arguments" : "",
+        "sample_evaluate_script" : "evaluate.sh",
+        "slurm"     : "True",
+        "batch_size"     : "400",
+        "output_log"    : "evaluate.log"
+    },
+    "extract" : {
+        "pyscript" : "extract.py",
+        "arguments" : "",
+        "sample_extract_script" : "extract.sh",
+        "slurm"     : "True",
+        "batch_size"     : "400",
+        "cost_output" : "results.out",
+        "output_log" : "extract.log"
+    },
+    "framework" : {
+        "output_log" : "framework_output.log",
+        "run_directory" : "rundir"
+    },
+    "slurm" : {
+        "nodes" : 1,
+        "cpus_per_task" : 1,
+        "constraint" : "x86_64,centos",
+        "user_script_configured" : "False"
+    }
+}
