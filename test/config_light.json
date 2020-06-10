@@ -1,0 +1,47 @@
+{
+    "python_path" : ["."],
+    "include" : ["$DEFFE_DIR/templates/deffe_framework.json"],
+    "knobs" : 
+        [
+        { 
+            "name" : "param1",
+            "groups" : "set1",
+            "values" : "1-8"
+        },
+        { 
+            "name" : "param2",
+            "groups" : "set1",
+            "values" : [1,2,4] 
+        }
+    ],
+    "scenarios" : 
+        [
+        {
+            "name" : "size",
+            "map" : "options",
+            "groups" : "application1",
+            "values" : [16, 32, 64, 128, 256]
+        },
+        {
+            "name" : "size",
+            "map" : "options",
+            "groups" : "application2",
+            "values" : "100-100100-10000"
+        }
+    ],
+    "costs" : [ "exec_time" ],
+    "exploration" : {
+        "explore" : 
+            [
+            {
+                "name" : "application1_explore",
+                "groups" : "set1, application1",
+                "pre_evaluated_data" : "output_application1_deffe.csv",
+                "exploration_table" : "deffe_exploration.csv",
+                "evaluation_table" : "deffe_evaluation.csv",
+                "ml_predict_table" : "deffe_prediction.csv",
+                "evaluation_predict_table" : "deffe_eval_predict.csv"
+            }
+            ]
+    }
+}

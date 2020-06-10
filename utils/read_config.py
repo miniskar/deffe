@@ -272,11 +272,11 @@ class DeffeConfig:
                     yield (k, dict1[k])
                 else:
                     yield (k, dict2[k])
-        self.file_name = filename
-        if not os.path.exists(filename):
+        self.file_name = os.path.expandvars(filename)
+        if not os.path.exists(self.file_name):
             print("[Error] Json file:{} not available!".format(filename))
             return None
-        with open(filename) as infile:
+        with open(self.file_name) as infile:
             data = json.load(infile)
             if data != None and 'include' in data:
                 includes = data['include']
@@ -293,7 +293,7 @@ class DeffeConfig:
         return None
 
     def WriteFile(self, filename, data):
-        self.file_name = filename
+        filename = os.path.expandvars(filename)
         with open(filename, "w") as outfile:
             json.dump(data, outfile, indent=2)
 
