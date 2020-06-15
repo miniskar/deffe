@@ -74,7 +74,10 @@ class DeffeExtract:
                 lines = fh.readlines()
                 if len(lines) == 0:
                     return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
-                result = np.array([RemoveWhiteSpaces(lines[0]),]).astype("str")
+                flines = [RemoveWhiteSpaces(lines[index]) 
+                            if index < len(lines) else 0 
+                            for index in range(len(self.cost_list)) ]
+                result = np.array(flines).astype("str")
                 if self.framework.args.hold_evaluated_data:
                     self.framework.evaluate.PushEvaluatedData(param_val, result)
                 return (

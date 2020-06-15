@@ -174,8 +174,12 @@ class DeffeFramework:
                         break
                 if self.args.step_end != "" and step >= int(self.args.step_end):
                     break
-                print("***** Step {} *****".format(step))
                 samples = self.sampling.GetNewBatch()
+                print("***** Step {} Current Samples:{} Total Samples:{} "
+                        "Permutations:{} *****".format(step,
+                            len(samples),
+                            len(self.sampling.GetBatch()), 
+                            self.parameters.total_permutations))
                 parameter_values = None
                 parameters_normalize = None
                 # Check if the data point already exist in pre-computed data

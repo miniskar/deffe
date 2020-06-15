@@ -60,13 +60,25 @@ class Parameters:
 
     # Entry method to get all permutations
     def Initialize(self, explore_groups):
+        def get_explore_groups_hash():
+            exp_hash = {}
+            for grp in explore_groups:
+                grp_fields = re.split(r'\s*::\s*', grp)
+                grp_key = grp_fields[0]
+                if grp_key not in exp_hash:
+                    exp_hash[grp_key] = []
+                if len(grp_fields) > 1:
+                    values = re.split(r'\s*;\s*', grp_fields[1])
+                    exp_hash[grp_key].extend(values)
+            return exp_hash
+        exp_grp_hash = get_explore_groups_hash()
         knobs = self.config.GetKnobs()
         scenarios = self.config.GetScenarios()
         param_groups = {}
         for knob in knobs:
             groups = knob.groups
             for grp in groups:
-                if grp not in explore_groups:
+                if grp not in exp_grp_hash:
                     continue
                 if grp not in param_groups:
                     param_groups[grp] = {}
@@ -77,14 +89,17 @@ class Parameters:
                     knob_name_values[map_name] = ([], [])
                 knob_name_values[map_name][0].append((knob, self.type_knob))
                 common_data = []
-                common_data.extend(knob.values.values)
-                common_data.extend(knob_name_values[map_name][1])
-                del knob_name_values[map_name][1][:]
+                if len(exp_grp_hash[grp]) > 0:
+                    common_data.extend(exp_grp_hash[grp])
+                else:
+                    common_data.extend(knob.values.values)
+                    common_data.extend(knob_name_values[map_name][1])
+                    del knob_name_values[map_name][1][:]
                 knob_name_values[map_name][1].extend(common_data)
         for scn in scenarios:
             groups = scn.groups
             for grp in groups:
-                if grp not in explore_groups:
+                if grp not in exp_grp_hash:
                     continue
                 if grp not in param_groups:
                     param_groups[grp] = {}
@@ -95,9 +110,12 @@ class Parameters:
                     scn_name_values[map_name] = ([], [])
                 scn_name_values[map_name][0].append((scn, self.type_scenario))
                 common_data = []
-                common_data.extend(scn.values.values)
-                common_data.extend(scn_name_values[map_name][1])
-                del scn_name_values[map_name][1][:]
+                if len(exp_grp_hash[grp]) > 0:
+                    common_data.extend(exp_grp_hash[grp])
+                else:
+                    common_data.extend(scn.values.values)
+                    common_data.extend(scn_name_values[map_name][1])
+                    del scn_name_values[map_name][1][:]
                 scn_name_values[map_name][1].extend(common_data)
         output_params = []
         total_permutations = 1

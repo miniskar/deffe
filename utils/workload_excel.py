@@ -760,6 +760,10 @@ def GroupDataPlot(args, workload):
     elif args.group_plot != "":
         groups_axis.append(args.group_plot)
     y_axis_index = workload.GetHdrIndex(args.ycol[0])
+    min_max_std_indexes = []
+    if len(args.ycol)>1:
+        min_max_std_indexes = [workload.GetHdrIndex(y) 
+                                         for y in args.ycol[1:]]
     x_axis_index = workload.GetHdrIndex(args.xcol)
     data_lines = workload.data_lines
     if args.xsort:
@@ -767,7 +771,8 @@ def GroupDataPlot(args, workload):
     if args.ysort:
         data_lines = workload.SortData(data_lines, float, y_axis_index)
     group_data = workload.GroupsData(groups_axis, data_lines)
-    PlotGraph(args, group_data, x_axis_index, y_axis_index)
+    PlotGraph(args, group_data, 
+            x_axis_index, y_axis_index, min_max_std_indexes)
 
 
 def MultiDataPlot(args, workload):
@@ -787,10 +792,11 @@ def MultiDataPlot(args, workload):
         y_axis_index = workload.GetHdrIndex(ycol)
         data = workload.Get2DData([x_axis_index, y_axis_index], data_lines)
         group_data[ycol] = data
-    PlotGraph(args, group_data, 0, 1)
+    PlotGraph(args, group_data, 0, 1, [])
 
 
-def PlotGraph(args, group_data, x_axis_index, y_axis_index):
+def PlotGraph(args, group_data, x_axis_index, 
+        y_axis_index, min_max_std_indexes):
     l_xmin = ""
     l_ymin = ""
     l_xmax = ""
@@ -812,7 +818,7 @@ def PlotGraph(args, group_data, x_axis_index, y_axis_index):
     if args.plot_font_size != "":
         plt.rcParams.update({"font.size": int(args.plot_font_size)})
 
-    def GetColumn(data, cols):
+    def GetColumn(data, cols, min_max_std_indexes):
         def GetDataAtIndexes(data, indexes):
             return [data[i] for i in indexes]
 
@@ -838,6 +844,8 @@ def PlotGraph(args, group_data, x_axis_index, y_axis_index):
         d = zip(*pruned_data)
         d2 = list(d)
         xydata = [list(d2[col]) for col in cols]
+        min_max_std_data = [list(d2[col]) for col in min_max_std_indexes]
+        min_max_std_data = np.array(min_max_std_data).astype("float")
         if args.xdatatype == "" and IsFloat(xydata[0][0]):
             xydata0_np = np.array(xydata[0]).astype("float")
             xydata = [xydata0_np.tolist(), xydata[1]]
@@ -850,13 +858,12 @@ def PlotGraph(args, group_data, x_axis_index, y_axis_index):
         if args.ydatatype != "":
             xydata1_np = np.array(xydata[1]).astype(args.ydatatype)
             xydata = [xydata[0], xydata1_np.tolist()]
-        return xydata
+        return xydata, min_max_std_data
 
     def NormalizeData(x, xmin, xnorm):
         return (x - xmin) / xnorm
 
     markers = ["o", "x", "+", "v", "^", "<", ">", "s", "d", ".", "1", "2"]
-    index = 0
     title = args.title
     xtitle = args.xtitle
     ytitle = args.ytitle
@@ -886,7 +893,7 @@ def PlotGraph(args, group_data, x_axis_index, y_axis_index):
             key_tuple = float(key)
         group_key_hash[key_tuple] = 1
     for key, ldata in group_data.items():
-        xydata = GetColumn(ldata, [x_axis_index, y_axis_index])
+        xydata, min_max_std_data = GetColumn(ldata, [x_axis_index, y_axis_index], min_max_std_indexes)
         if len(xydata[0]) == 0:
             continue
         if args.pareto:
@@ -896,7 +903,7 @@ def PlotGraph(args, group_data, x_axis_index, y_axis_index):
                 key = int(key)
             elif float_re.search(key):
                 key = float(key)
-        graph_data[key] = xydata
+        graph_data[key] = (xydata, min_max_std_data)
         if args.plot_normalize:
             xmax = max(xmax, max(xydata[0]))
             xmin = min(xmin, min(xydata[0]))
@@ -908,13 +915,15 @@ def PlotGraph(args, group_data, x_axis_index, y_axis_index):
         ax = fig.add_subplot(111, projection="3d")
     colors = ["b", "g", "r", "c", "m", "y", "k"]
     color_index = 0
+    index = 0
     plt.subplots_adjust(left=0.2)
     plt.subplots_adjust(bottom=0.2)
     xtick_labels = {}
+    total_keys = len(graph_data.keys())
     for key in sorted(graph_data.keys()):
         if len(group_key_hash) > 0 and key not in group_key_hash:
             continue
-        xydata = graph_data[key]
+        (xydata, min_max_std_data) = graph_data[key]
         print("Identified group key:" + str(key) + " count:" + str(len(xydata[0])))
         for data in xydata[0]:
             xtick_labels[data] = 1
@@ -940,6 +949,18 @@ def PlotGraph(args, group_data, x_axis_index, y_axis_index):
                 color=colors[color_index % len(colors)],
                 alpha=0.8,
             )
+            color_index = color_index + 1
+        elif args.min_max_std_plot:
+            plt_color = colors[color_index%len(colors)]
+            if total_keys != 1:
+                tick_range = 0.25
+                x = x - tick_range + (2*tick_range*index/(total_keys-1))
+            if len(min_max_std_indexes) > 2:
+                plt.errorbar(x, y, min_max_std_data[2], fmt=plt_color+marker, ecolor=plt_color, lw=3)
+            mins = min_max_std_data[0]
+            maxes = min_max_std_data[1]
+            plt.errorbar(x, y, [y-mins, maxes-y], fmt=plt_color+marker, ecolor=plt_color, lw=1)
+            plt.plot(x, y, marker, color=plt_color, linewidth="1", linestyle="-", label=str(key))
             color_index = color_index + 1
         else:
             plt.plot(x, y, marker, linewidth="1", linestyle="-", label=str(key))
@@ -1239,6 +1260,7 @@ def ProcessData(args):
 def InitializeWorkloadArgParse(parser):
     parser.add_argument("-map", nargs="*", action="store", dest="map_hdrs", default="")
     parser.add_argument("-input", nargs="*", action="store", dest="inputs", default="")
+    parser.add_argument("-min-max-std-plot", dest="min_max_std_plot", action="store_true")
     parser.add_argument("-combine", dest="combine", action="store_true")
     parser.add_argument("-stitch", dest="stitch", action="store_true")
     parser.add_argument("-merge", dest="merge", action="store_true")
