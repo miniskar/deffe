@@ -101,7 +101,8 @@ class DeffeFramework:
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
         # Iterate through multiple explorations list as per the configuration
-        for explore_groups in self.config.GetExploration().exploration_list:
+        exploration_list = self.config.GetExploration().exploration_list
+        for exp_index, explore_groups in enumerate(exploration_list):
             # extract the parameters and cost metrics in that exploration list
             no_train_flag = self.args.no_train
             evaluate_flag = False
@@ -175,8 +176,11 @@ class DeffeFramework:
                 if self.args.step_end != "" and step >= int(self.args.step_end):
                     break
                 samples = self.sampling.GetNewBatch()
-                print("***** Step {} Current Samples:{} Total Samples:{} "
-                        "Permutations:{} *****".format(step,
+                print("***** Exploration:{}/{} Step {} Current Samples:{} Samples:{}/{} "
+                        "*****".format(
+                            exp_index+1,
+                            len(exploration_list), 
+                            step,
                             len(samples),
                             len(self.sampling.GetBatch()), 
                             self.parameters.total_permutations))
