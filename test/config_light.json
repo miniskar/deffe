@@ -1,5 +1,4 @@
 {
-    "python_path" : ["."],
     "include" : ["$DEFFE_DIR/templates/deffe_framework.json"],
     "knobs" : 
         [
