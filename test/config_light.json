@@ -35,11 +35,7 @@
             {
                 "name" : "application1_explore",
                 "groups" : "set1, application1",
-                "pre_evaluated_data" : "output_application1_deffe.csv",
-                "exploration_table" : "deffe_exploration.csv",
-                "evaluation_table" : "deffe_evaluation.csv",
-                "ml_predict_table" : "deffe_prediction.csv",
-                "evaluation_predict_table" : "deffe_eval_predict.csv"
+                "evaluation_table" : "deffe_evaluation.csv"
             }
             ]
     }
