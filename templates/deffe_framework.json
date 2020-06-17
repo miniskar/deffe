@@ -1,0 +1,39 @@
+{
+     "python_path" : ["."],
+     "sampling" : {
+        "pyscript" : "random_sampling.py",
+        "arguments" : "-fixed-samples 1",
+        "output_log" : "sampling.log"
+     },
+     "model" : {
+        "pyscript" : "ml_model.py",
+        "ml_model_script" : "keras_cnn.py",
+        "output_log" : "network.log",
+        "arguments" : "",
+        "ml_arguments" : "-convs 2 -loss custom_mean_abs_log_loss -epochs 10 -train-test-split 1.0 -validation-split 0.4"
+     },
+     "exploration" : {
+         "pyscript" : "exploration.py",
+         "arguments" : "",
+         "output_log" : "exploration.log"
+     },
+     "evaluate" : {
+        "pyscript"    : "evaluate.py",
+        "arguments" : "",
+        "sample_evaluate_script" : "evaluate.sh",
+        "batch_size"     : "1",
+        "output_log"    : "evaluate.log"
+     },
+     "extract" : {
+        "pyscript" : "extract.py",
+        "arguments" : "",
+        "sample_extract_script" : "extract.sh",
+        "batch_size"     : "1",
+        "cost_output" : "results.out",
+        "output_log" : "extract.log"
+     },
+     "framework" : {
+        "output_log" : "framework_output.log",
+        "run_directory" : "sd_exploration"
+     }
+}

@@ -1,0 +1,8 @@
+{
+    "slurm" : {
+        "nodes" : 1,
+        "cpus_per_task" : 1,
+        "constraint" : "x86_64,centos",
+        "user_script_configured" : "False"
+    }
+}
