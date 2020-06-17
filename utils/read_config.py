@@ -62,7 +62,7 @@ class DeffeConfigKnob:
         if "values" in data:
             self.values = DeffeConfigValues(data["values"])
         if "groups" in data:
-            self.groups = re.split("\s*,\s*", data["groups"])
+            self.groups = DeffeConfigValues(data["groups"]).values
         self.groups.append("all")
 
 
@@ -78,7 +78,7 @@ class DeffeConfigScenarios:
         if "values" in data:
             self.values = DeffeConfigValues(data["values"])
         if "groups" in data:
-            self.groups = re.split("\s*,\s*", data["groups"])
+            self.groups = DeffeConfigValues(data["groups"]).values
         self.groups.append("all")
 
 
