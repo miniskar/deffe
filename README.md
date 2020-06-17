@@ -39,7 +39,7 @@ The above figures shows the main blocks and their corresponding python files in 
 ## Software Dependencies
 1. Python-3
 2. Graphviz 
-3. ML packages in Python 
+3. Python packages
     - keras 
     - tensorflow 
     - tensorflow-gpu 
@@ -53,6 +53,8 @@ The above figures shows the main blocks and their corresponding python files in 
     - pydot 
     - tqdm 
     - torchsummary
+    - json
+    - commentjson
     ```bash
     Install all required packages from requirements.txt file in the repository.
     $ pip3 install -r requirements.txt

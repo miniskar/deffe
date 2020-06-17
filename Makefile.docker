@@ -23,3 +23,6 @@ run:
 	docker run -it --rm \
 		--mount source=deffe-workspace,target=/workspace \
 		deffe:dev
+
+pip-freeze:
+	pip3 freeze > requirements.txt
