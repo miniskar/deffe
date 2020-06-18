@@ -5,12 +5,17 @@
         { 
             "name" : "param1",
             "groups" : "set1",
-            "values" : "1-8"
+            "values" : "1,2-4,5"
         },
         { 
             "name" : "param2",
             "groups" : "set1",
-            "values" : [1,2,4] 
+            "values" : [1,2] 
+        },
+        { 
+            "name" : "param3",
+            "groups" : "set2",
+            "values" : [1,2] 
         }
     ],
     "scenarios" : 

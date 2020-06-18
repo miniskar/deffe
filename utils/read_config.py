@@ -21,19 +21,29 @@ import time
 import json
 import commentjson
 
-
+# Values: Scalar / List
+#   List: String with values seperated with ','        : Example: "1,2,3,4"
+#         String with range of values representated '-': Example: "1-10"
+#         represented as a list itself                 : Example: [1,2,3,4]
+#         combination of all above        Example: [1, 2, "10-20", "30-40"]
+# Note:
+#         One can use different delimiter (instead of comma ',') in string 
+#         This feature is useful to use it as list of list in a string itself
+#                   Example: groups: "riscv, app_size::12;15;20-22, mode"
+#                            In the above example, the second list is provided 
+#                            app_size with list of values [12, 15, 20, 21, 22]
 class DeffeConfigValues:
-    def __init__(self, values):
+    def __init__(self, values, delim=','):
         self.values = []
         if type(values) == list:
             self.values = []
             for i in values:
-                self.values.extend(self.ExtractValues(str(i)))
+                self.values.extend(self.ExtractValues(str(i), delim))
         else:
-            self.values.extend(self.ExtractValues(values))
+            self.values.extend(self.ExtractValues(values, delim))
 
-    def ExtractValues(self, values):
-        values_list = re.split("\s*,\s*", values)
+    def ExtractValues(self, values, delim=','):
+        values_list = re.split("\s*"+delim+"\s*", values)
         values_extract = []
         for value in values_list:
             if re.search(r"^([0-9]+)\s*-\s*([0-9]+)", value):
@@ -63,6 +73,7 @@ class DeffeConfigKnob:
             self.values = DeffeConfigValues(data["values"])
         if "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
+        self.groups.append(self.name)
         self.groups.append("all")
 
 
@@ -112,7 +123,7 @@ class DeffeConfigSingleExploration:
         if data != None and "pre_evaluated_data" in data:
             self.pre_evaluated_data = os.path.expandvars(data["pre_evaluated_data"])
         if data != None and "groups" in data:
-            self.groups = re.split("\s*,\s*", data["groups"])
+            self.groups = DeffeConfigValues(data["groups"]).values
         self.exploration_table = "deffe_exploration.csv"
         if data != None and "exploration_table" in data:
             self.exploration_table = os.path.expandvars(data["exploration_table"])
