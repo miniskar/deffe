@@ -1,0 +1,56 @@
+{
+    "include" : ["$DEFFE_DIR/templates/deffe_framework.json"],
+    "knobs" : 
+        [
+        { 
+            "name" : "param1",
+            "groups" : "set1",
+            "values" : "1,2-4"
+        },
+        { 
+            "name" : "param2",
+            "groups" : "set1",
+            "values" : [1,2] 
+        },
+        { 
+            "name" : "param3",
+            "groups" : "set2",
+            "values" : [1,2] 
+        },
+        { 
+            "name" : "param4",
+            "groups" : "set3",
+            "values" : [1,2] 
+        },
+        { 
+            "name" : "param5",
+            "values" : [1,2] 
+        }
+    ],
+    "scenarios" : 
+        [
+        {
+            "name" : "size",
+            "map" : "options",
+            "groups" : "application1",
+            "values" : [16, 32, 64, 128, 256]
+        },
+        {
+            "name" : "size",
+            "map" : "options",
+            "groups" : "application2",
+            "values" : "100-100100-10000"
+        }
+    ],
+    "costs" : [ "exec_time" ],
+    "exploration" : {
+        "explore" : 
+            [
+            {
+                "name" : "application1_explore",
+                "groups" : "set1, param1::7;8, set2::4, param4::5;6, application1",
+                "evaluation_table" : "deffe_evaluation.csv"
+            }
+            ]
+    }
+}

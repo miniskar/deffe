@@ -13,6 +13,7 @@ import pdb
 import numpy as np
 import re
 import sys
+from read_config import *
 
 def IsNumber(x):
     allowed_types = [
@@ -82,31 +83,45 @@ class Parameters:
             groups = knob_scn.groups
             for grp in groups:
                 if grp not in exp_grp_hash:
-                    continue
+                    # Check if it has only "all", but no other group is configured
+                    if grp != "all" or len(groups) != 2: 
+                        continue
                 if grp not in param_groups:
                     param_groups[grp] = {}
                 ks_name_values = param_groups[grp]
-                map_name = knob_scn.name
-                if map_name not in ks_name_values:
+                ks_name = knob_scn.name
+                if ks_name not in ks_name_values:
                     # Mapped knobs and common values
-                    ks_name_values[map_name] = ([], [])
-                ks_name_values[map_name][0].append((knob_scn, ks_type))
+                    ks_name_values[ks_name] = ([], [])
+                ks_name_values[ks_name][0].append((knob_scn, ks_type))
                 common_data = []
-                if len(exp_grp_hash[grp]) > 0:
+                if grp in exp_grp_hash and len(exp_grp_hash[grp]) > 0:
                     common_data.extend(exp_grp_hash[grp])
                 else:
                     common_data.extend(knob_scn.values.values)
-                    common_data.extend(ks_name_values[map_name][1])
-                    del ks_name_values[map_name][1][:]
-                ks_name_values[map_name][1].extend(common_data)
+                    common_data.extend(ks_name_values[ks_name][1])
+                    del ks_name_values[ks_name][1][:]
+                ks_name_values[ks_name][1].extend(common_data)
         output_params = []
-        total_permutations = 1
+        param_unique_hash = {}
         for grp in param_groups.keys():
-            for map_name in param_groups[grp].keys():
-                (param_list, param_values) = param_groups[grp][map_name]
+            for ks_name in param_groups[grp].keys():
+                #print("Grp:{} ks:{}".format(grp, ks_name))
+                (param_list, param_values) = param_groups[grp][ks_name]
                 for (param, ptype) in param_list:
-                    output_params.append((param, param_values, len(output_params)))
-                    total_permutations = total_permutations * len(param_values)
+                    if param.name in param_unique_hash:
+                        # Already existing
+                        if ks_name == grp:
+                            # Give priority to this
+                            del param_unique_hash[param.name]
+                            param_unique_hash[param.name] = (param, param_values)
+                    else:
+                        param_unique_hash[param.name] = (param, param_values)
+        for param_name, (param, param_values) in param_unique_hash.items():
+            output_params.append((param, param_values, len(output_params)))
+        total_permutations = 1
+        for (param, param_values, pindex) in output_params:
+            total_permutations = total_permutations * len(param_values)
         self.selected_params = output_params
         self.total_permutations = total_permutations
         self.indexing = []
@@ -132,85 +147,10 @@ class Parameters:
                 self.UpdateMinMaxRange(param, minp, maxp)
                 self.is_values_string[param.map] = True
         # print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
-        for (param, param_values, pindex) in self.selected_pruned_params:
+        print("******* All considered parameters *******")
+        for (param, param_values, pindex) in self.selected_params:
             print("{}: {} = {}".format(pindex, param.name, param_values))
-        #print(self.selected_pruned_params)
-        print("Total permutations:"+str(total_permutations))
-        return (self.selected_params, self.selected_pruned_params, total_permutations)
-
-    def InitializeOld9(self, explore_groups):
-        def get_explore_groups_hash():
-            exp_hash = {}
-            for grp in explore_groups:
-                grp_fields = re.split(r'\s*::\s*', grp)
-                grp_key = grp_fields[0]
-                if grp_key not in exp_hash:
-                    exp_hash[grp_key] = []
-                if len(grp_fields) > 1:
-                    # Use second level delimiter Semicolon (;)
-                    values = DeffeConfigValues(grp_fields[1], ';').values
-                    exp_hash[grp_key].extend(values)
-            return exp_hash
-        exp_grp_hash = get_explore_groups_hash()
-        knobs = self.config.GetKnobs()
-        scenarios = self.config.GetScenarios()
-        knob_scns_list = [ (k, self.type_knob) for k in knobs ]
-        knob_scns_list.extend([ (s, self.type_scenario) for s in scenarios ])
-        param_groups = {}
-        for (knob_scn, ks_type) in knob_scns_list:
-            groups = knob_scn.groups
-            for grp in groups:
-                if grp not in exp_grp_hash:
-                    continue
-                if grp not in param_groups:
-                    param_groups[grp] = {}
-                ks_name_values = param_groups[grp]
-                map_name = knob_scn.name
-                if map_name not in ks_name_values:
-                    # Mapped knobs and common values
-                    ks_name_values[map_name] = ([], [])
-                ks_name_values[map_name][0].append((knob_scn, ks_type))
-                common_data = []
-                if len(exp_grp_hash[grp]) > 0:
-                    common_data.extend(exp_grp_hash[grp])
-                else:
-                    common_data.extend(knob_scn.values.values)
-                    common_data.extend(ks_name_values[map_name][1])
-                    del ks_name_values[map_name][1][:]
-                ks_name_values[map_name][1].extend(common_data)
-        output_params = []
-        total_permutations = 1
-        for grp in param_groups.keys():
-            for map_name in param_groups[grp].keys():
-                (param_list, param_values) = param_groups[grp][map_name]
-                for (param, ptype) in param_list:
-                    output_params.append((param, param_values, len(output_params)))
-                    total_permutations = total_permutations * len(param_values)
-        self.selected_params = output_params
-        self.total_permutations = total_permutations
-        self.indexing = []
-        prev_dim_elements = 1
-        self.param_all_values = []
-        for (param, param_values, pindex) in self.selected_params:
-            self.indexing.append(prev_dim_elements)
-            prev_dim_elements = len(param_values) * prev_dim_elements
-            self.param_all_values.append(len(param_values))
-        self.prev_dim_elements = prev_dim_elements
-        self.selected_pruned_params = self.GetPrunedSelectedParams(self.selected_params)
-        for (param, param_values, pindex) in self.selected_params:
-            is_numbers = self.IsParameterNumber(param_values)
-            if is_numbers:
-                minp = np.min(np.array(param_values).astype("float"))
-                maxp = np.max(np.array(param_values).astype("float"))
-                # print("1MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
-                self.UpdateMinMaxRange(param, minp, maxp)
-                self.is_values_string[param.map] = False
-            else:
-                minp = 0
-                maxp = len(param_values)
-                self.UpdateMinMaxRange(param, minp, maxp)
-                self.is_values_string[param.map] = True
-        # print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
+        print("******* Variable parameters *******")
         for (param, param_values, pindex) in self.selected_pruned_params:
             print("{}: {} = {}".format(pindex, param.name, param_values))
         #print(self.selected_pruned_params)

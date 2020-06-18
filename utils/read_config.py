@@ -90,6 +90,7 @@ class DeffeConfigScenarios:
             self.values = DeffeConfigValues(data["values"])
         if "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
+        self.groups.append(self.name)
         self.groups.append("all")
 
 
