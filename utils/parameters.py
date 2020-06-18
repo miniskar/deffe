@@ -84,7 +84,7 @@ class Parameters:
             for grp in groups:
                 if grp not in exp_grp_hash:
                     # Check if it has only "all", but no other group is configured
-                    if grp != "all" or len(groups) != 2: 
+                    if knob_scn.groups_configured: 
                         continue
                 if grp not in param_groups:
                     param_groups[grp] = {}
@@ -106,7 +106,7 @@ class Parameters:
         param_unique_hash = {}
         for grp in param_groups.keys():
             for ks_name in param_groups[grp].keys():
-                #print("Grp:{} ks:{}".format(grp, ks_name))
+                print("Grp:{} ks:{}".format(grp, ks_name))
                 (param_list, param_values) = param_groups[grp][ks_name]
                 for (param, ptype) in param_list:
                     if param.name in param_unique_hash:

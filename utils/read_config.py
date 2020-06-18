@@ -67,13 +67,16 @@ class DeffeConfigKnob:
         self.values = []
         self.groups = []
         self.map = self.name
+        self.groups_configured = False
         if "map" in data:
             self.map = data["map"]
         if "values" in data:
             self.values = DeffeConfigValues(data["values"])
         if "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
-        self.groups.append(self.name)
+            self.groups_configured = True
+        if self.name not in self.groups:
+            self.groups.append(self.name)
         self.groups.append("all")
 
 
@@ -84,13 +87,16 @@ class DeffeConfigScenarios:
         self.values = []
         self.groups = []
         self.map = self.name
+        self.groups_configured = False
         if "map" in data:
             self.map = data["map"]
         if "values" in data:
             self.values = DeffeConfigValues(data["values"])
         if "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
-        self.groups.append(self.name)
+            self.groups_configured = True
+        if self.name not in self.groups:
+            self.groups.append(self.name)
         self.groups.append("all")
 
 
