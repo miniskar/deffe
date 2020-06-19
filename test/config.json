@@ -4,7 +4,7 @@
         [
         { 
             "name" : "param1",
-            "groups" : "set1",
+            "groups" : "set1, set2",
             "values" : "1,2-4,5"
         },
         { 

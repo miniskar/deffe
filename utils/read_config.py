@@ -293,7 +293,7 @@ class DeffeConfig:
                     yield (k, dict2[k])
         self.file_name = os.path.expandvars(filename)
         if not os.path.exists(self.file_name):
-            print("[Error] Json file:{} not available!".format(filename))
+            print("[Error] Json file:{} not available!".format(filename, self.file_name))
             return None
         with open(self.file_name) as infile:
             data = commentjson.load(infile)
