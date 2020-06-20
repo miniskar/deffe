@@ -127,7 +127,14 @@ class DeffeRandomSampling:
                 sys.exit(1)
             np_records = sample_mat.values.astype("str")
             np_hdrs = np.char.lower(np.array(list(sample_mat.columns)).astype("str"))
-            self._seq = np.array([ Parameters.EncodePermutation(rec, np_hdrs, selected_pruned_params) for rec in np_records ]).astype("int")
+            sel_param_hash = { 
+                    k:re.sub(r'\.0$', '', np_records[index]) 
+                          for index, k in enumerate(np_hdrs) 
+                    }
+            self._seq = np.array([ 
+                    self.parameters.EncodePermutation(sel_param_pash) \
+                    for rec in np_records 
+                    ]).astype("int")
         if self._shuffle:
             np.random.shuffle(self._seq)
         return

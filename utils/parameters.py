@@ -160,25 +160,23 @@ class Parameters:
             indexes.append(pindex)
         return [param[indexes,] for param in parameters]
 
-    def EncodePermutation(self, rec, np_hdrs, selected_params=None):
-        sel_param_values = { k:re.sub(r'\.0$', '', rec[index]) for index, k in enumerate(np_hdrs) }
-        return self.EncodePermutationHash(sel_param_values, selected_params)
-
-    def EncodePermutationHash(self, sel_param_values, selected_params=None):
+    def EncodePermutation(self, sel_param_hash, selected_params=None):
         if selected_params == None:
             selected_params = self.selected_params
         perm_index = 0
-        for (param, param_values, pindex, permutation_index) in reversed(self.selected_params):
+        for (param, param_values, pindex, permutation_index) in reversed(selected_params):
             val_index = 0 
-            if param.name in sel_param_values:
-                val = sel_param_values[param.name]
+            if param.name in sel_param_hash:
+                val = sel_param_hash[param.name]
                 val_index = param_values.index(val)
             perm_index = perm_index + val_index * permutation_index
         return perm_index
 
-    def GetPermutationSelection(self, nd_index):
+    def GetPermutationSelection(self, nd_index, selected_params=None):
+        if selected_params == None:
+            selected_params = self.selected_params
         out_dim_list = []
-        for (param, param_values, pindex, permutation_index) in reversed(self.selected_params):
+        for (param, param_values, pindex, permutation_index) in reversed(selected_params):
             dim_index = int(nd_index / permutation_index)
             out_dim_list.append(dim_index)
             nd_index = nd_index % permutation_index
