@@ -1,5 +1,5 @@
 pre:
-	python3 -m pip install --upgrade pip
+	python3 -m pip install --upgrade pip --user
 	python3 -m pip install -I keras \
         tensorflow \
         torch \
