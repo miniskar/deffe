@@ -15,8 +15,8 @@ pre:
         torchsummary  --user
 
 test-deffe: 
-	export DEFFE_DIR=$(PWD)
 	$(info echo "$(DEFFE_DIR)")
+	export DEFFE_DIR=$(PWD) ; \
 	cd test ; \
 	rm -f test*.txt ; sh run_deffe.sh ;  \
 	diff gold_test1.txt test1.txt ; \

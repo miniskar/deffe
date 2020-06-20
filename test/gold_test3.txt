@@ -1,3 +1,4 @@
+Deffe framework is found in path: /home/nqx/Deffe
 Current directory: /home/nqx/Deffe/test
 Machine: mcmurdo
 Grp:param1 ks:param1
