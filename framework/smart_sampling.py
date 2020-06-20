@@ -118,6 +118,9 @@ class DeffeRandomSampling:
         # Write your logic
         #
 
+    def GetSamplesCostEstimation(self, samples): 
+        self.model.
+
     def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True):
         self.custom_samples = []
         self.parameters = parameters
