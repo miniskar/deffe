@@ -83,7 +83,7 @@ class DeffeRandomSampling:
 
     def GenerateSamples(self):
         param_dict =  { param.name : param_values 
-            for (param, param_values, pindex) in 
+            for (param, param_values, pindex, permutation_index) in 
                 self.parameters.selected_pruned_params }
         n_samples = self._n_samples
         max_samples = min(1000000, self._n_samples)
@@ -103,7 +103,7 @@ class DeffeRandomSampling:
         # Get initial set of samples
         # Vary only one parameter at a time and fix all others
         # Intelligent selection of parameters
-        for (param, param_values, pindex) in selected_pruned_params:
+        for (param, param_values, pindex, permutation_index) in selected_pruned_params:
             None
 
     def GetNextSetOfSamples(self, n_new_samples):

@@ -60,15 +60,13 @@ class DeffeEvaluate:
     def GetValidPreloadedData(self):
         trans_data_flag = np.full(shape=trans_data.shape, fill_value=False)
         pruned_list_indexes = []
-        for pdata in pruned_param_list:
-            (param, param_values, pindex) = pdata
+        for (param, param_values, pindex, permutation_index) in pruned_param_list:
             pruned_list_indexes.append(pindex)
             for pvalue in param_values:
                 trans_data_flag[pindex] = trans_data_flag[pindex] | (
                     trans_data[pindex] == pvalue
                 )
-        for pdata in pruned_param_list:
-            (param, param_values, pindex) = pdata
+        for (param, param_values, pindex, permutation_index) in pruned_param_list:
             if pindex not in pruned_list_indexes:
                 trans_data_flag[pindex] = np.full(
                     shape=trans_data_flag[pindex].shape, fill_value=True
@@ -113,12 +111,12 @@ class DeffeEvaluate:
         for index, cost in enumerate(self.cost_list):
             cost_hash[cost] = index
         for pdata in self.param_list:
-            (param, param_values, pindex) = pdata
+            (param, param_values, pindex, permutation_index) = pdata
             param_hdrs.append(param.name.lower())
             param_hash[param.name.lower()] = pdata
             param_hash[param.map.lower()] = pdata
         self.param_hash = param_hash
-        for (param, param_values, pindex) in self.param_list:
+        for (param, param_values, pindex, permutation_index) in self.param_list:
             self.param_extract_indexes.append(pindex)
         if preload_file == None:
             return
@@ -176,7 +174,7 @@ class DeffeEvaluate:
         unused_params_list = []
         count = 0
         for pdata in self.param_list:
-            (param, param_values, pindex) = pdata
+            (param, param_values, pindex, permutation_index) = pdata
             if len(param_values) > 1:
                 if param.name in np_param_hdrs_hash:
                     count = count + 1
@@ -197,7 +195,7 @@ class DeffeEvaluate:
         ]
         for index, hdr in enumerate(self.rev_param_list):
             self.rev_param_extract_indexes[param_hash[hdr][2]] = index
-        for (param, param_values, pindex) in self.param_list:
+        for (param, param_values, pindex, permutation_index) in self.param_list:
             if len(param_values) > 1:
                 if param.name in np_param_hdrs_hash:
                     self.param_extract_indexes[np_param_hdrs_hash[param.name]] = pindex

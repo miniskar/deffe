@@ -82,9 +82,10 @@ class DeffeRandomSampling:
         return parser
 
     def GenerateSamples(self):
+        selected_pruned_params = self.parameters.selected_pruned_params
         param_dict =  { param.name : param_values 
-            for (param, param_values, pindex) in 
-                self.parameters.selected_pruned_params }
+            for (param, param_values, pindex, permutation_index) in 
+                selected_pruned_params }
         n_samples = self._n_samples
         max_samples = min(1000000, self._n_samples)
         sampling_method = self.args.method
@@ -126,7 +127,7 @@ class DeffeRandomSampling:
                 sys.exit(1)
             np_records = sample_mat.values.astype("str")
             np_hdrs = np.char.lower(np.array(list(sample_mat.columns)).astype("str"))
-            self._seq = np.array([ self.parameters.EncodePermutation(rec, np_hdrs) for rec in np_records ]).astype("int")
+            self._seq = np.array([ Parameters.EncodePermutation(rec, np_hdrs, selected_pruned_params) for rec in np_records ]).astype("int")
         if self._shuffle:
             np.random.shuffle(self._seq)
         return

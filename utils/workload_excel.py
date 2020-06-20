@@ -471,6 +471,7 @@ class Workload:
 
     def WriteHeaderInCSV(self, filename, headers=None):
         self.csv_filename = filename
+        print("[Info] Writing into file:"+filename)
         if headers == None:
             headers = self.headers_data
         with open(self.csv_filename, "w") as csv_fh:
@@ -981,6 +982,23 @@ def PlotGraph(args, group_data, x_axis_index,
                 loc=legend_pos,
                 ncol=int(args.legend_ncol),
                 fontsize=12,
+            )
+        elif args.legend_pos != "best" and args.legend_ncol != '1':
+            legend_pos = args.legend_pos
+            legend_pos = re.sub(r":", " ", legend_pos)
+            plt.legend(
+                loc=legend_pos,
+                ncol=int(args.legend_ncol),
+                bbox_to_anchor=(0.5, -1.05), shadow=True, 
+                fontsize=10,
+            )
+        elif args.legend_pos != "best":
+            legend_pos = args.legend_pos
+            legend_pos = re.sub(r":", " ", legend_pos)
+            plt.legend(
+                loc=legend_pos,
+                bbox_to_anchor=(0.5, -0.05), shadow=True, 
+                fontsize=10,
             )
     if args.xticks_rotation != "":
         if args.xdatatype == "str":

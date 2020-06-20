@@ -50,7 +50,7 @@ def IsFloat(x):
 
 
 class Parameters:
-    def __init__(self, config, framework):
+    def __init__(self, config=None, framework=None):
         self.config = config
         self.type_knob = 1
         self.type_scenario = 2
@@ -102,7 +102,6 @@ class Parameters:
                     common_data.extend(ks_name_values[ks_name][1])
                     del ks_name_values[ks_name][1][:]
                 ks_name_values[ks_name][1].extend(common_data)
-        output_params = []
         param_unique_hash = {}
         for grp in param_groups.keys():
             for ks_name in param_groups[grp].keys():
@@ -117,23 +116,15 @@ class Parameters:
                             param_unique_hash[param.name] = (param, param_values)
                     else:
                         param_unique_hash[param.name] = (param, param_values)
-        for param_name, (param, param_values) in param_unique_hash.items():
-            output_params.append((param, param_values, len(output_params)))
         total_permutations = 1
-        for (param, param_values, pindex) in output_params:
-            total_permutations = total_permutations * len(param_values)
+        output_params = []
+        for param_name, (param, param_values) in param_unique_hash.items():
+            output_params.append((param, param_values, len(output_params), total_permutations))
+            total_permutations = len(param_values) * total_permutations 
         self.selected_params = output_params
         self.total_permutations = total_permutations
-        self.indexing = []
-        prev_dim_elements = 1
-        self.param_all_values = []
-        for (param, param_values, pindex) in self.selected_params:
-            self.indexing.append(prev_dim_elements)
-            prev_dim_elements = len(param_values) * prev_dim_elements
-            self.param_all_values.append(len(param_values))
-        self.prev_dim_elements = prev_dim_elements
         self.selected_pruned_params = self.GetPrunedSelectedParams(self.selected_params)
-        for (param, param_values, pindex) in self.selected_params:
+        for (param, param_values, pindex, permutation_index) in self.selected_params:
             is_numbers = self.IsParameterNumber(param_values)
             if is_numbers:
                 minp = np.min(np.array(param_values).astype("float"))
@@ -148,10 +139,10 @@ class Parameters:
                 self.is_values_string[param.map] = True
         # print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
         print("******* All considered parameters *******")
-        for (param, param_values, pindex) in self.selected_params:
+        for (param, param_values, pindex, permutation_index) in self.selected_params:
             print("{}: {} = {}".format(pindex, param.name, param_values))
         print("******* Variable parameters *******")
-        for (param, param_values, pindex) in self.selected_pruned_params:
+        for (param, param_values, pindex, permutation_index) in self.selected_pruned_params:
             print("{}: {} = {}".format(pindex, param.name, param_values))
         #print(self.selected_pruned_params)
         print("Total permutations:"+str(total_permutations))
@@ -165,34 +156,32 @@ class Parameters:
 
     def GetPrunedSelectedValues(self, parameters, pruned_param_list):
         indexes = []
-        for (param, param_values, pindex) in pruned_param_list:
+        for (param, param_values, pindex, permutation_index) in pruned_param_list:
             indexes.append(pindex)
         return [param[indexes,] for param in parameters]
 
-    def EncodePermutation(self, rec, np_hdrs):
+    def EncodePermutation(self, rec, np_hdrs, selected_params=None):
         sel_param_values = { k:re.sub(r'\.0$', '', rec[index]) for index, k in enumerate(np_hdrs) }
-        return self.EncodePermutationHash(sel_param_values)
+        return self.EncodePermutationHash(sel_param_values, selected_params)
 
-    def EncodePermutationHash(self, sel_param_values):
-        index = len(self.selected_params) - 1
+    def EncodePermutationHash(self, sel_param_values, selected_params=None):
+        if selected_params == None:
+            selected_params = self.selected_params
         perm_index = 0
-        for (param, param_values, pindex) in reversed(self.selected_params):
+        for (param, param_values, pindex, permutation_index) in reversed(self.selected_params):
             val_index = 0 
             if param.name in sel_param_values:
                 val = sel_param_values[param.name]
                 val_index = param_values.index(val)
-            perm_index = perm_index + val_index * self.indexing[index]
-            index = index - 1
+            perm_index = perm_index + val_index * permutation_index
         return perm_index
 
     def GetPermutationSelection(self, nd_index):
-        index = len(self.selected_params) - 1
         out_dim_list = []
-        for (param, param_values, pindex) in reversed(self.selected_params):
-            dim_index = int(nd_index / self.indexing[index])
+        for (param, param_values, pindex, permutation_index) in reversed(self.selected_params):
+            dim_index = int(nd_index / permutation_index)
             out_dim_list.append(dim_index)
-            nd_index = nd_index % self.indexing[index]
-            index = index - 1
+            nd_index = nd_index % permutation_index
         out_dim_list.reverse()
         return out_dim_list
 
@@ -209,7 +198,7 @@ class Parameters:
 
     def GetMinMaxToJSonData(self):
         data = {}
-        for (param, param_values, pindex) in self.selected_params:
+        for (param, param_values, pindex, permutation_index) in self.selected_params:
             if param.map in data:
                 continue
             enable = False
@@ -232,7 +221,7 @@ class Parameters:
         min_list = []
         max_list = []
         nparams_t = nparams.transpose()
-        for index, (param, param_values, pindex) in enumerate(selected_params):
+        for index, (param, param_values, pindex, permutation_index) in enumerate(selected_params):
             if param.map not in self.min_list_params:
                 print("[Error] key:{} not found in min_list_params".format(param.map))
                 pdb.set_trace()
@@ -286,7 +275,7 @@ class Parameters:
         for nd_index in indexes:
             out_dim_list = self.GetPermutationSelection(nd_index)
             param_sel_list = []
-            for (param, param_values, index) in selected_params:
+            for (param, param_values, index, permutation_index) in selected_params:
                 param_value_index = out_dim_list[index]
                 value = param_values[param_value_index]
                 if with_indexing and type(value) == str:
@@ -309,13 +298,13 @@ class Parameters:
 
     def GetPrunedSelectedParams(self, param_list):
         return [
-            (param, pvalues, pindex)
-            for (param, pvalues, pindex) in param_list
+            (param, pvalues, pindex, permutation_index)
+            for (param, pvalues, pindex, permutation_index) in param_list
             if len(pvalues) > 1
         ]
 
     def GetHeaders(self, param_list):
-        return [param.name for (param, pvalues, pindex) in param_list]
+        return [param.name for (param, pvalues, pindex, permutation_index) in param_list]
 
     def CreateRunScript(self, script, run_dir, param_pattern, param_dict):
         with open(script, "r") as rfh, open(
@@ -335,7 +324,7 @@ class Parameters:
             param_list = self.selected_params
         param_hash = {}
         index = 0
-        for (param, param_values, pindex) in param_list:
+        for (param, param_values, pindex, permutation_index) in param_list:
             param_key1 = "${" + param.name + "}"
             param_key2 = "$" + param.name+""
             if index >= len(param_val):
@@ -381,7 +370,7 @@ if __name__ == "__main__":
     params.Initialize(explore_groups)
     val = params.GetPermutationSelection(1234)
     val_hash = { param.name:param_values[val[index]] 
-        for index, (param, param_values, pindex) in enumerate(params.selected_params) }
+        for index, (param, param_values, pindex, permutation_index) in enumerate(params.selected_params) }
     print(val_hash)
     index = params.EncodePermutationHash(val_hash)
     if index != 1234:
