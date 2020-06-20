@@ -2,4 +2,4 @@ kold-build:
     tags: ["kold", "shell"]
     stage: build
     script:
-        -   make pre test
+        -   make pre test-deffe
