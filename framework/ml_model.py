@@ -24,12 +24,14 @@ class DeffeMLModel:
         self.accuracy = (0.0, 0.0)
 
     # Initialize the members
-    def Initialize(self):
+    def Initialize(self, cost_names, valid_costs):
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
         self.parameters = np.array([])
         self.cost_output = np.array([])
         self.samples = np.array([])
+        self.cost_names = cost_names
+        self.valid_costs = valid_costs
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):
@@ -86,6 +88,8 @@ class DeffeMLModel:
         self.ml_model_script.Initialize(
             step,
             headers,
+            self.cost_names,
+            self.valid_costs,
             self.parameters,
             self.cost_output,
             self.samples
@@ -94,7 +98,8 @@ class DeffeMLModel:
 
     # Run the prediction/inference
     def Inference(self, output_file=""):
-        all_output = self.ml_model_script.Inference(output_file)
+        cost_index = 0
+        all_output = self.ml_model_script.Inference(cost_index, output_file)
         cost = []
         for output in all_output:
             cost.append(

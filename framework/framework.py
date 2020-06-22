@@ -148,6 +148,7 @@ class DeffeFramework:
             only_preloaded_data_exploration = self.args.only_preloaded_data_exploration
             full_exploration = self.args.full_exploration
             load_data_file = explore_groups.pre_evaluated_data
+            valid_costs = explore_groups.valid_costs
             if self.args.input != "":
                 load_data_file = self.args.input
                 only_preloaded_data_exploration = True
@@ -159,7 +160,7 @@ class DeffeFramework:
                 param_list, pruned_param_list, self.config.GetCosts(), load_data_file
             )
             self.extract.Initialize(param_list, self.config.GetCosts())
-            self.model.Initialize()
+            self.model.Initialize(self.config.GetCosts(), valid_costs)
             # Initialize the random sampling
             init_n_train = self.init_n_train
             init_n_val = self.init_n_val
@@ -262,7 +263,7 @@ class DeffeFramework:
                         )
                         stats_data = self.model.Train()
                         print(
-                            "Stats: (Step, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "
+                            "Stats: (Step, CostI, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "
                             + str(stats_data)
                         )
                     if self.args.inference_only:

@@ -127,6 +127,9 @@ class DeffeConfigSingleExploration:
         self.groups = []
         if data == None:
             self.groups.append("all")
+        self.valid_costs = []
+        if data != None and "valid_costs" in data:
+            self.valid_costs = DeffeConfigValues(data["valid_costs"]).values
         if data != None and "pre_evaluated_data" in data:
             self.pre_evaluated_data = os.path.expandvars(data["pre_evaluated_data"])
         if data != None and "groups" in data:

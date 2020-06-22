@@ -20,14 +20,39 @@ class BaseMLModel:
     def __init__(self):
         None
 
-    def Initialize(self, headers, parameters, cost_data, samples):
+    def Initialize(self, headers, cost_names, valid_costs,
+            parameters, cost_data, samples):
         print("Headers: " + str(headers))
         orig_cost_data = cost_data
         self.headers = headers
+        self.cost_names = cost_names
+        self.valid_costs = valid_costs
         self.parameters_data = parameters
         self.cost_data = cost_data
         self.orig_cost_data = orig_cost_data
         self.sample_actual_indexes = samples
+
+    def IsValidCost(self, cost):
+        if len(self.valid_costs) > 0:
+            if cost not in self.valid_costs:
+                return False
+        return True
+
+    def Train(self):
+        output = []
+        for index, cost in enumerate(self.cost_names):
+            if self.IsValidCost(cost):
+                output.append(self.TrainCost(index))
+            else:
+                output.append(None)
+        return output
+
+    def ReshapeCosts(self, train):
+        ntrain = []
+        for i in range(train.shape[1]):
+            one_train = train.transpose()[i].reshape(train.shape[0], 1)
+            ntrain.append(one_train)
+        return np.array(ntrain)
 
     def PreLoadData(self, step, train_test_split, validation_split, shuffle=False):
         parameters = self.parameters_data
@@ -63,6 +88,10 @@ class BaseMLModel:
             z_train = orig_cost_data[training_idx, :].astype("float")
             y_test = cost_data[test_idx, :].astype("float")
             z_test = orig_cost_data[test_idx, :].astype("float")
+            y_train = self.ReshapeCosts(y_train)
+            z_train = self.ReshapeCosts(z_train)
+            y_test = self.ReshapeCosts(y_test)
+            z_test = self.ReshapeCosts(z_test)
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
 
@@ -101,6 +130,10 @@ class BaseMLModel:
         x_test = parameters[test_idx, :].astype("float")
         y_test = cost_data[test_idx, :].astype("float")
         z_test = orig_cost_data[test_idx, :].astype("float")
+        y_train = self.ReshapeCosts(y_train)
+        z_train = self.ReshapeCosts(z_train)
+        y_test = self.ReshapeCosts(y_test)
+        z_test = self.ReshapeCosts(z_test)
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
         self.train_count = len(training_idx) * (1 - self.validation_split)
@@ -120,9 +153,6 @@ class BaseMLModel:
                 max_epoch = epoch
                 last_icp = icp_file
         return last_icp
-
-    def Train(self):
-        None
 
     def WritePredictionsToFile(self, x_train, y_train, predictions, outfile):
         print("Loading checkpoint file:" + self.icp)

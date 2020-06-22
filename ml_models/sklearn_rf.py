@@ -63,13 +63,18 @@ class SKlearnRF(BaseMLModel):
         self,
         step,
         headers,
+        cost_names,
+        valid_costs,
         parameters_data,
         cost_data,
         samples,
         name="network",
     ):
         BaseMLModel.Initialize(
-            self, headers, parameters_data, cost_data, samples
+            self, headers, 
+            cost_names,
+            valid_costs,
+            parameters_data, cost_data, samples
         )
         args = self.args
         self.step = step
@@ -114,7 +119,7 @@ class SKlearnRF(BaseMLModel):
         self.z_test = z_test
 
     # Inference on samples, which is type of model specific
-    def Inference(self, outfile=""):
+    def Inference(self, cost_index, outfile=""):
         self.model.load_weights(self.icp)
         predictions = self.model.predict(self.x_train)
         if outfile != None:
@@ -123,7 +128,7 @@ class SKlearnRF(BaseMLModel):
             )
         return predictions.reshape((predictions.shape[0],))
 
-    def Train(self):
+    def TrainCost(self, cost_index=0):
         BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test = self.x_test, self.y_test, self.z_test

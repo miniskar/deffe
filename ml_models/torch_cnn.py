@@ -143,13 +143,18 @@ class TorchCNN(BaseMLModel):
         self,
         step,
         headers,
+        cost_names,
+        valid_costs,
         parameters_data,
         cost_data,
         samples,
         name="network",
     ):
         BaseMLModel.Initialize(
-            self, headers, parameters_data, cost_data, samples
+            self, headers, 
+            cost_names,
+            valid_costs,
+            parameters_data, cost_data, samples
         )
         args = self.args
         self.prev_step = self.step
@@ -283,7 +288,7 @@ class TorchCNN(BaseMLModel):
         # print(tags+" MeanAct: ", np.mean(estimation_act_error), "MaxAct: ", np.max(estimation_act_error), "MinAct: ", np.min(estimation_act_error))
 
     # Inference on samples, which is type of model specific
-    def Inference(self, outfile=""):
+    def Inference(self, cost_index, outfile=""):
         self.load_model(self.icp)
         predictions = self.model.predict(self.x_train, batch_size=self.GetBatchSize())
         if outfile != None:
@@ -304,7 +309,7 @@ class TorchCNN(BaseMLModel):
         pred = g_model(features)
         return self.loss_function(ground_truth, pred)
 
-    def Train(self):
+    def TrainCost(self, cost_index=0):
         BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test = self.x_test, self.y_test, self.z_test

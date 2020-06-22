@@ -130,33 +130,11 @@ class KerasCNN(BaseMLModel):
         parser.add_argument("-last-layer-nodes", dest="last_layer_nodes", default="32")
         return parser
 
-    def Initialize(
-        self,
-        step,
-        headers,
-        parameters_data,
-        cost_data,
-        samples,
-        name="network",
-    ):
-        BaseMLModel.Initialize(
-            self, headers, parameters_data, cost_data, samples
-        )
-        args = self.args
-        self.prev_step = self.step
-        self.step = step
-        self.n_out_fmaps = 1
-        # self.nodes = 128
-        self.train_count = 0
-        self.val_count = 0
-        self.test_count = 0
-        self.n_in_fmaps = parameters_data.shape[1]
-        last_layer_nodes = int(args.last_layer_nodes)
-        self.name = name
-        batch_size = int(args.batch_size)
-        if self.framework.args.batch_size != "-1":
-            batch_size = int(self.framework.args.batch_size)
-        self.batch_size = min(self.parameters_data.shape[0], batch_size)
+    def GetModel(self, index):
+        return self.cost_models[index]
+
+    def CreateKerasModel(self):
+        model = None
         if self.convs == 0:
             inputs = keras.Input(shape=(self.n_in_fmaps,), name="parameters")
             x = inputs
@@ -166,9 +144,9 @@ class KerasCNN(BaseMLModel):
             x = layers.Dropout(rate=0.4)(x)
             x = layers.Dense(self.nodes, activation="tanh", name="dense2")(x)
             x = layers.Dropout(rate=0.4)(x)
-            x = layers.Dense(last_layer_nodes, activation="relu", name="dense3")(x)
+            x = layers.Dense(self.last_layer_nodes, activation="relu", name="dense3")(x)
             x = layers.Dense(self.n_out_fmaps, activation="relu", name="predict")(x)
-            self.model = keras.Model(inputs=inputs, outputs=x)
+            model = keras.Model(inputs=inputs, outputs=x)
         elif self.convs == 2:
             inputs = keras.Input(shape=(self.n_in_fmaps,), name="parameters")
             x = inputs
@@ -184,17 +162,17 @@ class KerasCNN(BaseMLModel):
             x = layers.Reshape((1, 64 * (self.n_in_fmaps - 4)), name="reshape1")(x)
             x = layers.Dense(self.nodes, activation="tanh", name="dense0")(x)
             x = layers.Dropout(rate=0.4)(x)
-            x = layers.Dense(last_layer_nodes, activation="relu", name="dense1")(x)
+            x = layers.Dense(self.last_layer_nodes, activation="relu", name="dense1")(x)
             x = layers.Dense(1, activation="relu", name="dense2")(x)
-            self.model = keras.Model(inputs=inputs, outputs=x)
+            model = keras.Model(inputs=inputs, outputs=x)
         if self.args.plot_model:
             model_name = "model.png"
             if name != "":
                 model_name = name + "_model.png"
             from keras.utils import plot_model
-            tf.keras.utils.plot_model(self.model, to_file=model_name)
-        self.model.summary()
-        self.loss_fn = args.loss
+            tf.keras.utils.plot_model(model, to_file=model_name)
+        model.summary()
+        self.loss_fn = self.args.loss
         if self.framework.args.loss != "":
             self.loss_fn = self.framework.args.loss
         self.loss_function = custom_mean_abs_exp_loss
@@ -209,9 +187,49 @@ class KerasCNN(BaseMLModel):
         elif self.loss_fn == "custom_mean_abs_exp_loss":
             self.loss_function = custom_mean_abs_exp_loss
         keras.losses.custom_loss = self.loss_function
-        self.model = self.get_compiled_model(
-            self.model, loss=self.loss_function, optimizer="adam", metrics=["mse"]
+        model = self.get_compiled_model(
+            model, loss=self.loss_function, optimizer="adam", metrics=["mse"]
         )
+        return model
+
+    def Initialize(
+        self,
+        step,
+        headers,
+        cost_names,
+        valid_costs,
+        parameters_data,
+        cost_data,
+        samples,
+        name="network",
+    ):
+        BaseMLModel.Initialize(
+            self, headers, cost_names,
+            valid_costs,
+            parameters_data, cost_data, samples
+        )
+        args = self.args
+        self.prev_step = self.step
+        self.step = step
+        self.n_out_fmaps = 1
+        # self.nodes = 128
+        self.train_count = 0
+        self.val_count = 0
+        self.test_count = 0
+        self.n_in_fmaps = parameters_data.shape[1]
+        self.last_layer_nodes = int(args.last_layer_nodes)
+        self.name = name
+        batch_size = int(args.batch_size)
+        if self.framework.args.batch_size != "-1":
+            batch_size = int(self.framework.args.batch_size)
+        self.batch_size = min(self.parameters_data.shape[0], batch_size)
+        self.cost_models = []
+        for index, cost in enumerate(self.cost_names):
+            if self.IsValidCost(cost):
+                model = self.CreateKerasModel()
+                self.cost_models.append(model)
+            else:
+                self.cost_models.append(None)
 
     def get_compiled_model(
         self,
@@ -238,16 +256,24 @@ class KerasCNN(BaseMLModel):
         self.disable_icp = flag
 
     def PreLoadData(self):
+        for index, cost in enumerate(self.cost_names):
+            if self.IsValidCost(cost):
+                self.PreLoadDataCore(index)
+
+    def PreLoadDataCore(self, cost_index):
         BaseMLModel.PreLoadData(
-            self, self.step, self.train_test_split, self.validation_split
+            self, self.step, self.train_test_split, 
+            self.validation_split
         )
         if self.args.tl_samples and self.step != self.step_start:
             all_files = glob.glob(
-                os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.prev_step))
+                os.path.join(checkpoint_dir, 
+                    "step{}-cost{}-*.hdf5".format(self.prev_step,
+                        cost_index))
             )
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != "":
-                self.load_model(last_cp)
+                self.load_model(last_cp, cost_index)
                 self.disable_icp = True
         else:
             all_files = glob.glob(
@@ -255,15 +281,15 @@ class KerasCNN(BaseMLModel):
             )
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != "":
-                self.load_model(last_cp)
+                self.load_model(last_cp, cost_index)
                 self.disable_icp = True
 
-    def evaluate(self, x_test, y_test, z_test, tags=""):
+    def evaluate(self, cost_index, x_test, y_test, z_test, tags=""):
         if x_test.size == 0:
             return
         print("***********************************************")
         print("\n# Generate predictions for 3 samples of " + tags)
-        predictions = self.model.predict(x_test, batch_size=self.GetBatchSize())
+        predictions = self.cost_models[cost_index].predict(x_test, batch_size=self.GetBatchSize())
         print(
             predictions[0],
             np.log(y_test[0]),
@@ -313,22 +339,24 @@ class KerasCNN(BaseMLModel):
         # print(tags+" MeanAct: ", np.mean(estimation_act_error), "MaxAct: ", np.max(estimation_act_error), "MinAct: ", np.min(estimation_act_error))
 
     # Inference on samples, which is type of model specific
-    def Inference(self, outfile=""):
-        self.load_model(self.icp)
-        predictions = self.model.predict(self.x_train, batch_size=self.GetBatchSize())
+    def Inference(self, cost_index, outfile=""):
+        self.load_model(self.icp, cost_index)
+        predictions = self.cost_models[cost_index].predict(
+                self.x_train, batch_size=self.GetBatchSize())
         if outfile != None:
             BaseMLModel.WritePredictionsToFile(
-                self, self.x_train, self.y_train, predictions, outfile
+                self, self.x_train, self.y_train[cost_index], 
+                predictions, outfile
             )
         return predictions.reshape((predictions.shape[0],))
 
     # Load the model from the hdf5
-    def load_model(self, model_name):
+    def load_model(self, model_name, cost_index):
         print("Loading the checkpoint: " + model_name)
         keras.losses.custom_loss = self.loss_function
-        self.model.load_weights(model_name)
+        self.cost_models[cost_index].load_weights(model_name)
 
-    def Train(self):
+    def TrainCost(self, cost_index):
         class TestCallback(Callback):
             def __init__(self, test_data, fh):
                 self.test_data = test_data
@@ -336,13 +364,17 @@ class KerasCNN(BaseMLModel):
 
             def on_epoch_end(self, epoch, logs={}):
                 x, y = self.test_data
-                loss, acc = self.model.evaluate(x, y, verbose=0)
+                loss, acc = self.cost_models[cost_index].evaluate(x, y, verbose=0)
                 fh.write(str(epoch) + ", " + str(loss) + ", " + str(acc))
                 # print('\nTesting loss: {}, acc: {}\n'.format(loss, acc))
 
         BaseMLModel.SaveTrainValTestData(self, self.step)
-        x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
-        x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
+        x_train = self.x_train
+        y_train = self.y_train[cost_index]
+        z_train = self.z_train[cost_index]
+        x_test = self.x_test
+        y_test = self.y_test[cost_index]
+        z_test = self.z_test[cost_index]
         if len(x_train) == 0:
             return
         print("Train count:" + str(x_train.shape[0]))
@@ -351,19 +383,21 @@ class KerasCNN(BaseMLModel):
         # of size "batch_size", and repeatedly iterating over
         # the entire dataset for a given number of "epochs"
         if self.no_run:
-            return
+            return (self.step, 0, 0, 0.0, 0.0, len(x_train), 0)
         if self.args.evaluate and self.icp != "":
             print("Loading checkpoint file:" + self.icp)
-            self.load_model(self.icp)
+            self.load_model(self.icp, cost_index)
             print("\n# Evaluate on test data")
-            self.evaluate(x_train, y_train, z_train, "training")
-            self.evaluate(x_test, y_test, z_test, "test")
-            loss, acc = self.model.evaluate(self.x_train, self.y_train, verbose=0)
+            self.evaluate(cost_index, x_train, y_train, z_train, "training")
+            self.evaluate(cost_index, x_test, y_test, z_test, "test")
+            loss, acc = self.cost_models[cost_index].evaluate(
+                    x_train, y_train, verbose=0)
             print("Train Loss: " + str(loss))
-            loss, acc = self.model.evaluate(self.x_test, self.y_test, verbose=0)
+            loss, acc = self.cost_models[cost_index].evaluate(
+                    x_test, y_test, verbose=0)
             print("Test Loss: " + str(loss))
         elif self.icp != "" and not self.disable_icp:
-            self.load_model(self.icp)
+            self.load_model(self.icp, cost_index)
             # self.model = keras.models.load_model(self.args.icp)
             # print('\n# Evaluate on test data')
             # self.evaluate(x_train, y_train, z_train, "training")
@@ -374,6 +408,8 @@ class KerasCNN(BaseMLModel):
                 pretag = (
                     "step"
                     + str(self.step)
+                    + "-cost"
+                    + str(cost_index)
                     + "-train"
                     + str(self.train_count)
                     + "-val"
@@ -392,13 +428,14 @@ class KerasCNN(BaseMLModel):
             )
             callbacks_list = [model_checkpoint]
             print("# Fit model on training data")
-            if self.tl_freeze_layers != "-1":
-                for layer in self.model.layers[: self.tl_freeze_layers]:
+            if self.tl_freeze_layers != -1:
+                model = self.cost_models[cost_index]
+                for layer in model.layers[: self.tl_freeze_layers]:
                     print("Frozen Layer: " + layer.name)
                     layer.trainable = False
             if len(x_train) < 2:
-                return (self.step, 0, 0.0, 0.0, len(x_train), 0)
-            history = self.model.fit(
+                return (self.step, 0, 0, 0.0, 0.0, len(x_train), 0)
+            history = self.cost_models[cost_index].fit(
                 x_train,
                 y_train,
                 batch_size=self.GetBatchSize(),
@@ -434,7 +471,9 @@ class KerasCNN(BaseMLModel):
         # Generate predictions (probabilities -- the output of the last layer)
         # on new data using `predict`
         all_files = glob.glob(
-            os.path.join(checkpoint_dir, "step{}-*.hdf5".format(self.step))
+            os.path.join(checkpoint_dir, 
+                "step{}-cost{}-*.hdf5".format(self.step,
+                    cost_index))
         )
         last_cp = BaseMLModel.get_last_cp_model(self, all_files)
         return self.GetStats(last_cp)
@@ -444,9 +483,11 @@ class KerasCNN(BaseMLModel):
         loss_re = re.compile(r"-loss([^-]*)-")
         valloss_re = re.compile(r"-valloss(.*)\.hdf5")
         step_re = re.compile(r"step([^-]*)-")
+        cost_re = re.compile(r"-cost([^-]*)-")
         traincount_re = re.compile(r"-train([^-]*)-")
         valcount_re = re.compile(r"val([0-9][^-]*)-")
         epoch_flag = epoch_re.search(icp_file)
+        cost_flag = cost_re.search(icp_file)
         loss_flag = loss_re.search(icp_file)
         valloss_flag = valloss_re.search(icp_file)
         step_flag = step_re.search(icp_file)
@@ -457,7 +498,10 @@ class KerasCNN(BaseMLModel):
         val_loss = 0.0
         traincount = 0
         valcount = 0
+        cost_index = 0
         step = -1
+        if cost_flag:
+            cost_index = int(cost_flag.group(1))
         if epoch_flag:
             epoch = int(epoch_flag.group(1))
         if loss_flag:
@@ -470,22 +514,19 @@ class KerasCNN(BaseMLModel):
             traincount = int(float(traincount_flag.group(1)))
         if valcount_flag:
             valcount = int(float(valcount_flag.group(1)))
-        return (step, epoch, train_loss, val_loss, traincount, valcount)
-
+        if step == -1:
+            step = self.step
+        return (step, cost_index, epoch, train_loss, val_loss, traincount, valcount)
+    
     def EvaluateModel(self, all_files, outfile="test-output.csv"):
-        epoch_re = re.compile(r"weights-improvement-([0-9]+)-")
-        loss_re = re.compile(r"-loss([^-]*)-")
-        valloss_re = re.compile(r"-valloss(.*)\.hdf5")
         # step2-train350-val350-weights-improvement-610-loss0.1988-valloss0.1341.hdf5
-        step_re = re.compile(r"step([^-]*)-")
-        traincount_re = re.compile(r"-train([^-]*)-")
-        valcount_re = re.compile(r"val([0-9][^-]*)-")
         with open(outfile, "w") as fh:
-            hdrs = ["Epoch", "TrainLoss", "ValLoss", "TestLoss", "AllLoss"]
+            hdrs = ["Epoch", "CostIndex", "TrainLoss", "ValLoss", "TestLoss", "AllLoss"]
             print("Calculating test accuracies " + str(len(all_files)))
             for index, icp_file in enumerate(all_files):
                 (
                     step,
+                    cost_index,
                     epoch,
                     train_loss,
                     val_loss,
@@ -494,20 +535,26 @@ class KerasCNN(BaseMLModel):
                 ) = self.GetStats(icp_file)
                 #if val_loss > 0.06:
                 #    continue
-                self.load_model(icp_file)
+                self.load_model(icp_file, cost_index)
                 if self.args.load_train_test or self.framework.args.load_train_test:
                     self.LoadTrainValTestData(step)
-                x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
+                x_test = self.x_test
+                y_test = self.y_test[cost_index]
+                z_test = self.z_test[cost_index]
                 print("Train count:" + str(self.x_train.shape[0]))
                 print("Test count:" + str(self.x_test.shape[0]))
                 keras.losses.custom_loss = self.loss_function
                 all_loss = 0.0
                 all_acc = 0.0
                 if x_test.size == 0:
-                    x_test, y_test, z_test = self.x_train, self.y_train, self.z_train
+                    x_test = self.x_train
+                    y_test = self.y_train[cost_index]
+                    z_test = self.z_train[cost_index]
                 else:
-                    all_loss, all_acc = self.model.evaluate(self.x_all, self.y_all, verbose=0)
-                loss, acc = self.model.evaluate(x_test, y_test, verbose=0)
+                    all_loss, all_acc = self.cost_models[cost_index].evaluate(
+                            self.x_all, self.y_all, verbose=0)
+                loss, acc = self.cost_models[cost_index].evaluate(x_test, 
+                        y_test, verbose=0)
                 if fh != None:
                     if index == 0:
                         if step != -1:
@@ -515,7 +562,9 @@ class KerasCNN(BaseMLModel):
                             hdrs.append("TrainCount")
                             hdrs.append("ValCount")
                         fh.write(", ".join(hdrs) + "\n")
-                    data = [str(epoch), str(train_loss), str(val_loss), str(loss), str(all_loss)]
+                    data = [str(epoch), str(cost_index),
+                            str(train_loss), str(val_loss), 
+                            str(loss), str(all_loss)]
                     if step != -1:
                         data.extend([str(step), str(traincount), str(valcount)])
                     print("Extracted data:"+str(data))
