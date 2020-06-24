@@ -44,9 +44,10 @@ class DeffeExtract:
         return parser
 
     # Initialize the class with parameters list and to be extracted cost metrics
-    def Initialize(self, param_list, cost_list):
+    def Initialize(self, param_list, cost_list, param_data):
         self.param_list = param_list
         self.cost_list = cost_list
+        self.param_data = param_data
 
     def GetExtractCommand(self, output, param_pattern, param_dict):
         (run_dir, evaluate_script) = output
@@ -78,8 +79,9 @@ class DeffeExtract:
                             if index < len(lines) else 0 
                             for index in range(len(self.cost_list)) ]
                 result = np.array(flines).astype("str")
-                if self.framework.args.hold_evaluated_data:
-                    self.framework.evaluate.PushEvaluatedData(param_val, result)
+                if self.framework.args.hold_evaluated_data or \
+                    self.config.hold_evaluated_data:
+                    self.param_data.PushEvaluatedData(param_val, result)
                 return (
                     self.framework.valid_flag, flag,
                     result,

@@ -100,6 +100,7 @@ class DeffeFramework:
         self.evaluate = LoadModule(self, self.config.GetEvaluate().pyscript)
         self.extract = LoadModule(self, self.config.GetExtract().pyscript)
         self.slurm = LoadModule(self, self.config.GetSlurm().pyscript)
+        self.param_data = LoadModule(self, "param_data.py")
         self.exploration.Initialize()
 
     # Initialize the python paths
@@ -140,12 +141,14 @@ class DeffeFramework:
             # extract the parameters and cost metrics in that exploration list
             no_train_flag = self.args.no_train
             evaluate_flag = False
-            (param_list, pruned_param_list, n_samples) = self.parameters.Initialize(
-                explore_groups.groups
-            )
+            (param_list, pruned_param_list, n_samples) = \
+                    self.parameters.Initialize(
+                            explore_groups.groups
+                    )
             headers = self.parameters.GetHeaders(param_list)
             pruned_headers = self.parameters.GetHeaders(pruned_param_list)
-            only_preloaded_data_exploration = self.args.only_preloaded_data_exploration
+            only_preloaded_data_exploration = \
+                                self.args.only_preloaded_data_exploration
             full_exploration = self.args.full_exploration
             load_data_file = explore_groups.pre_evaluated_data
             valid_costs = explore_groups.valid_costs
@@ -155,11 +158,17 @@ class DeffeFramework:
                 no_train_flag = True
             if self.args.inference_only:
                 full_exploration = True
-            # Initialize the evaluate, extract and ML models
-            self.evaluate.Initialize(
-                param_list, pruned_param_list, self.config.GetCosts(), load_data_file
+            # Initialize the preloaded data, evaluate, extract and ML models
+            self.param_data.Initialize(
+                param_list, pruned_param_list, 
+                self.config.GetCosts(), load_data_file
             )
-            self.extract.Initialize(param_list, self.config.GetCosts())
+            self.evaluate.Initialize(
+                param_list, pruned_param_list, self.param_data
+            )
+            self.extract.Initialize(param_list, 
+                    self.config.GetCosts(), self.param_data
+            )
             self.model.Initialize(self.config.GetCosts(), valid_costs)
             # Initialize the random sampling
             init_n_train = self.init_n_train
@@ -174,7 +183,9 @@ class DeffeFramework:
                 if self.args.model_extract_dir != "":
                     no_train_flag = True
                     evaluate_flag = True
-            self.sampling.Initialize(self.parameters, n_samples, init_n_train, init_n_val)
+            self.sampling.Initialize(self.parameters, 
+                    n_samples, init_n_train, init_n_val
+            )
 
             # Initialize writing of output log files
             hdrs_write_list = [d[0].name for d in param_list] 

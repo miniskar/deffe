@@ -304,14 +304,14 @@ class Parameters:
     def GetHeaders(self, param_list):
         return [param.name for (param, pvalues, pindex, permutation_index) in param_list]
 
-    def CreateRunScript(self, script, run_dir, param_pattern, param_dict):
+    def CreateRunScript(self, script, run_dir, param_pattern, param_val_with_escapechar_hash):
         with open(script, "r") as rfh, open(
             os.path.join(run_dir, os.path.basename(script)), "w"
         ) as wfh:
             lines = rfh.readlines()
             for line in lines:
                 wline = param_pattern.sub(
-                    lambda m: param_dict.get(re.escape(m.group(0)), m.group(0)), line
+                    lambda m: param_val_with_escapechar_hash.get(re.escape(m.group(0)), m.group(0)), line
                 )
                 wfh.write(wline)
             rfh.close()
@@ -320,7 +320,7 @@ class Parameters:
     def GetParamHash(self, param_val, param_list=None):
         if param_list == None:
             param_list = self.selected_params
-        param_hash = {}
+        param_val_hash = {}
         index = 0
         for (param, param_values, pindex, permutation_index) in param_list:
             param_key1 = "${" + param.name + "}"
@@ -328,29 +328,30 @@ class Parameters:
             if index >= len(param_val):
                 pdb.set_trace()
                 None
-            param_hash[param_key1] = param_val[index]
-            param_hash[param_key2] = param_val[index]
+            param_val_hash[param_key1] = param_val[index]
+            param_val_hash[param_key2] = param_val[index]
             param_key1 = "${" + param.map + "}"
             param_key2 = "$" + param.map+""
             if param.name != param.map:
-                if param_key1 in param_hash:
+                if param_key1 in param_val_hash:
                     print(
                         "[Error] Multiple map_name(s):"
                         + param.map
                         + " used in the evaluation"
                     )
-                param_hash[param_key1] = param_val[index]
-                if param_key2 in param_hash:
+                param_val_hash[param_key1] = param_val[index]
+                if param_key2 in param_val_hash:
                     print(
                         "[Error] Multiple map_name(s):"
                         + param.map
                         + " used in the evaluation"
                     )
-                param_hash[param_key2] = param_val[index]
+                param_val_hash[param_key2] = param_val[index]
             index = index + 1
-        param_dict = dict((re.escape(k), v) for k, v in param_hash.items())
+        param_val_with_escapechar_hash = dict((re.escape(k), v) 
+                for k, v in param_val_hash.items())
         param_pattern = re.compile(r'\$[{]?\b[a-zA-Z0-9_]+\b[}]?')
-        return (param_pattern, param_hash, param_dict)
+        return (param_pattern, param_val_hash, param_val_with_escapechar_hash)
 
 
 if __name__ == "__main__":

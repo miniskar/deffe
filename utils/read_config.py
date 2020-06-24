@@ -222,6 +222,10 @@ class DeffeConfigExtract:
         self.batch_size = "20"
         if data != None and "batch_size" in data:
             self.batch_size = data["batch_size"]
+        self.hold_evaluated_data = False
+        if data != None and "hold_evaluated_data" in data and \
+                   data["hold_evaluated_data"].lower() == "true":
+            self.hold_evaluated_data = True
         self.output_log = "extract.log"
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])

@@ -20,6 +20,7 @@
      "evaluate" : {
         "pyscript"    : "evaluate.py",
         "arguments" : "",
+        "hold_evaluated_data" : "True",
         "sample_evaluate_script" : "evaluate.sh",
         "batch_size"     : "1",
         "output_log"    : "evaluate.log"
