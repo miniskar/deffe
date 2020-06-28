@@ -128,7 +128,7 @@
     },
     "sampling" : {
         "pyscript" : "random_sampling.py",
-        "arguments" : "-method box_behnken",
+        "arguments" : "-method lhs",
         "output_log" : "sampling.log"
     },
     "evaluate" : {

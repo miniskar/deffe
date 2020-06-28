@@ -97,6 +97,11 @@ class DeffeRandomSampling:
             self._seq = org_seq
         else:
             sample_mat = None
+            param_dict_actual = param_dict
+            #param_dict = { k:np.array(v).astype('float').tolist() for k,v in param_dict_actual.items() }
+            #param_dict_hold = { k:np.array(v).astype('float').tolist() for k,v in param_dict_actual.items() }
+            param_dict = { k:[index for index in range(len(v))] for k,v in param_dict_actual.items() }
+            param_dict_hold = { k:[index for index in range(len(v))] for k,v in param_dict_actual.items() }
             if sampling_method == 'frac_fact_res':
                 sample_mat = build.frac_fact_res(param_dict)
             elif sampling_method == 'plackett_burman':
@@ -125,14 +130,26 @@ class DeffeRandomSampling:
                 print("[Error] Unknown method:{} of sampling!".
                         format(sampling))               
                 sys.exit(1)
-            np_records = sample_mat.values.astype("str")
             np_hdrs = np.char.lower(np.array(list(sample_mat.columns)).astype("str"))
-            sel_param_hash = { 
-                    k:re.sub(r'\.0$', '', np_records[index]) 
+            sample_mat_val = np.round(sample_mat.values)
+            sample_mat = np.zeros(sample_mat_val.shape, dtype=int)
+            for i in range(sample_mat_val.shape[1]):
+                id_keys = np.digitize(sample_mat_val[:, i], param_dict_hold[np_hdrs[i]], right=True)
+                sample_mat[:, i] = np.array(param_dict_actual[np_hdrs[i]])[id_keys]
+            sample_mat = np.unique(sample_mat, axis=0)
+            n_samples = sample_mat.shape[0]
+            self._n_samples = n_samples
+            np_records = sample_mat.astype("str")
+            def GetRecHash(rec):
+                sel_param_hash = { 
+                    k:rec[index]
                           for index, k in enumerate(np_hdrs) 
                     }
+                return sel_param_hash
             self._seq = np.array([ 
-                    self.parameters.EncodePermutation(sel_param_pash) \
+                    self.parameters.EncodePermutation( \
+                        GetRecHash(rec) \
+                    ) \
                     for rec in np_records 
                     ]).astype("int")
         if self._shuffle:
