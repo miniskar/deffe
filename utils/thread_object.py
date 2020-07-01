@@ -13,13 +13,24 @@ import time
 from queue import *
 import pdb
 
-class ThreadObject:
+class DeffeThreadData:
+    def __init__(self, data=None, thread_end=False):
+        self._thread_end = thread_end
+        self._data = data
+
+    def IsThreadEnd(self):
+        return self._data
+
+    def GetData(self):
+        return self._data
+
+class DeffeThread:
     """ 
     The RunThread() method will run in the background forever until the StopThread() method is called
     """
 
     def __init__(self):
-        print("ThreadObject init")
+        print("DeffeThread init")
         None
 
     def InitThread(self, method, arguments, start_flag=False):
@@ -67,20 +78,20 @@ class ThreadObject:
         if join_flag:
             self.JoinThread()
 
-class Producer(ThreadObject):
+class Producer(DeffeThread):
     def __init__(self, tag):
         self.tag = tag
-        ThreadObject.InitThread(self, self.run, ())
+        DeffeThread.InitThread(self, self.run, ())
 
     def run(self):
         for i in range(10):
             self.out_ports['samples'].put(i+100, True)
             print(self.tag+": Sent data:"+str(i+100))
 
-class Consumer(ThreadObject):
+class Consumer(DeffeThread):
     def __init__(self, tag):
         self.tag = tag
-        ThreadObject.InitThread(self, self.run, ())
+        DeffeThread.InitThread(self, self.run, ())
 
     def run(self):
         for i in range(10):
@@ -91,7 +102,7 @@ class Consumer(ThreadObject):
 if __name__ == "__main__":
     example1 = Producer("Prod")
     example2 = Consumer("Cons")
-    ThreadObject.Connect("samples", example1, example2)
+    DeffeThread.Connect("samples", example1, example2)
     example2.StartThread()
     example1.StartThread()
     time.sleep(3)

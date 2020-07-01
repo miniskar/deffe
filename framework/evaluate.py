@@ -24,9 +24,10 @@ import shlex
     """
 
 
-class DeffeEvaluate:
+class DeffeEvaluate(DeffeThread):
     # Constructor
     def __init__(self, framework):
+        DeffeThread.InitThread(self, self.RunThread, ())
         self.framework = framework
         self.config = framework.config.GetEvaluate()
         self.slurm_flag = self.config.slurm

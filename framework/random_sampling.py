@@ -17,7 +17,7 @@ import argparse
 import shlex
 
 
-class DeffeRandomSampling:
+class DeffeRandomSampling(DeffeThread):
     """
       SamplingSeqGenerator:  generate training and validation sequences
              Init   :  raw sequence, initial # training, # validation per step, shuffle or not
@@ -44,6 +44,7 @@ class DeffeRandomSampling:
     """
 
     def __init__(self, framework):
+        DeffeThread.InitThread(self, self.RunThread, ())
         self.framework = framework
         self.config = framework.config.GetSampling()
         self._seq = np.arange(1)
@@ -196,7 +197,36 @@ class DeffeRandomSampling:
         self._pos = self._n_train + self._n_val
         # print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
 
+    def GetStep(self):
+        return self.step
+
+    def SetStepInit(self, step, step_start, step_end, step_inc):
+        self.step = 0
+        self.current_step = 0
+        self.step_inc = int(step_inc)
+        self.step_start = -1 
+        if step_start != '':
+            self.step_start = int(step_start)
+        self.step_end = -1
+        if step_end != '':
+            self.step_end = int(step_end)
+
+    def IncrementStep(self):
+        self.step = self.step + self.step_inc
+
     def IsCompleted(self):
+        if self.step != 0 or self.step_start != "":
+            linc = self.step_inc
+            if self.step_start != -1 and self.step < self.step_start:
+                linc = self.step_start - self.step
+                self.step = self.step + linc
+            flag = self.sampling.StepWithInc(linc)
+            if not flag:
+                self._exhausted = True
+                return self._exhausted
+        if self.step_end != -1 and self.step >= self.step_end:
+            self._exhausted = True
+            return self._exhausted
         return self._exhausted
 
     """

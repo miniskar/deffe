@@ -96,12 +96,13 @@ class DeffeFramework:
         self.parameters = Parameters(self.config, self)
         self.model = LoadModule(self, self.config.GetModel().pyscript)
         self.sampling = LoadModule(self, self.config.GetSampling().pyscript)
-        self.exploration = LoadModule(self, self.config.GetExploration().pyscript)
+        #self.exploration = LoadModule(self, self.config.GetExploration().pyscript)
         self.evaluate = LoadModule(self, self.config.GetEvaluate().pyscript)
         self.extract = LoadModule(self, self.config.GetExtract().pyscript)
         self.slurm = LoadModule(self, self.config.GetSlurm().pyscript)
         self.param_data = LoadModule(self, "param_data.py")
-        self.exploration.Initialize()
+        self.param_data = LoadModule(self, "deffe_thread.py")
+        #self.exploration.Initialize()
 
     # Initialize the python paths
     def InitializePythonPaths(self):
@@ -206,27 +207,17 @@ class DeffeFramework:
                 explore_groups.evaluation_predict_table,
                 hdrs_write_list + self.config.GetCosts(),
             )
-            step = 0
-            inc = int(self.args.step_inc)
+            self.sampling.SetStepInit(0, self.args.step_start,
+                    self.args.step_end, self.args.step_inc)
 
             # Iterate the exploration until it is completed
-            while not self.exploration.IsCompleted():
-                if step != 0 or self.args.step_start != "":
-                    linc = inc
-                    if self.args.step_start != "" and step < int(self.args.step_start):
-                        linc = int(self.args.step_start) - step
-                        step = step + linc
-                    flag = self.sampling.StepWithInc(linc)
-                    if not flag:
-                        break
-                if self.args.step_end != "" and step >= int(self.args.step_end):
-                    break
+            while not self.sampling.IsCompleted():
                 samples = self.sampling.GetNewBatch()
                 print("***** Exploration:{}/{} Step {} Current Samples:{} Samples:{}/{} "
                         "*****".format(
                             exp_index+1,
                             len(exploration_list), 
-                            step,
+                            self.sampling.GetSte(),
                             len(samples),
                             len(self.sampling.GetBatch()), 
                             self.parameters.total_permutations))
@@ -280,7 +271,7 @@ class DeffeFramework:
                     if self.args.inference_only:
                         batch_output = self.model.Inference(self.args.output)
                 self.WriteExplorationOutput(parameter_values, batch_output)
-                step = step + inc
+                self.sampling.IncrementStep()
             if evaluate_flag:
                 all_files = glob.glob(
                     os.path.join(self.args.model_extract_dir, "*.hdf5")

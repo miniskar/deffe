@@ -16,8 +16,9 @@ import argparse
 import shlex
 
 
-class DeffeExtract:
+class DeffeExtract(DeffeThread):
     def __init__(self, framework):
+        DeffeThread.InitThread(self, self.RunThread, ())
         self.framework = framework
         self.config = framework.config.GetExtract()
         self.slurm_flag = self.config.slurm

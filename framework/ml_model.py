@@ -16,8 +16,9 @@ import shlex
 from deffe_utils import *
 
 
-class DeffeMLModel:
+class DeffeMLModel(DeffeThread):
     def __init__(self, framework):
+        DeffeThread.InitThread(self, self.RunThread, ())
         self.framework = framework
         self.config = framework.config.GetModel()
         self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
