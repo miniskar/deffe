@@ -109,7 +109,7 @@ class Parameters:
                 (param_list, param_values) = param_groups[grp][ks_name]
                 for (param, ptype) in param_list:
                     if param.name in param_unique_hash:
-                        # Already existing
+                        # Already existing 
                         if ks_name == grp:
                             # Give priority to this
                             del param_unique_hash[param.name]
@@ -118,13 +118,17 @@ class Parameters:
                         param_unique_hash[param.name] = (param, param_values)
         total_permutations = 1
         output_params = []
-        for param_name, (param, param_values) in param_unique_hash.items():
-            output_params.append((param, param_values, len(output_params), total_permutations))
+        for param_name, (param, param_values) in \
+                sorted(param_unique_hash.items(), key=lambda x: x[0]):
+            output_params.append((param, param_values, 
+                        len(output_params), total_permutations))
             total_permutations = len(param_values) * total_permutations 
         self.selected_params = output_params
         self.total_permutations = total_permutations
-        self.selected_pruned_params = self.GetPrunedSelectedParams(self.selected_params)
-        for (param, param_values, pindex, permutation_index) in self.selected_params:
+        self.selected_pruned_params = \
+                       self.GetPrunedSelectedParams(self.selected_params)
+        for (param, param_values, pindex, permutation_index) in \
+                self.selected_params:
             is_numbers = self.IsParameterNumber(param_values)
             if is_numbers:
                 minp = np.min(np.array(param_values).astype("float"))
