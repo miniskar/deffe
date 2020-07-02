@@ -19,15 +19,13 @@ from deffe_utils import *
 import argparse
 import shlex
 
-""" DeffeEvaluate class to evaluate the batch of samples with multi-thread execution environment either with/without 
+""" DeffeEvaluate class to evaluate the batch of samples with 
+    multi-thread execution environment either with/without 
     the help of slurm
     """
-
-
-class DeffeEvaluate(DeffeThread):
+class DeffeEvaluate:
     # Constructor
     def __init__(self, framework):
-        DeffeThread.InitThread(self, self.RunThread, ())
         self.framework = framework
         self.config = framework.config.GetEvaluate()
         self.slurm_flag = self.config.slurm

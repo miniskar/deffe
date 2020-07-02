@@ -15,10 +15,8 @@ import argparse
 import shlex
 from deffe_utils import *
 
-
-class DeffeMLModel(DeffeThread):
+class DeffeMLModel:
     def __init__(self, framework):
-        DeffeThread.InitThread(self, self.RunThread, ())
         self.framework = framework
         self.config = framework.config.GetModel()
         self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
@@ -59,7 +57,7 @@ class DeffeMLModel(DeffeThread):
         return self.ml_model_script.GetTrainTestSplit()
 
     # Initialize model parameters and costs
-    def InitializeModel(self, samples, headers, params, cost=None, step=0):
+    def InitializeSamples(self, samples, headers, params, cost=None, step=0):
         params_valid_indexes = []
         cost_metrics = []
         indexes = samples
@@ -109,8 +107,8 @@ class DeffeMLModel(DeffeThread):
         return cost
 
     # Train the model
-    def Train(self):
-        self.accuracy = self.ml_model_script.Train()
+    def Train(self, threading_model=False):
+        self.accuracy = self.ml_model_script.Train(threading_model)
         return self.accuracy
 
     # Evaluate model results

@@ -15,10 +15,12 @@ import numpy as np
 import argparse
 import shlex
 
-
-class DeffeExtract(DeffeThread):
+""" DeffeExtract class to extract cost metrics for the batch of samples with 
+    through multi-thread execution environment either with/without 
+    the help of slurm
+    """
+class DeffeExtract:
     def __init__(self, framework):
-        DeffeThread.InitThread(self, self.RunThread, ())
         self.framework = framework
         self.config = framework.config.GetExtract()
         self.slurm_flag = self.config.slurm

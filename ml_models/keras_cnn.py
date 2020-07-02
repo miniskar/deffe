@@ -151,15 +151,25 @@ class KerasCNN(BaseMLModel):
             inputs = keras.Input(shape=(self.n_in_fmaps,), name="parameters")
             x = inputs
             x = layers.Reshape((self.n_in_fmaps, 1), name="reshape0")(x)
-            x = layers.Conv1D(
-                32, activation="tanh", kernel_size=3, strides=1, name="conv1"
-            )(x)
-            x = layers.Dropout(rate=0.4)(x)
-            x = layers.Conv1D(
-                64, activation="tanh", kernel_size=3, strides=1, name="conv2"
-            )(x)
-            x = layers.Dropout(rate=0.4)(x)
-            x = layers.Reshape((1, 64 * (self.n_in_fmaps - 4)), name="reshape1")(x)
+            diff_features = 0
+            last_conv_nodes = 0
+            if self.n_in_fmaps >= 3:
+                x = layers.Conv1D(
+                    32, activation="tanh", kernel_size=3, 
+                    strides=1, name="conv1"
+                )(x)
+                x = layers.Dropout(rate=0.4)(x)
+                diff_features = diff_features + 2
+                last_conv_nodes = 32
+            if self.n_in_fmaps >= 5:
+                x = layers.Conv1D(
+                    64, activation="tanh", kernel_size=3, strides=1, name="conv2"
+                )(x)
+                x = layers.Dropout(rate=0.4)(x)
+                diff_features = diff_features + 2
+                last_conv_nodes = 64
+            if last_conv_nodes > 0:
+                x = layers.Reshape((1, last_conv_nodes * (self.n_in_fmaps - diff_features)), name="reshape1")(x)
             x = layers.Dense(self.nodes, activation="tanh", name="dense0")(x)
             x = layers.Dropout(rate=0.4)(x)
             x = layers.Dense(self.last_layer_nodes, activation="relu", name="dense1")(x)

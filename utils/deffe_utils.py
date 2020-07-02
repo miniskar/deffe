@@ -12,7 +12,8 @@ import os
 import re
 import importlib, pathlib
 import sys
-
+import pdb
+import inspect
 
 # Generic loading of python module
 def LoadModule(parent, py_file):
@@ -28,3 +29,33 @@ def RemoveWhiteSpaces(line):
     line = re.sub(r"^\s*", "", line)
     line = re.sub(r"\s*$", "", line)
     return line
+
+def GetFmtMsg(message):
+    framework_path = os.getenv("DEFFE_DIR")
+    message = re.sub(re.escape(framework_path), "$DEFFE_DIR", message)
+    return message
+
+def Log(message, type='Info'):
+    message = GetFmtMsg(message)
+    print("["+type+"] "+message, flush=True)
+
+def LogCmd(message, type='Cmd'):
+    Log(message, type)
+
+def LogModule(message, type='Info', caller_name=None):
+    #called_name = sys._getframe().f_code.co_name
+    if caller_name == None:
+        stack = inspect.stack()
+        caller_class = stack[1][0].f_locals["self"].__class__.__name__
+        caller_name = sys._getframe().f_back.f_code.co_name
+    message = GetFmtMsg(message)
+    print("["+type+"] ("+caller_class+"."+caller_name+"): "+message)
+    
+if __name__ == "__main__":
+    class A:
+        def __init__(self):
+            None
+        def Message(self):
+            LogModule("Hello")
+    a = A()
+    a.Message()

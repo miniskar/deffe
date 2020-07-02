@@ -38,13 +38,27 @@ class BaseMLModel:
                 return False
         return True
 
-    def Train(self):
+    def Train(self, threading_model=False):
         output = []
+        valid_trains = []
         for index, cost in enumerate(self.cost_names):
+            output.append(None)
             if self.IsValidCost(cost):
-                output.append(self.TrainCost(index))
+                valid_trains.append((index, cost))
+        train_threads_list = []
+        for (index, cost) in valid_trains:
+            if threading_model:
+                def TrainThread(self, index, cost):
+                    out = self.TrainCost(index)
+                    output[index] = out
+                train_th_obj = ThreadObject(TrainThread, 
+                        (self, index, cost), True)
+                train_th_obj.StartThread()
+                train_threads_list.append(train_th_obj)
             else:
-                output.append(None)
+                output[index] = self.TrainCost(index)
+        for th in train_threads_list:
+            th.JoinThread()
         return output
 
     def ReshapeCosts(self, train):

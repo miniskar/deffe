@@ -14,7 +14,7 @@ from multiprocessing.pool import ThreadPool
 import subprocess
 import time
 import pdb
-
+from deffe_utils import *
 
 class MultiThreadBatchRun:
     def __init__(self, taskpool_size, framework=None):
@@ -27,12 +27,12 @@ class MultiThreadBatchRun:
     def RunCommand(self, index, cmd):
         # os.system(cmd)
         start = time.time()
-        print("Index:" + str(index) + " Cmd:" + cmd)
+        LogCmd(str(index) +": "+ cmd)
         os.system(cmd)
         end = time.time()
         self.results[index] = 1
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
-        print("Lapsed time:" + str(lapsed_time))
+        Log("Lapsed time:" + str(lapsed_time))
 
     def Run(self, cmds, is_popen=False):
         # print("Start running commands now:"+str(is_popen))
