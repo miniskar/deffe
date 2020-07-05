@@ -181,8 +181,10 @@ class Workload:
             data = sorted(data, key=lambda tup: int(tup[field_index]))
         elif dtype == str or dtype == "str":
             data = sorted(data, key=lambda tup: str(tup[field_index]))
-        else:
+        elif IsFloat(data[0][field_index]):
             data = sorted(data, key=lambda tup: float(tup[field_index]))
+        else:
+            data = sorted(data, key=lambda tup: tup[field_index])
         return data
 
     def SortWorkload(self, data=None, dtype=float, field_index=0):
@@ -919,17 +921,26 @@ def PlotGraph(args, group_data, x_axis_index,
     index = 0
     plt.subplots_adjust(left=0.2)
     plt.subplots_adjust(bottom=0.2)
-    xtick_labels = {}
+    xtick_labels_hash = {}
+    xtick_labels = []
+    total_xlabels = 0
     total_keys = len(graph_data.keys())
+    xtick_args = {}
+    xdatatype = args.xdatatype
     for key in sorted(graph_data.keys()):
         if len(group_key_hash) > 0 and key not in group_key_hash:
             continue
         (xydata, min_max_std_data) = graph_data[key]
         print("Identified group key:" + str(key) + " count:" + str(len(xydata[0])))
         for data in xydata[0]:
-            xtick_labels[data] = 1
+            if data not in xtick_labels_hash:
+                xtick_labels_hash[data] = len(xtick_labels)
+                xtick_labels.append(data)
+        total_xlabels = max(total_xlabels, len(xtick_labels))
         x = np.array(xydata[0])
         y = np.array(xydata[1])
+        if not IsFloat(x[0]):
+            xdatatype = 'str'
         if args.plot_normalize:
             xnorm = xmax - xmin
             if xnorm == 0.0:
@@ -953,15 +964,18 @@ def PlotGraph(args, group_data, x_axis_index,
             color_index = color_index + 1
         elif args.min_max_std_plot:
             plt_color = colors[color_index%len(colors)]
+            xfmt = x
+            if xdatatype == 'str':
+                xfmt = np.array([ xtick_labels_hash[d] for d in x ])
             if total_keys != 1:
                 tick_range = 0.25
-                x = x - tick_range + (2*tick_range*index/(total_keys-1))
+                xfmt = xfmt - tick_range + (2*tick_range*index/(total_keys-1))
             if len(min_max_std_indexes) > 2:
-                plt.errorbar(x, y, min_max_std_data[2], fmt=plt_color+marker, ecolor=plt_color, lw=3)
+                plt.errorbar(xfmt, y, min_max_std_data[2], fmt=plt_color+marker, ecolor=plt_color, lw=3)
             mins = min_max_std_data[0]
             maxes = min_max_std_data[1]
-            plt.errorbar(x, y, [y-mins, maxes-y], fmt=plt_color+marker, ecolor=plt_color, lw=1)
-            plt.plot(x, y, marker, color=plt_color, linewidth="1", linestyle="-", label=str(key))
+            plt.errorbar(xfmt, y, [y-mins, maxes-y], fmt=plt_color+marker, ecolor=plt_color, lw=1)
+            plt.plot(xfmt, y, marker, color=plt_color, linewidth="1", linestyle="-", label=str(key))
             color_index = color_index + 1
         else:
             plt.plot(x, y, marker, linewidth="1", linestyle="-", label=str(key))
@@ -971,42 +985,46 @@ def PlotGraph(args, group_data, x_axis_index,
         ax.set_label(ytitle)
         ax.set_label(ztitle)
     else:
+        plot_width = re.split(r":", args.plot_width_loc)
+        if len(plot_width) == 1:
+            plot_width.append(plot_width[0])
+            plot_width[0] = 0
+        plot_height = re.split(r":", args.plot_height_loc)
+        if len(plot_height) == 1:
+            plot_height.append(plot_height[0])
+            plot_height[0] = 0
+        ax = plt.subplot(111)
+        box = ax.get_position()
+        ax.set_position([box.x0 + box.width * float(plot_width[0]), 
+                box.y0 + box.height * float(plot_height[0]),
+             box.width * float(plot_width[1]), box.height * float(plot_height[1])])
         plt.xlabel(xtitle)
         plt.ylabel(ytitle)
         plt.legend(numpoints=1)
+        legend_args = {}
         if args.legend_title != "":
+            legend_args['title'] = args.legend_title
+        if args.legend_pos != "":
             legend_pos = args.legend_pos
             legend_pos = re.sub(r":", " ", legend_pos)
-            plt.legend(
-                title=args.legend_title,
-                loc=legend_pos,
-                ncol=int(args.legend_ncol),
-                fontsize=12,
-            )
-        elif args.legend_pos != "best" and args.legend_ncol != '1':
-            legend_pos = args.legend_pos
-            legend_pos = re.sub(r":", " ", legend_pos)
-            plt.legend(
-                loc=legend_pos,
-                ncol=int(args.legend_ncol),
-                bbox_to_anchor=(0.5, -1.05), shadow=True, 
-                fontsize=10,
-            )
-        elif args.legend_pos != "best":
-            legend_pos = args.legend_pos
-            legend_pos = re.sub(r":", " ", legend_pos)
-            plt.legend(
-                loc=legend_pos,
-                bbox_to_anchor=(0.5, -0.05), shadow=True, 
-                fontsize=10,
-            )
+            legend_args['loc']=legend_pos
+        if args.legend_ncol != '':
+            legend_args['ncol'] = int(args.legend_ncol)
+        if args.legend_fontsize != '':
+            legend_args['fontsize'] = int(args.legend_fontsize)
+        if args.legend_bbox != '':
+            bbox = args.legend_bbox
+            bbox = re.split(r"\s*[,:]\s*", bbox)
+            fbox = [float(x) for x in bbox]
+            fbox = tuple(fbox)
+            legend_args['bbox_to_anchor'] = fbox
+        plt.legend(**legend_args)
+    if xdatatype == "str":
+        xtick_args["ticks"] = np.arange(total_xlabels)
+        xtick_args["labels"] = xtick_labels
     if args.xticks_rotation != "":
-        if args.xdatatype == "str":
-            plt.xticks(
-                ticks=sorted(xtick_labels.keys()), rotation=int(args.xticks_rotation)
-            )
-        else:
-            plt.xticks(rotation=int(args.xticks_rotation))
+        xtick_args["rotation"] = int(args.xticks_rotation)
+    plt.xticks(**xtick_args)
     if args.yticks_rotation != "":
         plt.yticks(rotation=int(args.yticks_rotation))
     if title != "" and not args.notitle:
@@ -1175,6 +1193,70 @@ def PerformCondition(args, workload):
     return workload
 
 
+def PerformStats(args, workload):
+    const_re = re.compile(r"^\s*::\s*(.*)\s*$", re.IGNORECASE)
+    fields_re = re.compile(
+        r"\s*([^=]*)\s*=\s*([^\s]*)\s\s*([^\s]*)\s\s*([^\s]*)", re.IGNORECASE
+    )
+    fields = fields_re.search(args.stats)
+    if fields:
+        data = workload.GetData()
+        hdrs = workload.GetHeaders()
+        if not workload.IsHdrExist(re.sub("\s*$", "", fields[1])):
+            dst_index = len(hdrs)
+            hdrs, data = workload.AddColumn(["0"], [re.sub("\s*$", "", fields[1])])
+        else:
+            dst_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[1]))
+        src0_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[2]))
+        operator = re.sub("\s*$", "", fields[3])
+        const_fields = const_re.search(fields[4])
+        if const_fields:
+            src1_index = const_fields[1]
+        else:
+            src1_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[4]))
+        if operator.lower() == "min":
+            if const_fields:
+                for rdata in data:
+                    rdata[dst_index] = str(min(
+                                float(rdata[src0_index]), 
+                                float(src1_index)
+                                ))
+            else:
+                for rdata in data:
+                    rdata[dst_index] = str(min(
+                        float(rdata[src0_index]), 
+                        float(rdata[src1_index])
+                        ))
+        elif operator == "max":
+            if const_fields:
+                for rdata in data:
+                    rdata[dst_index] = str(max(
+                                float(rdata[src0_index]), 
+                                float(src1_index)
+                                ))
+            else:
+                for rdata in data:
+                    rdata[dst_index] = str(max(
+                        float(rdata[src0_index]), 
+                        float(rdata[src1_index])
+                    ))
+        elif operator == "avg":
+            if const_fields:
+                for rdata in data:
+                    rdata[dst_index] = str(np.mean([
+                                float(rdata[src0_index]), 
+                                float(src1_index)
+                    ]))
+            else:
+                for rdata in data:
+                    rdata[dst_index] = str(np.mean([
+                        float(rdata[src0_index]),
+                        float(rdata[src1_index])
+                    ]))
+        workload = Workload()
+        workload.InitializeWorkload(hdrs, data)
+    return workload
+
 def PerformArithmatic(args, workload):
     const_re = re.compile(r"^\s*::\s*(.*)\s*$", re.IGNORECASE)
     fields_re = re.compile(
@@ -1255,6 +1337,9 @@ def ProcessData(args):
     if args.arith != "":
         workload = PerformArithmatic(args, workload)
         write_flag = True
+    if args.stats != "":
+        workload = PerformStats(args, workload)
+        write_flag = True
     if args.condition != "":
         workload = PerformCondition(args, workload)
         write_flag = True
@@ -1288,6 +1373,8 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-output", dest="output", default="output")
     parser.add_argument("-column-names", dest="column_names", default="")
     parser.add_argument("-multi-plot", dest="multi_plot", action="store_true")
+    parser.add_argument("-plot-width", dest="plot_width_loc", default="0:1.0")
+    parser.add_argument("-plot-height", dest="plot_height_loc", default="0:1.0")
     parser.add_argument("-group-plot", dest="group_plot", default="")
     parser.add_argument("-group-keys", dest="group_keys", default="")
     parser.add_argument("-sequence-count", dest="sequence_count", default="-1")
@@ -1298,6 +1385,7 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-normalize", dest="normalize", action="store_true")
     parser.add_argument("-arith", dest="arith", default="")
     parser.add_argument("-condition", dest="condition", default="")
+    parser.add_argument("-stats", dest="stats", default="")
     parser.add_argument("-just-sufficient", dest="just_sufficient", action="store_true")
     parser.add_argument("-plot-font-size", dest="plot_font_size", default="")
     parser.add_argument("-plot-name", dest="plot_name", default="out_plot.png")
@@ -1310,7 +1398,9 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-xdatatype", dest="xdatatype", default="")
     parser.add_argument("-legend-title", dest="legend_title", default="")
     parser.add_argument("-legend-pos", dest="legend_pos", default="best")
-    parser.add_argument("-legend-ncol", dest="legend_ncol", default="1")
+    parser.add_argument("-legend-ncol", dest="legend_ncol", default="")
+    parser.add_argument("-legend-fontsize", dest="legend_fontsize", default="")
+    parser.add_argument("-legend-bbox", dest="legend_bbox", default="")
     parser.add_argument("-xtitle", dest="xtitle", default="")
     parser.add_argument("-ytitle", dest="ytitle", default="")
     parser.add_argument("-ztitle", dest="ztitle", default="")
