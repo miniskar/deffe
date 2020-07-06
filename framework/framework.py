@@ -176,7 +176,7 @@ class DeffeFramework:
         init_n_val = self.init_n_val
         # Preload the data if anything is configured
         if self.only_preloaded_data_exploration:
-            n_samples = len(self.evaluate.param_data_hash)
+            n_samples = len(self.param_data.param_data_hash)
             if self.args.model_extract_dir != "" or self.full_exploration:
                 train_test_percentage = self.model.GetTrainTestSplit()
                 init_n_train = int(n_samples * train_test_percentage)
@@ -227,7 +227,7 @@ class DeffeFramework:
         parameters_normalize = None
         # Check if the data point already exist in pre-computed data
         if self.only_preloaded_data_exploration:
-            parameter_values = self.evaluate.GetPreEvaluatedParameters(
+            parameter_values = self.param_data.GetPreEvaluatedParameters(
                 samples, param_list
             )
             pruned_parameter_values = self.parameters.GetPrunedSelectedValues(

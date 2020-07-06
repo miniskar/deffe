@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import argparse
 import shlex
+from deffe_utils import *
 
 class ParamData:
     def __init__(self, framework):
@@ -105,8 +106,12 @@ class ParamData:
             else:
                 unused_params_list.append(param.name)
                 self.unused_params_values.append(param_values[0])
-        if count != len(self.np_param_hdrs):
-            return
+        #pdb.set_trace()
+        #if count != len(self.np_param_hdrs):
+        #    LogError("Parameters identidied in file:{} are {}, "
+        #        "which is not matching with valid count parameters:{}".
+        #        format(preload_file, len(self.np_param_hdrs), count))
+        #    return
         self.rev_param_list = self.np_param_hdrs + unused_params_list
         self.param_extract_indexes = [index for index in range(len(self.np_param_hdrs))]
         self.rev_param_extract_indexes = [

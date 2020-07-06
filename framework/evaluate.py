@@ -162,7 +162,7 @@ class DeffeEvaluate:
         for param_val in parameters:
             # Check if data already existing 
             param_cost = self.param_data.GetParamterCost(param_val)
-            if param_cost:
+            if type(param_cost) == np.ndarray and len(param_cost) > 0:
                 eval_output.append(
                     (
                         self.framework.pre_evaluated_flag,

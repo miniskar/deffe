@@ -489,9 +489,10 @@ class KerasCNN(BaseMLModel):
         return self.GetStats(last_cp)
 
     def GetStats(self, icp_file):
+        float_pattern = "[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?"
         epoch_re = re.compile(r"weights-improvement-([0-9]+)-")
-        loss_re = re.compile(r"-loss([^-]*)-")
-        valloss_re = re.compile(r"-valloss(.*)\.hdf5")
+        loss_re = re.compile(r"-loss("+float_pattern+")-")
+        valloss_re = re.compile(r"-valloss("+float_pattern+")\.hdf5")
         step_re = re.compile(r"step([^-]*)-")
         cost_re = re.compile(r"-cost([^-]*)-")
         traincount_re = re.compile(r"-train([^-]*)-")
