@@ -1095,13 +1095,13 @@ def GetSimpleConditionWorkload(args, workload, condition):
     if fields:
         data = workload.GetData()
         hdrs = workload.GetHeaders()
-        src0_index = workload.GetHdrIndex(fields[1])
-        operator = fields[2]
-        const_fields = const_re.search(fields[3])
+        src0_index = workload.GetHdrIndex(fields.group(1))
+        operator = fields.group(2)
+        const_fields = const_re.search(fields.group(3))
         if const_fields:
-            src1_index = const_fields[1]
+            src1_index = const_fields.group(1)
         else:
-            src1_index = workload.GetHdrIndex(fields[3])
+            src1_index = workload.GetHdrIndex(fields.group(3))
         new_data = None
         if operator == "==":
             if const_fields:
@@ -1202,18 +1202,18 @@ def PerformStats(args, workload):
     if fields:
         data = workload.GetData()
         hdrs = workload.GetHeaders()
-        if not workload.IsHdrExist(re.sub("\s*$", "", fields[1])):
+        if not workload.IsHdrExist(re.sub("\s*$", "", fields.group(1))):
             dst_index = len(hdrs)
-            hdrs, data = workload.AddColumn(["0"], [re.sub("\s*$", "", fields[1])])
+            hdrs, data = workload.AddColumn(["0"], [re.sub("\s*$", "", fields.group(1))])
         else:
-            dst_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[1]))
-        src0_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[2]))
-        operator = re.sub("\s*$", "", fields[3])
-        const_fields = const_re.search(fields[4])
+            dst_index = workload.GetHdrIndex(re.sub("\s*$", "", fields.group(1)))
+        src0_index = workload.GetHdrIndex(re.sub("\s*$", "", fields.group(2)))
+        operator = re.sub("\s*$", "", fields.group(3))
+        const_fields = const_re.search(fields.group(4))
         if const_fields:
-            src1_index = const_fields[1]
+            src1_index = const_fields.group(1)
         else:
-            src1_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[4]))
+            src1_index = workload.GetHdrIndex(re.sub("\s*$", "", fields.group(4)))
         if operator.lower() == "min":
             if const_fields:
                 for rdata in data:
@@ -1266,18 +1266,18 @@ def PerformArithmatic(args, workload):
     if fields:
         data = workload.GetData()
         hdrs = workload.GetHeaders()
-        if not workload.IsHdrExist(re.sub("\s*$", "", fields[1])):
+        if not workload.IsHdrExist(re.sub("\s*$", "", fields.group(1))):
             dst_index = len(hdrs)
-            hdrs, data = workload.AddColumn(["0"], [re.sub("\s*$", "", fields[1])])
+            hdrs, data = workload.AddColumn(["0"], [re.sub("\s*$", "", fields.group(1))])
         else:
-            dst_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[1]))
-        src0_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[2]))
-        operator = re.sub("\s*$", "", fields[3])
-        const_fields = const_re.search(fields[4])
+            dst_index = workload.GetHdrIndex(re.sub("\s*$", "", fields.group(1)))
+        src0_index = workload.GetHdrIndex(re.sub("\s*$", "", fields.group(2)))
+        operator = re.sub("\s*$", "", fields.group(3))
+        const_fields = const_re.search(fields.group(4))
         if const_fields:
             src1_index = const_fields[1]
         else:
-            src1_index = workload.GetHdrIndex(re.sub("\s*$", "", fields[4]))
+            src1_index = workload.GetHdrIndex(re.sub("\s*$", "", fields.group(4)))
         if operator == "+":
             if const_fields:
                 for rdata in data:

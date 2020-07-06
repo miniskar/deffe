@@ -64,7 +64,7 @@ class MultiThreadBatchRun:
 
 
 if __name__ == "__main__":
-    cmds = ["sh /home/nqx/RISCV/Deffe.Feb24.2020/utils/samp.sh" for i in range(10)]
+    cmds = ["sh $DEFFE_DIR/utils/samp.sh" for i in range(10)]
     mt = MultiThreadBatchRun(5)
     mt.Run(cmds, is_popen=True)
     mt.Run(cmds)
