@@ -1022,6 +1022,9 @@ def PlotGraph(args, group_data, x_axis_index,
     if xdatatype == "str":
         xtick_args["ticks"] = np.arange(total_xlabels)
         xtick_args["labels"] = xtick_labels
+    if len(args.xticks_labels) > 0:
+        xtick_args["ticks"] = np.arange(total_xlabels)
+        xtick_args["labels"] = args.xticks_labels 
     if args.xticks_rotation != "":
         xtick_args["rotation"] = int(args.xticks_rotation)
     plt.xticks(**xtick_args)
@@ -1404,6 +1407,9 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-xtitle", dest="xtitle", default="")
     parser.add_argument("-ytitle", dest="ytitle", default="")
     parser.add_argument("-ztitle", dest="ztitle", default="")
+    parser.add_argument(
+        "-xticks-labels", nargs="*", action="store", dest="xticks_labels", default=""
+    )
     parser.add_argument("-xticks-rotation", dest="xticks_rotation", default="")
     parser.add_argument("-yticks-rotation", dest="yticks_rotation", default="")
     parser.add_argument("-xlimit", dest="xlimit", default="")
