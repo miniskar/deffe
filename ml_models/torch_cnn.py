@@ -154,7 +154,7 @@ class TorchCNN(BaseMLModel):
             self, headers, 
             cost_names,
             valid_costs,
-            parameters_data, cost_data, samples
+            parameters_data, cost_data, samples, 1.0
         )
         args = self.args
         self.prev_step = self.step

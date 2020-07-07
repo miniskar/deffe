@@ -117,6 +117,7 @@ class KerasCNN(BaseMLModel):
         parser.add_argument("-icp", dest="icp", default="")
         parser.add_argument("-epochs", dest="epochs", default="50")
         parser.add_argument("-batch-size", dest="batch_size", default="256")
+        parser.add_argument("-cost-scaling-factor", dest="cost_scaling_factor", default="1")
         parser.add_argument("-freeze-layers", dest="tl_freeze_layers", default="-1")
         parser.add_argument("-convs", dest="convs", default="2")
         parser.add_argument("-plot-model", dest="plot_model", action="store_true")
@@ -218,7 +219,7 @@ class KerasCNN(BaseMLModel):
         BaseMLModel.Initialize(
             self, headers, cost_names,
             valid_costs,
-            parameters_data, cost_data, samples
+            parameters_data, cost_data, samples, float(self.args.cost_scaling_factor)
         )
         args = self.args
         self.prev_step = self.step

@@ -21,15 +21,15 @@ class BaseMLModel:
         None
 
     def Initialize(self, headers, cost_names, valid_costs,
-            parameters, cost_data, samples):
+            parameters, cost_data, samples, cost_scaling_factor):
         print("Headers: " + str(headers))
         orig_cost_data = cost_data
         self.headers = headers
         self.cost_names = cost_names
         self.valid_costs = valid_costs
         self.parameters_data = parameters
-        self.cost_data = cost_data.astype('float') * 100.0
-        self.orig_cost_data = orig_cost_data.astype('float') * 100.0
+        self.cost_data = cost_data.astype('float') * cost_scaling_factor
+        self.orig_cost_data = orig_cost_data.astype('float') * cost_scaling_factor 
         self.sample_actual_indexes = samples
 
     def IsValidCost(self, cost):
