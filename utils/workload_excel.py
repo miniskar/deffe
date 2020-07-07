@@ -820,6 +820,10 @@ def PlotGraph(args, group_data, x_axis_index,
             l_ymax = mm_range[1]
     if args.plot_font_size != "":
         plt.rcParams.update({"font.size": int(args.plot_font_size)})
+    if args.plot_font_truetype:
+        plt.rcParams['ps.useafm'] = True
+        plt.rcParams['pdf.use14corefonts'] = True
+        plt.rcParams['text.usetex'] = True
 
     def GetColumn(data, cols, min_max_std_indexes):
         def GetDataAtIndexes(data, indexes):
@@ -1390,6 +1394,7 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-condition", dest="condition", default="")
     parser.add_argument("-stats", dest="stats", default="")
     parser.add_argument("-just-sufficient", dest="just_sufficient", action="store_true")
+    parser.add_argument('-plot-font-truetype', dest='plot_font_truetype', action="store_true")
     parser.add_argument("-plot-font-size", dest="plot_font_size", default="")
     parser.add_argument("-plot-name", dest="plot_name", default="out_plot.png")
     parser.add_argument("-plot-normalize", dest="plot_normalize", action="store_true")
