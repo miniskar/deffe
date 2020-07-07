@@ -12,7 +12,7 @@ import numpy as np
 import re
 import pdb
 import pandas as pd
-
+from deffe_thread import *
 checkpoint_dir = "checkpoints"
 
 
@@ -28,8 +28,8 @@ class BaseMLModel:
         self.cost_names = cost_names
         self.valid_costs = valid_costs
         self.parameters_data = parameters
-        self.cost_data = cost_data
-        self.orig_cost_data = orig_cost_data
+        self.cost_data = cost_data.astype('float') * 100.0
+        self.orig_cost_data = orig_cost_data.astype('float') * 100.0
         self.sample_actual_indexes = samples
 
     def IsValidCost(self, cost):
@@ -41,6 +41,7 @@ class BaseMLModel:
     def Train(self, threading_model=False):
         output = []
         valid_trains = []
+        self.SaveTrainValTestData(self.step)
         for index, cost in enumerate(self.cost_names):
             output.append(None)
             if self.IsValidCost(cost):
@@ -51,7 +52,7 @@ class BaseMLModel:
                 def TrainThread(self, index, cost):
                     out = self.TrainCost(index)
                     output[index] = out
-                train_th_obj = ThreadObject(TrainThread, 
+                train_th_obj = DeffeThread(TrainThread, 
                         (self, index, cost), True)
                 train_th_obj.StartThread()
                 train_threads_list.append(train_th_obj)
@@ -98,10 +99,10 @@ class BaseMLModel:
         y_test = np.array([])
         z_test = np.array([])
         if cost_data.size != 0:
-            y_train = cost_data[training_idx, :].astype("float")
-            z_train = orig_cost_data[training_idx, :].astype("float")
-            y_test = cost_data[test_idx, :].astype("float")
-            z_test = orig_cost_data[test_idx, :].astype("float")
+            y_train = cost_data[training_idx, :]
+            z_train = orig_cost_data[training_idx, :]
+            y_test = cost_data[test_idx, :]
+            z_test = orig_cost_data[test_idx, :]
             y_train = self.ReshapeCosts(y_train)
             z_train = self.ReshapeCosts(z_train)
             y_test = self.ReshapeCosts(y_test)
@@ -112,18 +113,24 @@ class BaseMLModel:
     def SaveTrainValTestData(self, step=-1):
         if step == -1:
             print("Saving ML model indices: ml-indices.npy")
-            np.save("ml-indices.npy", self.sample_actual_indexes)
+            np.save("ml-indices.npy", 
+                    self.sample_actual_indexes)
         else:
-            print("Saving ML indices: step{}-ml-indices.npy".format(step))
-            np.save("step{}-ml-indices.npy".format(step), self.sample_actual_indexes)
+            print("Saving ML indices: "
+                    "step{}-ml-indices.npy".format(step))
+            np.save("step{}-ml-indices.npy".format(step), 
+                    self.sample_actual_indexes)
 
     def LoadTrainValTestData(self, step=-1):
         if step == -1:
             print("Loading ML indices: ml-indices.npy")
-            sample_load_indexes = np.load("ml-indices.npy")
+            sample_load_indexes = np.load(
+                    "ml-indices.npy")
         else:
-            print("Loading ML indices: step{}-ml-indices.npy".format(step))
-            sample_load_indexes = np.load("step{}-ml-indices.npy".format(step))
+            print("Loading ML indices: "
+                    "step{}-ml-indices.npy".format(step))
+            sample_load_indexes = np.load(
+                    "step{}-ml-indices.npy".format(step))
         parameters = self.parameters_data
         cost_data = self.cost_data
         orig_cost_data = self.orig_cost_data

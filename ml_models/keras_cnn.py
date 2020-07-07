@@ -55,7 +55,7 @@ def custom_mean_abs_exp_loss(y_actual, y_predicted):
 
 def custom_mean_abs_log_loss(y_actual, y_predicted):
     error_sq = K.abs(y_predicted - K.log(y_actual)) / K.log(y_actual)
-    return K.mean(error_sq)
+    return K.abs(K.mean(error_sq))
 
 
 def custom_mean_abs_loss_v3(y_actual, y_predicted):
@@ -72,6 +72,8 @@ class KerasCNN(BaseMLModel):
         self.step = -1
         self.prev_step = -1
         self.step_start = framework.args.step_start
+        if self.step_start == '':
+            self.step_start = 0
         self.step_end = framework.args.step_end
         self.epochs = int(self.args.epochs)
         if framework.args.epochs != "-1":
@@ -266,15 +268,15 @@ class KerasCNN(BaseMLModel):
         self.disable_icp = flag
 
     def PreLoadData(self):
+        BaseMLModel.PreLoadData(
+            self, self.step, self.train_test_split, 
+            self.validation_split
+        )
         for index, cost in enumerate(self.cost_names):
             if self.IsValidCost(cost):
                 self.PreLoadDataCore(index)
 
     def PreLoadDataCore(self, cost_index):
-        BaseMLModel.PreLoadData(
-            self, self.step, self.train_test_split, 
-            self.validation_split
-        )
         if self.args.tl_samples and self.step != self.step_start:
             all_files = glob.glob(
                 os.path.join(checkpoint_dir, 
@@ -378,7 +380,6 @@ class KerasCNN(BaseMLModel):
                 fh.write(str(epoch) + ", " + str(loss) + ", " + str(acc))
                 # print('\nTesting loss: {}, acc: {}\n'.format(loss, acc))
 
-        BaseMLModel.SaveTrainValTestData(self, self.step)
         x_train = self.x_train
         y_train = self.y_train[cost_index]
         z_train = self.z_train[cost_index]
@@ -547,11 +548,12 @@ class KerasCNN(BaseMLModel):
                 #if val_loss > 0.06:
                 #    continue
                 self.load_model(icp_file, cost_index)
-                if self.args.load_train_test or self.framework.args.load_train_test:
+                if self.args.load_train_test or \
+                    self.framework.args.load_train_test:
                     self.LoadTrainValTestData(step)
                 x_test = self.x_test
-                y_test = self.y_test[cost_index]
-                z_test = self.z_test[cost_index]
+                y_test = self.y_test
+                z_test = self.z_test
                 print("Train count:" + str(self.x_train.shape[0]))
                 print("Test count:" + str(self.x_test.shape[0]))
                 keras.losses.custom_loss = self.loss_function
@@ -562,6 +564,8 @@ class KerasCNN(BaseMLModel):
                     y_test = self.y_train[cost_index]
                     z_test = self.z_train[cost_index]
                 else:
+                    y_test = self.y_test[cost_index]
+                    z_test = self.z_test[cost_index]
                     all_loss, all_acc = self.cost_models[cost_index].evaluate(
                             self.x_all, self.y_all, verbose=0)
                 loss, acc = self.cost_models[cost_index].evaluate(x_test, 

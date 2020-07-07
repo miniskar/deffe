@@ -108,7 +108,7 @@ class DeffeMLModel:
 
     # Train the model
     def Train(self, threading_model=False):
-        self.accuracy = self.ml_model_script.Train(threading_model)
+        self.accuracy = self.ml_model_script.Train(True)
         return self.accuracy
 
     # Evaluate model results

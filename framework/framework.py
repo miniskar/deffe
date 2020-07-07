@@ -311,12 +311,16 @@ class DeffeFramework:
                         self.Train(samples, 
                             pruned_headers, parameters_normalize, 
                             batch_output, step)
+                    if self.model_evaluate_flag:
+                        self.model.InitializeSamples(
+                            samples, pruned_headers, 
+                            parameters_normalize, batch_output, step
+                        )
+                        all_files = glob.glob(
+                            os.path.join(self.args.model_extract_dir, "*.hdf5")
+                        )
+                        self.model.EvaluateModel(all_files, self.args.model_stats_output)
                 self.WriteExplorationOutput(parameter_values, batch_output)
-            if self.model_evaluate_flag:
-                all_files = glob.glob(
-                    os.path.join(self.args.model_extract_dir, "*.hdf5")
-                )
-                self.model.EvaluateModel(all_files, self.args.model_stats_output)
 
     # Run the framework
     def RunParallel(self):
