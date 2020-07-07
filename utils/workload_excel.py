@@ -20,7 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # from multicore_run import *
 # Is string floating point number
-float_pattern = "^[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?$"
+float_pattern = "^[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?$"
 int_pattern = "^([0-9]*)$"
 int_re = re.compile(int_pattern)
 float_re = re.compile(float_pattern, re.VERBOSE)
@@ -97,7 +97,9 @@ class Workload:
         return [index for index, hdr in enumerate(hdrs) if self.cost_re.search(hdr)]
 
     def GetHdrIndex(self, index_name):
-        return self.headers_index_hash[index_name]
+        if index_name in self.headers_index_hash:
+            return self.headers_index_hash[index_name]
+        return None
 
     # Remove whitespaces in line
     def RemoveWhiteSpaces(self, line):
@@ -768,6 +770,7 @@ def GroupDataPlot(args, workload):
         min_max_std_indexes = [workload.GetHdrIndex(y) 
                                          for y in args.ycol[1:]]
     x_axis_index = workload.GetHdrIndex(args.xcol)
+    z_axis_index = workload.GetHdrIndex(args.zcol)
     data_lines = workload.data_lines
     if args.xsort:
         data_lines = workload.SortData(data_lines, int, x_axis_index)
@@ -775,7 +778,7 @@ def GroupDataPlot(args, workload):
         data_lines = workload.SortData(data_lines, float, y_axis_index)
     group_data = workload.GroupsData(groups_axis, data_lines)
     PlotGraph(args, group_data, 
-            x_axis_index, y_axis_index, min_max_std_indexes)
+            x_axis_index, y_axis_index, min_max_std_indexes, z_axis_index)
 
 
 def MultiDataPlot(args, workload):
@@ -790,16 +793,17 @@ def MultiDataPlot(args, workload):
     if args.ycol != "":
         ycols = args.ycol
     x_axis_index = workload.GetHdrIndex(args.xcol)
+    z_axis_index = workload.GetHdrIndex(args.zcol)
     group_data = {}
     for ycol in ycols:
         y_axis_index = workload.GetHdrIndex(ycol)
         data = workload.Get2DData([x_axis_index, y_axis_index], data_lines)
         group_data[ycol] = data
-    PlotGraph(args, group_data, 0, 1, [])
+    PlotGraph(args, group_data, 0, 1, [], z_axis_index)
 
 
 def PlotGraph(args, group_data, x_axis_index, 
-        y_axis_index, min_max_std_indexes):
+        y_axis_index, min_max_std_indexes, z_axis_index):
     l_xmin = ""
     l_ymin = ""
     l_xmax = ""
@@ -825,7 +829,7 @@ def PlotGraph(args, group_data, x_axis_index,
         plt.rcParams['pdf.use14corefonts'] = True
         plt.rcParams['text.usetex'] = True
 
-    def GetColumn(data, cols, min_max_std_indexes):
+    def GetColumn(data, cols, min_max_std_indexes, z_index=-1):
         def GetDataAtIndexes(data, indexes):
             return [data[i] for i in indexes]
 
@@ -851,6 +855,9 @@ def PlotGraph(args, group_data, x_axis_index,
         d = zip(*pruned_data)
         d2 = list(d)
         xydata = [list(d2[col]) for col in cols]
+        zdata = []
+        if args.plot3dscatter and z_index != None and z_index >= 0:
+            zdata = list(d2[z_index])
         min_max_std_data = [list(d2[col]) for col in min_max_std_indexes]
         min_max_std_data = np.array(min_max_std_data).astype("float")
         if args.xdatatype == "" and IsFloat(xydata[0][0]):
@@ -859,13 +866,19 @@ def PlotGraph(args, group_data, x_axis_index,
         if args.ydatatype == "" and IsFloat(xydata[1][0]):
             xydata1_np = np.array(xydata[1]).astype("float")
             xydata = [xydata[0], xydata1_np.tolist()]
+        if args.zdatatype == "" and len(zdata) > 0 and IsFloat(zdata[0]):
+            zdata_np = np.array(zdata).astype("float")
+            zdata = zdata_np.tolist()
         if args.xdatatype != "":
             xydata0_np = np.array(xydata[0]).astype(args.xdatatype)
             xydata = [xydata0_np.tolist(), xydata[1]]
         if args.ydatatype != "":
             xydata1_np = np.array(xydata[1]).astype(args.ydatatype)
             xydata = [xydata[0], xydata1_np.tolist()]
-        return xydata, min_max_std_data
+        if args.zdatatype != "" and len(zdata) > 0:
+            zdata_np = np.array(zdata).astype(args.ydatatype)
+            zdata = zdata_np.tolist()
+        return xydata, min_max_std_data, zdata
 
     def NormalizeData(x, xmin, xnorm):
         return (x - xmin) / xnorm
@@ -900,7 +913,7 @@ def PlotGraph(args, group_data, x_axis_index,
             key_tuple = float(key)
         group_key_hash[key_tuple] = 1
     for key, ldata in group_data.items():
-        xydata, min_max_std_data = GetColumn(ldata, [x_axis_index, y_axis_index], min_max_std_indexes)
+        xydata, min_max_std_data, zdata = GetColumn(ldata, [x_axis_index, y_axis_index], min_max_std_indexes, z_axis_index)
         if len(xydata[0]) == 0:
             continue
         if args.pareto:
@@ -910,14 +923,14 @@ def PlotGraph(args, group_data, x_axis_index,
                 key = int(key)
             elif float_re.search(key):
                 key = float(key)
-        graph_data[key] = (xydata, min_max_std_data)
+        graph_data[key] = (xydata, min_max_std_data, zdata)
         if args.plot_normalize:
             xmax = max(xmax, max(xydata[0]))
             xmin = min(xmin, min(xydata[0]))
             ymax = max(ymax, max(xydata[1]))
             ymin = min(ymin, min(xydata[1]))
     ax = None
-    if args.plot3d:
+    if args.plot3d or args.plot3dscatter:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection="3d")
     colors = ["b", "g", "r", "c", "m", "y", "k"]
@@ -934,7 +947,7 @@ def PlotGraph(args, group_data, x_axis_index,
     for key in sorted(graph_data.keys()):
         if len(group_key_hash) > 0 and key not in group_key_hash:
             continue
-        (xydata, min_max_std_data) = graph_data[key]
+        (xydata, min_max_std_data, zdata) = graph_data[key]
         print("Identified group key:" + str(key) + " count:" + str(len(xydata[0])))
         for data in xydata[0]:
             if data not in xtick_labels_hash:
@@ -943,6 +956,7 @@ def PlotGraph(args, group_data, x_axis_index,
         total_xlabels = max(total_xlabels, len(xtick_labels))
         x = np.array(xydata[0])
         y = np.array(xydata[1])
+        z = np.array(zdata)
         if not IsFloat(x[0]):
             xdatatype = 'str'
         if args.plot_normalize:
@@ -956,15 +970,18 @@ def PlotGraph(args, group_data, x_axis_index,
             y = NormalizeData(y, ymin, ynorm)
         marker = markers[index % len(markers)]
         if ax != None:
-            ax.bar(
-                x,
-                y,
-                zs=key,
-                width=100.0,
-                zdir="y",
-                color=colors[color_index % len(colors)],
-                alpha=0.8,
-            )
+            if args.plot3dscatter:
+                ax.scatter(x, y, z, c=colors[color_index % len(colors)], marker=marker)
+            else:
+                ax.bar(
+                    x,
+                    y,
+                    zs=key,
+                    width=100.0,
+                    zdir="y",
+                    color=colors[color_index % len(colors)],
+                    alpha=0.8,
+                )
             color_index = color_index + 1
         elif args.min_max_std_plot:
             plt_color = colors[color_index%len(colors)]
@@ -989,19 +1006,20 @@ def PlotGraph(args, group_data, x_axis_index,
         ax.set_label(ytitle)
         ax.set_label(ztitle)
     else:
-        plot_width = re.split(r":", args.plot_width_loc)
-        if len(plot_width) == 1:
-            plot_width.append(plot_width[0])
-            plot_width[0] = 0
-        plot_height = re.split(r":", args.plot_height_loc)
-        if len(plot_height) == 1:
-            plot_height.append(plot_height[0])
-            plot_height[0] = 0
-        ax = plt.subplot(111)
-        box = ax.get_position()
-        ax.set_position([box.x0 + box.width * float(plot_width[0]), 
-                box.y0 + box.height * float(plot_height[0]),
-             box.width * float(plot_width[1]), box.height * float(plot_height[1])])
+        if args.plot_width_loc != '' or args.plot_height_loc != '':
+            plot_width = re.split(r":", args.plot_width_loc)
+            if len(plot_width) == 1:
+                plot_width.append(plot_width[0])
+                plot_width[0] = 0
+            plot_height = re.split(r":", args.plot_height_loc)
+            if len(plot_height) == 1:
+                plot_height.append(plot_height[0])
+                plot_height[0] = 0
+            ax = plt.subplot(111)
+            box = ax.get_position()
+            ax.set_position([box.x0 + box.width * float(plot_width[0]), 
+                    box.y0 + box.height * float(plot_height[0]),
+                 box.width * float(plot_width[1]), box.height * float(plot_height[1])])
         plt.xlabel(xtitle)
         plt.ylabel(ytitle)
         plt.legend(numpoints=1)
@@ -1389,6 +1407,7 @@ def InitializeWorkloadArgParse(parser):
         "-sequencing", nargs="*", action="store", dest="sequencing", default=""
     )
     parser.add_argument("-plot3d", dest="plot3d", action="store_true")
+    parser.add_argument("-plot3dscatter", dest="plot3dscatter", action="store_true")
     parser.add_argument("-normalize", dest="normalize", action="store_true")
     parser.add_argument("-arith", dest="arith", default="")
     parser.add_argument("-condition", dest="condition", default="")
@@ -1402,6 +1421,7 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-pareto-deviation", dest="deviation", default="0.0")
     parser.add_argument("-title", dest="title", default="")
     parser.add_argument("-notitle", dest="notitle", action="store_true")
+    parser.add_argument("-zdatatype", dest="zdatatype", default="")
     parser.add_argument("-ydatatype", dest="ydatatype", default="")
     parser.add_argument("-xdatatype", dest="xdatatype", default="")
     parser.add_argument("-legend-title", dest="legend_title", default="")
@@ -1419,13 +1439,13 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-yticks-rotation", dest="yticks_rotation", default="")
     parser.add_argument("-xlimit", dest="xlimit", default="")
     parser.add_argument("-ylimit", dest="ylimit", default="")
+    parser.add_argument("-zcol", dest="zcol", default="Index")
     parser.add_argument("-xcol", dest="xcol", default="Index")
     parser.add_argument(
         "-ycol", nargs="*", action="store", dest="ycol", default="cpu_cycles"
     )
     parser.add_argument("-xsort", dest="xsort", action="store_true")
     parser.add_argument("-ysort", dest="ysort", action="store_true")
-    parser.add_argument("-zcol", dest="zcol", default="Z")
     parser.add_argument("-log", dest="log", default="")
     parser.add_argument("-ylog", dest="ylog", default="")
     parser.add_argument("-xlog", dest="xlog", default="")
