@@ -153,8 +153,9 @@ class Workload:
         group_data = {}
         indexes = []
         for gname in group_hdrs:
-            hindex = self.headers_index_hash[gname]
-            indexes.append(hindex)
+            if gname != '#all':
+                hindex = self.headers_index_hash[gname]
+                indexes.append(hindex)
         global_key = "plot"
         if data_lines == None:
             data_lines = self.data_lines
@@ -998,13 +999,17 @@ def PlotGraph(args, group_data, x_axis_index,
             plt.errorbar(xfmt, y, [y-mins, maxes-y], fmt=plt_color+marker, ecolor=plt_color, lw=1)
             plt.plot(xfmt, y, marker, color=plt_color, linewidth="1", linestyle="-", label=str(key))
             color_index = color_index + 1
+        elif args.scatter_plot:
+            plt_color = colors[color_index%len(colors)]
+            plt.scatter(x, y, marker=marker, color=plt_color, label=str(key))
+            color_index = color_index + 1
         else:
             plt.plot(x, y, marker, linewidth="1", linestyle="-", label=str(key))
         index = index + 1
     if ax != None:
-        ax.set_label(xtitle)
-        ax.set_label(ytitle)
-        ax.set_label(ztitle)
+        ax.set_xlabel(xtitle)
+        ax.set_ylabel(ytitle)
+        ax.set_zlabel(ztitle)
     else:
         if args.plot_width_loc != '' or args.plot_height_loc != '':
             plot_width = re.split(r":", args.plot_width_loc)
@@ -1407,6 +1412,7 @@ def InitializeWorkloadArgParse(parser):
         "-sequencing", nargs="*", action="store", dest="sequencing", default=""
     )
     parser.add_argument("-plot3d", dest="plot3d", action="store_true")
+    parser.add_argument("-plot-scatter", dest="scatter_plot", action="store_true")
     parser.add_argument("-plot3dscatter", dest="plot3dscatter", action="store_true")
     parser.add_argument("-normalize", dest="normalize", action="store_true")
     parser.add_argument("-arith", dest="arith", default="")
