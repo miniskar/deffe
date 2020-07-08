@@ -715,16 +715,17 @@ def MergeData(args):
     return new_workload
 
 
-def GetParetoData(xydata, deviation=0.0):
+def GetParetoData(xydata, anndata, deviation=0.0):
     xdata = np.array(xydata[0]).astype("float")
     ydata = np.array(xydata[1]).astype("float")
-    best_point = [xdata[0], ydata[0]]
+    best_point = [xdata[0], ydata[0], 0]
     prev_best_point = best_point
-    pareto_point = [[], []]
+    pareto_point = [[], [], []]
     for index in range(xdata.size):
         if xdata[index] == best_point[0]:
             if ydata[index] < best_point[1]:
                 best_point[1] = ydata[index]
+                best_point[2] = index
         else:
             is_best = False
             is_second_best = False
@@ -737,9 +738,11 @@ def GetParetoData(xydata, deviation=0.0):
             if is_best or is_second_best:
                 pareto_point[0].append(best_point[0])
                 pareto_point[1].append(best_point[1])
+                if len(anndata):
+                    pareto_point[2].append(anndata[index])
             if is_best:
                 prev_best_point = best_point
-            best_point = [xdata[index], ydata[index]]
+            best_point = [xdata[index], ydata[index], index]
     is_best = False
     is_second_best = False
     if len(pareto_point[1]) == 0 or best_point[1] < prev_best_point[1]:
@@ -751,8 +754,10 @@ def GetParetoData(xydata, deviation=0.0):
     if is_best or is_second_best:
         pareto_point[0].append(best_point[0])
         pareto_point[1].append(best_point[1])
+        if len(anndata):
+            pareto_point[2].append(anndata[best_point[2]])
     print("Total pareto points: " + str(len(pareto_point[0])))
-    return pareto_point
+    return [pareto_point[0], pareto_point[1]], pareto_point[2]
 
 
 def GroupDataPlot(args, workload):
@@ -778,8 +783,13 @@ def GroupDataPlot(args, workload):
     if args.ysort:
         data_lines = workload.SortData(data_lines, float, y_axis_index)
     group_data = workload.GroupsData(groups_axis, data_lines)
+    annotation_cols = []
+    if len(args.ann_cols)>0:
+        annotation_cols = [workload.GetHdrIndex(y) 
+                                         for y in args.ann_cols]
     PlotGraph(args, group_data, 
-            x_axis_index, y_axis_index, min_max_std_indexes, z_axis_index)
+            x_axis_index, y_axis_index, 
+            min_max_std_indexes, z_axis_index, annotation_cols)
 
 
 def MultiDataPlot(args, workload):
@@ -800,11 +810,15 @@ def MultiDataPlot(args, workload):
         y_axis_index = workload.GetHdrIndex(ycol)
         data = workload.Get2DData([x_axis_index, y_axis_index], data_lines)
         group_data[ycol] = data
-    PlotGraph(args, group_data, 0, 1, [], z_axis_index)
+    annotation_cols = []
+    if len(args.ann_cols)>0:
+        annotation_cols = [workload.GetHdrIndex(y) 
+                                         for y in args.ann_cols]
+    PlotGraph(args, group_data, 0, 1, [], z_axis_index, annotation_cols)
 
 
 def PlotGraph(args, group_data, x_axis_index, 
-        y_axis_index, min_max_std_indexes, z_axis_index):
+        y_axis_index, min_max_std_indexes, z_axis_index, annotation_cols):
     l_xmin = ""
     l_ymin = ""
     l_xmax = ""
@@ -830,7 +844,8 @@ def PlotGraph(args, group_data, x_axis_index,
         plt.rcParams['pdf.use14corefonts'] = True
         plt.rcParams['text.usetex'] = True
 
-    def GetColumn(data, cols, min_max_std_indexes, z_index=-1):
+    def GetColumn(data, cols, min_max_std_indexes, annotation_cols,
+            z_index=-1):
         def GetDataAtIndexes(data, indexes):
             return [data[i] for i in indexes]
 
@@ -856,6 +871,8 @@ def PlotGraph(args, group_data, x_axis_index,
         d = zip(*pruned_data)
         d2 = list(d)
         xydata = [list(d2[col]) for col in cols]
+        anndata = [list(d2[col]) for col in annotation_cols]
+        anndata = list(zip(*anndata))
         zdata = []
         if args.plot3dscatter and z_index != None and z_index >= 0:
             zdata = list(d2[z_index])
@@ -879,7 +896,7 @@ def PlotGraph(args, group_data, x_axis_index,
         if args.zdatatype != "" and len(zdata) > 0:
             zdata_np = np.array(zdata).astype(args.ydatatype)
             zdata = zdata_np.tolist()
-        return xydata, min_max_std_data, zdata
+        return xydata, min_max_std_data, zdata, anndata
 
     def NormalizeData(x, xmin, xnorm):
         return (x - xmin) / xnorm
@@ -914,17 +931,19 @@ def PlotGraph(args, group_data, x_axis_index,
             key_tuple = float(key)
         group_key_hash[key_tuple] = 1
     for key, ldata in group_data.items():
-        xydata, min_max_std_data, zdata = GetColumn(ldata, [x_axis_index, y_axis_index], min_max_std_indexes, z_axis_index)
+        xydata, min_max_std_data, zdata, anndata = GetColumn(ldata, 
+                [x_axis_index, y_axis_index], 
+                min_max_std_indexes, annotation_cols, z_axis_index)
         if len(xydata[0]) == 0:
             continue
         if args.pareto:
-            xydata = GetParetoData(xydata, float(args.deviation))
+            xydata, anndata = GetParetoData(xydata, anndata, float(args.deviation))
         if type(key) != tuple:
             if int_re.search(key):
                 key = int(key)
             elif float_re.search(key):
                 key = float(key)
-        graph_data[key] = (xydata, min_max_std_data, zdata)
+        graph_data[key] = (xydata, min_max_std_data, zdata, anndata)
         if args.plot_normalize:
             xmax = max(xmax, max(xydata[0]))
             xmin = min(xmin, min(xydata[0]))
@@ -948,7 +967,7 @@ def PlotGraph(args, group_data, x_axis_index,
     for key in sorted(graph_data.keys()):
         if len(group_key_hash) > 0 and key not in group_key_hash:
             continue
-        (xydata, min_max_std_data, zdata) = graph_data[key]
+        (xydata, min_max_std_data, zdata, anndata) = graph_data[key]
         print("Identified group key:" + str(key) + " count:" + str(len(xydata[0])))
         for data in xydata[0]:
             if data not in xtick_labels_hash:
@@ -1002,6 +1021,17 @@ def PlotGraph(args, group_data, x_axis_index,
         elif args.scatter_plot:
             plt_color = colors[color_index%len(colors)]
             plt.scatter(x, y, marker=marker, color=plt_color, label=str(key))
+            #for aindex, adata in enumerate(anndata):
+            #    plt.annotate(str(adata), (x[aindex], y[aindex]))
+            if len(anndata):
+                #for aindex in [0, len(anndata)-1]:
+                    aoffset = 72
+                    arrowprops = dict(
+                        arrowstyle = "->",
+                        connectionstyle = "angle,angleA=45,angleB=0,rad=10")
+                    #plt.annotate(str(anndata[0]), (x[0], y[0]), xytext=(0,0), textcoords='offset points', arrowprops=arrowprops)
+                    #plt.annotate(str(anndata[0]), (x[0], y[0]), xytext=(-2*aoffset,aoffset), textcoords='offset points', arrowprops=arrowprops)
+                    plt.annotate(str(anndata[len(anndata)-1]), (x[len(anndata)-1], y[len(anndata)-1]))
             color_index = color_index + 1
         else:
             plt.plot(x, y, marker, linewidth="1", linestyle="-", label=str(key))
@@ -1449,6 +1479,9 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-xcol", dest="xcol", default="Index")
     parser.add_argument(
         "-ycol", nargs="*", action="store", dest="ycol", default="cpu_cycles"
+    )
+    parser.add_argument(
+        "-ann-cols", nargs="*", action="store", dest="ann_cols", default=""
     )
     parser.add_argument("-xsort", dest="xsort", action="store_true")
     parser.add_argument("-ysort", dest="ysort", action="store_true")
