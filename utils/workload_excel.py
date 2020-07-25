@@ -17,6 +17,7 @@ import time
 import argparse
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import random
 
 # from multicore_run import *
 # Is string floating point number
@@ -991,6 +992,15 @@ def PlotGraph(args, group_data, x_axis_index,
         marker = markers[index % len(markers)]
         if ax != None:
             if args.plot3dscatter:
+                #idx=random.sample(range(len(x)),1000)
+                #ax.scatter(x[idx], y[idx], z[idx], c=colors[color_index % len(colors)], marker=marker)
+                if args.limit_scatter != '-1':
+                    xyz = np.unique((np.array([x,y,z])/int(args.limit_scatter)).astype("int"), axis=1)
+                    xyz = xyz * int(args.limit_scatter)
+                    x = xyz[0]
+                    y = xyz[1]
+                    z = xyz[2]
+                print("Total scatter points:"+str(len(x)))
                 ax.scatter(x, y, z, c=colors[color_index % len(colors)], marker=marker)
             else:
                 ax.bar(
@@ -1020,18 +1030,51 @@ def PlotGraph(args, group_data, x_axis_index,
             color_index = color_index + 1
         elif args.scatter_plot:
             plt_color = colors[color_index%len(colors)]
-            plt.scatter(x, y, marker=marker, color=plt_color, label=str(key))
-            #for aindex, adata in enumerate(anndata):
-            #    plt.annotate(str(adata), (x[aindex], y[aindex]))
-            if len(anndata):
+            lmarker = marker
+            if args.marker != '':
+                lmarker = args.marker 
+            lcolor = plt_color
+            if args.color != '':
+                lcolor = args.color
+            plt.scatter(x, y, marker=lmarker, color=lcolor, label=str(key))
+            def AnnStr(data):
+                d = list(data)
+                d = ", ".join(d)
+                return "("+d+")"
+            if args.all_annotations:
+                rotated_labels = []
+                def text_slope_match_line(text, x, y, line):
+                    global rotated_labels
+
+                    # find the slope
+                    xdata, ydata = line.get_data()
+
+                    x1 = xdata[0]
+                    x2 = xdata[-1]
+                    y1 = ydata[0]
+                    y2 = ydata[-1]
+
+                    rotated_labels.append({"text":text, "line":line, "p1":numpy.array((x1, y1)), "p2":numpy.array((x2, y2))})
+                sax = plt.subplot(111)
+                mean_anndata = len(anndata)/2
+                if args.ann_mean != '':
+                    mean_anndata = int(args.ann_mean)
+                rot_angle = int(args.ann_rotation)
+                for aindex, adata in enumerate(anndata):
+                    abindex = aindex
+                    tot_seg = mean_anndata
+                    if aindex >= mean_anndata:
+                        tot_seg = len(anndata)-mean_anndata
+                        abindex = (len(anndata)-aindex)
+                    rotation=int(abindex * rot_angle * 1.0/tot_seg)
+                    sax.text(x[aindex], y[aindex], AnnStr(adata), {'ha': 'left', 'va': 'bottom'}, rotation=rotation)
+                    #plt.annotate(str(adata), (x[aindex], y[aindex]))
+            elif len(anndata) > 0:
                 #for aindex in [0, len(anndata)-1]:
                     aoffset = 72
-                    arrowprops = dict(
-                        arrowstyle = "->",
-                        connectionstyle = "angle,angleA=45,angleB=0,rad=10")
                     #plt.annotate(str(anndata[0]), (x[0], y[0]), xytext=(0,0), textcoords='offset points', arrowprops=arrowprops)
                     #plt.annotate(str(anndata[0]), (x[0], y[0]), xytext=(-2*aoffset,aoffset), textcoords='offset points', arrowprops=arrowprops)
-                    plt.annotate(str(anndata[len(anndata)-1]), (x[len(anndata)-1], y[len(anndata)-1]))
+                    plt.annotate(AnnStr(anndata[len(anndata)-1]), (x[len(anndata)-1], y[len(anndata)-1]))
             color_index = color_index + 1
         else:
             plt.plot(x, y, marker, linewidth="1", linestyle="-", label=str(key))
@@ -1076,6 +1119,8 @@ def PlotGraph(args, group_data, x_axis_index,
             fbox = tuple(fbox)
             legend_args['bbox_to_anchor'] = fbox
         plt.legend(**legend_args)
+    if args.nolegend:
+        plt.legend().set_visible(False)
     if xdatatype == "str":
         xtick_args["ticks"] = np.arange(total_xlabels)
         xtick_args["labels"] = xtick_labels
@@ -1089,6 +1134,12 @@ def PlotGraph(args, group_data, x_axis_index,
         plt.yticks(rotation=int(args.yticks_rotation))
     if title != "" and not args.notitle:
         plt.title(title)
+    if args.xlim != '':
+        lim_fields=re.split(r'\s*[:,]\s*', args.xlim)
+        plt.xlim(int(lim_fields[0]), int(lim_fields[1]))
+    if args.ylim != '':
+        lim_fields=re.split(r'\s*[:,]\s*', args.ylim)
+        plt.ylim(int(lim_fields[0]), int(lim_fields[1]))
     if args.log != "":
         plt.yscale("log", basey=int(args.log))
     if args.ylog != "":
@@ -1465,6 +1516,7 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-legend-ncol", dest="legend_ncol", default="")
     parser.add_argument("-legend-fontsize", dest="legend_fontsize", default="")
     parser.add_argument("-legend-bbox", dest="legend_bbox", default="")
+    parser.add_argument("-nolegend", dest="nolegend", action="store_true")
     parser.add_argument("-xtitle", dest="xtitle", default="")
     parser.add_argument("-ytitle", dest="ytitle", default="")
     parser.add_argument("-ztitle", dest="ztitle", default="")
@@ -1473,6 +1525,8 @@ def InitializeWorkloadArgParse(parser):
     )
     parser.add_argument("-xticks-rotation", dest="xticks_rotation", default="")
     parser.add_argument("-yticks-rotation", dest="yticks_rotation", default="")
+    parser.add_argument("-xlim", dest="xlim", default="")
+    parser.add_argument("-ylim", dest="ylim", default="")
     parser.add_argument("-xlimit", dest="xlimit", default="")
     parser.add_argument("-ylimit", dest="ylimit", default="")
     parser.add_argument("-zcol", dest="zcol", default="Index")
@@ -1483,9 +1537,15 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument(
         "-ann-cols", nargs="*", action="store", dest="ann_cols", default=""
     )
+    parser.add_argument("-all-annotations", dest="all_annotations", action="store_true")
     parser.add_argument("-xsort", dest="xsort", action="store_true")
+    parser.add_argument("-limit-scatter", dest="limit_scatter", default="-1")
     parser.add_argument("-ysort", dest="ysort", action="store_true")
     parser.add_argument("-log", dest="log", default="")
+    parser.add_argument("-ann-rotation", dest="ann_rotation", default="15")
+    parser.add_argument("-ann-mean", dest="ann_mean", default="")
+    parser.add_argument("-marker", dest="marker", default="")
+    parser.add_argument("-color", dest="color", default="")
     parser.add_argument("-ylog", dest="ylog", default="")
     parser.add_argument("-xlog", dest="xlog", default="")
 
