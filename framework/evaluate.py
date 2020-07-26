@@ -97,13 +97,18 @@ class DeffeEvaluate:
             os.makedirs(run_dir)
         scripts = []
         run_dir = os.path.abspath(run_dir)
+        evaluate_replacements_hash = { 
+            k:v for k,v in param_val_with_escapechar_hash.items() 
+        }
+        evaluate_replacements_hash[re.escape("${evaluate_index}")] = str(self.counter)
+        evaluate_replacements_hash[re.escape("$evaluate_index")] = str(self.counter)
         if "${command_file}" in param_val_hash:
             filename = param_val_hash["${command_file}"]
             if not os.path.exists(filename):
                 filename = os.path.join(self.framework.config_dir, filename)
             self.parameters.CreateRunScript(
                 filename, run_dir, 
-                param_pattern, param_val_with_escapechar_hash
+                param_pattern, evaluate_replacements_hash
             )
             scripts.append((run_dir, filename))
         if "${command_option}" in param_val_hash:
@@ -112,12 +117,12 @@ class DeffeEvaluate:
                 filename = os.path.join(self.framework.config_dir, filename)
             self.parameters.CreateRunScript(
                 filename, run_dir, 
-                param_pattern, param_val_with_escapechar_hash
+                param_pattern, evaluate_replacements_hash
             )
             scripts.append((run_dir, filename))
         self.parameters.CreateRunScript(
             self.config.sample_evaluate_script, run_dir, 
-            param_pattern, param_val_with_escapechar_hash
+            param_pattern, evaluate_replacements_hash
         )
         scripts.append((run_dir, self.config.sample_evaluate_script))
         cmd = ""
