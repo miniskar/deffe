@@ -722,6 +722,7 @@ def GetParetoData(xydata, anndata, deviation=0.0):
     best_point = [xdata[0], ydata[0], 0]
     prev_best_point = best_point
     pareto_point = [[], [], []]
+    non_pareto_point = [[], [], []]
     for index in range(xdata.size):
         if xdata[index] == best_point[0]:
             if ydata[index] < best_point[1]:
@@ -741,6 +742,11 @@ def GetParetoData(xydata, anndata, deviation=0.0):
                 pareto_point[1].append(best_point[1])
                 if len(anndata):
                     pareto_point[2].append(anndata[index])
+            else:
+                non_pareto_point[0].append(best_point[0])
+                non_pareto_point[1].append(best_point[1])
+                if len(anndata):
+                    non_pareto_point[2].append(anndata[index])
             if is_best:
                 prev_best_point = best_point
             best_point = [xdata[index], ydata[index], index]
@@ -757,8 +763,13 @@ def GetParetoData(xydata, anndata, deviation=0.0):
         pareto_point[1].append(best_point[1])
         if len(anndata):
             pareto_point[2].append(anndata[best_point[2]])
+    else:
+        non_pareto_point[0].append(best_point[0])
+        non_pareto_point[1].append(best_point[1])
+        if len(anndata):
+            non_pareto_point[2].append(anndata[index])
     print("Total pareto points: " + str(len(pareto_point[0])))
-    return [pareto_point[0], pareto_point[1]], pareto_point[2]
+    return [pareto_point[0], pareto_point[1]], pareto_point[2], [non_pareto_point[0], non_pareto_point[1]], non_pareto_point[2]
 
 
 def GroupDataPlot(args, workload):
@@ -935,16 +946,23 @@ def PlotGraph(args, group_data, x_axis_index,
         xydata, min_max_std_data, zdata, anndata = GetColumn(ldata, 
                 [x_axis_index, y_axis_index], 
                 min_max_std_indexes, annotation_cols, z_axis_index)
+        non_pareto_xydata = [[], []]
+        non_pareto_anndata = []
         if len(xydata[0]) == 0:
             continue
         if args.pareto:
-            xydata, anndata = GetParetoData(xydata, anndata, float(args.deviation))
+            xydata, anndata, non_pareto_xydata, non_pareto_anndata = GetParetoData(xydata, anndata, float(args.deviation))
         if type(key) != tuple:
             if int_re.search(key):
                 key = int(key)
             elif float_re.search(key):
                 key = float(key)
+        if args.pareto and type(key) == str and key == 'plot':
+            key = 'Pareto-points'
         graph_data[key] = (xydata, min_max_std_data, zdata, anndata)
+        if args.pareto and args.non_pareto:
+            key = 'Non-pareto-points'
+            graph_data[key] = (non_pareto_xydata, min_max_std_data, zdata, non_pareto_anndata)
         if args.plot_normalize:
             xmax = max(xmax, max(xydata[0]))
             xmin = min(xmin, min(xydata[0]))
@@ -1504,6 +1522,7 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument("-plot-font-size", dest="plot_font_size", default="")
     parser.add_argument("-plot-name", dest="plot_name", default="out_plot.png")
     parser.add_argument("-plot-normalize", dest="plot_normalize", action="store_true")
+    parser.add_argument("-non-pareto", dest="non_pareto", action="store_true")
     parser.add_argument("-pareto", dest="pareto", action="store_true")
     parser.add_argument("-pareto-deviation", dest="deviation", default="0.0")
     parser.add_argument("-title", dest="title", default="")
