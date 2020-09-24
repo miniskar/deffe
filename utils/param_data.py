@@ -118,7 +118,8 @@ class ParamData:
             index for index in range(len(self.param_list))
         ]
         for index, hdr in enumerate(self.rev_param_list):
-            self.rev_param_extract_indexes[param_hash[hdr][2]] = index
+            if hdr in param_hash:
+                self.rev_param_extract_indexes[param_hash[hdr][2]] = index
         for (param, param_values, pindex, permutation_index) in self.param_list:
             if len(param_values) > 1:
                 if param.name in np_param_hdrs_hash:
