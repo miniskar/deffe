@@ -282,13 +282,32 @@ class DeffeConfig:
             self.data = self.ReadFile(file_name)
 
     def ReadFile(self, filename):
+        def merge_two_json_lists(l1, l2):
+            is_dict_list = False
+            if len(l1) > 0:
+                if isinstance(l1[0], dict):
+                    is_dict_list = True
+            if len(l2) > 0: 
+                if isinstance(l2[0], dict):
+                    is_dict_list = True
+            if not is_dict_list:
+                return l1+l2
+            new_list = [] + l2
+            new_list_hash = { edict['name'] : (edict, index) for index, edict in enumerate(new_list) }
+            for edict in l1:
+                if edict['name'] in new_list_hash:
+                    (olddict, index) = new_list_hash[edict['name']]
+                    new_list[index] = dict(merge_two_jsons(edict, olddict))
+                else:
+                    new_list.append(edict)
+            return new_list
         def merge_two_jsons(dict1, dict2):
             for k in set(dict1.keys()).union(dict2.keys()):
                 if k in dict1 and k in dict2:
                     if isinstance(dict1[k], dict) and isinstance(dict2[k], dict):
                         yield (k, dict(merge_two_jsons(dict1[k], dict2[k])))
                     elif type(dict1[k]) == list and type(dict2[k]) == list:
-                        yield(k, dict1[k] + dict2[k])
+                        yield(k, merge_two_json_lists(dict1[k], dict2[k]))
                     else:
                         # If one of the values is not a dict, you can't continue merging it.
                         # Value from first dict overrides one in first and we move on.

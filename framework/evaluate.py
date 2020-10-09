@@ -124,7 +124,8 @@ class DeffeEvaluate:
             self.config.sample_evaluate_script, run_dir, 
             param_pattern, evaluate_replacements_hash
         )
-        scripts.append((run_dir, self.config.sample_evaluate_script))
+        scripts.append((run_dir, 
+                    os.path.basename(self.config.sample_evaluate_script)))
         cmd = ""
         for index, (rdir, filename) in enumerate(scripts):
             redirect_symbol = ">>"

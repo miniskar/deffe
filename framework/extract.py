@@ -62,7 +62,7 @@ class DeffeExtract:
             "cd "
             + run_dir
             + " ; sh "
-            + extract_script
+            + os.path.basename(extract_script)
             + " > "
             + self.config.output_log
             + " 2>&1 3>&1 ; cd "
