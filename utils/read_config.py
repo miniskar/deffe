@@ -42,21 +42,32 @@ class DeffeConfigValues:
         else:
             self.values.extend(self.ExtractValues(values, delim))
 
+    def GetRangeOfValues(self, value, values_extract, prefix='', postfix=''):
+        if re.search(r"^([0-9]+)\s*-\s*([0-9]+)", value):
+            fields = re.split("\s*-\s*", value)
+            start = int(fields[0])
+            end = int(fields[1])
+            inc = 1
+            if len(fields) > 2:
+                inc = int(fields[2])
+            sub_values = [prefix+str(i)+postfix for i in range(start, end, inc)]
+            values_extract.extend(sub_values)
+        else:
+            values_extract.append(os.path.expandvars(value))
+
     def ExtractValues(self, values, delim=','):
         values_list = re.split("\s*"+delim+"\s*", values)
         values_extract = []
         for value in values_list:
-            if re.search(r"^([0-9]+)\s*-\s*([0-9]+)", value):
-                fields = re.split("\s*-\s*", value)
-                start = int(fields[0])
-                end = int(fields[1])
-                inc = 1
-                if len(fields) > 2:
-                    inc = int(fields[2])
-                sub_values = [str(i) for i in range(start, end, inc)]
-                values_extract.extend(sub_values)
-            else:
-                values_extract.append(os.path.expandvars(value))
+            range_value = value
+            prefix = ''
+            postfix = ''
+            match = re.match(r'(.*)\[(.*)\](.*)', value)
+            if match:
+                prefix = match[1]
+                range_value = match[2]
+                postfix = match[3]
+            self.GetRangeOfValues(range_value, values_extract, prefix, postfix)
         return values_extract
 
 
@@ -403,11 +414,22 @@ class DeffeConfig:
         return DeffeConfigSlurm(None)
 
 
-def main():
+def test1():
+    name = "config.json"
+    config = DeffeConfigValues("hello[0-10]")
+    print(config.values)
+    config = DeffeConfigValues("[0-9]hello")
+    print(config.values)
+    config = DeffeConfigValues("hi[0-9]hello")
+    print(config.values)
+
+def test2():
     name = "config.json"
     config = DeffeConfig(name)
     config.WriteFile("config_write.json", config.data)
 
+def main():
+    test1()
 
 if __name__ == "__main__":
     main()
