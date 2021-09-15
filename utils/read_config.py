@@ -20,6 +20,7 @@ import argparse
 import time
 import json
 import commentjson
+import jsoncomment 
 
 # Values: Scalar / List
 #   List: String with values seperated with ','        : Example: "1,2,3,4"
@@ -333,7 +334,8 @@ class DeffeConfig:
             print("[Error] Json file:{} not available!".format(self.file_name))
             return None
         with open(self.file_name) as infile:
-            data = commentjson.load(infile)
+            #data = commentjson.load(infile)
+            data = jsoncomment.JsonComment().load(infile)
             if data != None and 'include' in data:
                 includes = data['include']
                 if type(includes) == list:
@@ -427,9 +429,11 @@ def test2():
     name = "config.json"
     config = DeffeConfig(name)
     config.WriteFile("config_write.json", config.data)
+    print(config.GetCosts())
 
 def main():
     test1()
+    test2()
 
 if __name__ == "__main__":
     main()
