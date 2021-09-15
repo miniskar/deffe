@@ -375,7 +375,7 @@ class DeffeConfig:
 
     def GetCosts(self):
         if self.data != None and "costs" in self.data:
-            return self.data["costs"]
+            return DeffeConfigValues(self.data["costs"]).values
         return []
 
     def GetModel(self):
