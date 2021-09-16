@@ -15,6 +15,7 @@ import numpy as np
 import argparse
 import shlex
 import pathlib
+from read_config import *
 
 """ DeffeExtract class to extract cost metrics for the batch of samples with 
     through multi-thread execution environment either with/without 
@@ -77,7 +78,7 @@ class DeffeExtract:
         if os.path.exists(file_path):
             if pathlib.Path(file_path).suffix == '.json':
                 data = DeffeConfig(file_path).data
-                param_hash_key = list(self.param_data.GetParamValKey(param_val))
+                param_hash_key = self.framework.config.GetCosts()
                 if data != None:
                     result = []
                     for p in param_hash_key:
