@@ -14,6 +14,7 @@ from deffe_utils import *
 import numpy as np
 import argparse
 import shlex
+import pathlib
 
 """ DeffeExtract class to extract cost metrics for the batch of samples with 
     through multi-thread execution environment either with/without 
@@ -74,21 +75,40 @@ class DeffeExtract:
         (run_dir, evaluate_script) = eval_output
         file_path = os.path.join(run_dir, self.config.cost_output)
         if os.path.exists(file_path):
-            with open(file_path, "r") as fh:
-                lines = fh.readlines()
-                if len(lines) == 0:
-                    return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
-                flines = [RemoveWhiteSpaces(lines[index]) 
-                            if index < len(lines) else 0 
-                            for index in range(len(self.cost_list)) ]
-                result = np.array(flines).astype("str")
-                if self.framework.args.hold_evaluated_data or \
-                    self.config.hold_evaluated_data:
-                    self.param_data.PushEvaluatedData(param_val, result)
-                return (
-                    self.framework.valid_flag, flag,
-                    result,
-                )
+            if pathlib.Path(file_path).suffix == '.json':
+                data = DeffeConfig(file_path).data
+                param_hash_key = list(self.param_data.GetParamValKey(param_val))
+                if data != None:
+                    result = []
+                    for p in param_hash_key:
+                        if p in data:
+                            result.append(data[p])
+                        else:
+                            result.append("NULL")
+                    result = np.array(result).astype("str")
+                    if self.framework.args.hold_evaluated_data or \
+                        self.config.hold_evaluated_data:
+                        self.param_data.PushEvaluatedData(param_val, result)
+                    return (
+                        self.framework.valid_flag, flag,
+                        result,
+                    )
+            else:
+                with open(file_path, "r") as fh:
+                    lines = fh.readlines()
+                    if len(lines) == 0:
+                        return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
+                    flines = [RemoveWhiteSpaces(lines[index]) 
+                                if index < len(lines) else 0 
+                                for index in range(len(self.cost_list)) ]
+                    result = np.array(flines).astype("str")
+                    if self.framework.args.hold_evaluated_data or \
+                        self.config.hold_evaluated_data:
+                        self.param_data.PushEvaluatedData(param_val, result)
+                    return (
+                        self.framework.valid_flag, flag,
+                        result,
+                    )
         return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
 
     # Run the extraction

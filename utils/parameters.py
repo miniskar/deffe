@@ -309,6 +309,10 @@ class Parameters:
         return [param.name for (param, pvalues, pindex, permutation_index) in param_list]
 
     def CreateRunScript(self, script, run_dir, param_pattern, param_val_with_escapechar_hash):
+        if not os.path.exists(script):
+            with open(script, "w") as wfh:
+                wfh.write("")
+                wfh.close()
         with open(script, "r") as rfh, open(
             os.path.join(run_dir, os.path.basename(script)), "w"
         ) as wfh:

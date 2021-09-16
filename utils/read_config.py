@@ -57,6 +57,8 @@ class DeffeConfigValues:
             values_extract.append(os.path.expandvars(value))
 
     def ExtractValues(self, values, delim=','):
+        if type(values)!=str:
+            values = str(values)
         values_list = re.split("\s*"+delim+"\s*", values)
         values_extract = []
         for value in values_list:
@@ -430,6 +432,7 @@ def test2():
     config = DeffeConfig(name)
     config.WriteFile("config_write.json", config.data)
     print(config.GetCosts())
+    #print(config.GetKnobs())
 
 def main():
     test1()
