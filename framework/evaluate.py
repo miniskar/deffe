@@ -38,6 +38,10 @@ class DeffeEvaluate:
         self.batch_size = int(self.config.batch_size)
         self.counter = 0
         self.fr_config = self.framework.fr_config
+        if self.framework.args.batch_size!= -1:
+            self.batch_size = self.framework.args.batch_size
+        if self.framework.args.evaluate_batch_size != -1:
+            self.batch_size = self.framework.args.evaluate_batch_size
         self.preload_data = []
         self.preload_header = []
         self.parameters = self.framework.parameters
