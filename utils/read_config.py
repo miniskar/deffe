@@ -274,6 +274,9 @@ class DeffeConfigSlurm:
         self.cpus_per_task = "1"
         if data != None and "cpus_per_task" in data:
             self.cpus_per_task = str(data["cpus_per_task"])
+        self.mem = ""
+        if data != None and "mem" in data:
+            self.mem= data["mem"]
         self.constraint = "x86_64,centos"
         if data != None and "constraint" in data:
             self.constraint = data["constraint"]

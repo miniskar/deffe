@@ -17,14 +17,19 @@ class DeffeSlurm:
         self.config = self.framework.config.GetSlurm()
         self.nodes = self.config.nodes
         self.cpus_per_task = self.config.cpus_per_task
+        self.mem = self.config.mem
         self.constraint = self.config.constraint
 
     def CreateSlurmScript(self, cmd, slurm_filename):
         with open(slurm_filename, "w") as fh:
             fh.write("#!/bin/bash\n")
-            fh.write("#SBATCH --nodes=" + self.nodes + "\n")
-            fh.write("#SBATCH --cpus-per-task=" + self.cpus_per_task + "\n")
+            if self.nodes != '':
+                fh.write("#SBATCH --nodes=" + self.nodes + "\n")
+            if self.cpus_per_task != '':
+                fh.write("#SBATCH --cpus-per-task=" + self.cpus_per_task + "\n")
             fh.write('#SBATCH --constraint="' + self.constraint + '"\n')
+            if self.mem != '':
+                fh.write('#SBATCH --mem='+self.mem+"\n")
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')
             fh.write('echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"\n')

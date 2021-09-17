@@ -62,6 +62,8 @@ class DeffeExtract:
     def GetExtractCommand(self, output, param_pattern, param_dict):
         (run_dir, evaluate_script) = output
         extract_script = self.config.sample_extract_script
+        if not os.path.isfile(extract_script):
+            return None
         self.parameters.CreateRunScript(
             extract_script, run_dir, param_pattern, param_dict
         )
@@ -132,11 +134,12 @@ class DeffeExtract:
             elif flag == self.framework.evaluate_flag:
                 cmd = self.GetExtractCommand(output, param_pattern, param_dict)
                 (run_dir, eval_script_filename) = output
-                if self.slurm_flag:
-                    slurm_script_filename = os.path.join(run_dir, "slurm_extract.sh")
-                    self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
-                    cmd = self.framework.slurm.GetSlurmJobCommand(slurm_script_filename)
-                mt.Run([cmd])
+                if cmd != None:
+                    if self.slurm_flag:
+                        slurm_script_filename = os.path.join(run_dir, "slurm_extract.sh")
+                        self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
+                        cmd = self.framework.slurm.GetSlurmJobCommand(slurm_script_filename)
+                    mt.Run([cmd])
                 batch_output.append(
                     (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
                 )

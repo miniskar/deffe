@@ -68,6 +68,7 @@ class DeffeFramework:
         parser.add_argument(
             "-full-exploration", dest="full_exploration", action="store_true"
         )
+        parser.add_argument("-fixed-samples", type=int, dest="fixed_samples", default=-1)
         parser.add_argument("-train-test-split", dest="train_test_split", default="")
         parser.add_argument("-validation-split", dest="validation_split", default="")
         parser.add_argument("-init-batch-samples", dest="init_batch_samples", default="100")
