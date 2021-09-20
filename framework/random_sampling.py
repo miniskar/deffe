@@ -201,11 +201,9 @@ class DeffeRandomSampling:
     def SetStepInit(self, step, step_start, step_end, step_inc):
         self.step = 0
         self.current_step = 0
-        self.step_inc = int(step_inc)
-        self.step_start = -1 
-        if step_start != '':
-            self.step_start = int(step_start)
-        self.step_end = -1
+        self.step_inc = step_inc
+        self.step_start = step_start 
+        self.step_end = step_end 
         if step_end != '':
             self.step_end = int(step_end)
 
@@ -213,9 +211,9 @@ class DeffeRandomSampling:
         self.step = self.step + self.step_inc
 
     def IsCompleted(self):
-        if self.step != 0 or self.step_start != -1:
+        if self.step != 0 or self.step_start != 0:
             linc = self.step_inc
-            if self.step_start != -1 and self.step < self.step_start:
+            if self.step_start != 0 and self.step < self.step_start:
                 linc = self.step_start - self.step
                 self.step = self.step + linc
             flag = self.StepWithInc(linc)
