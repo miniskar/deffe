@@ -210,6 +210,7 @@ class Parameters:
                 enable = True
             if enable:
                 data[param.map] = {}
+                data[param.map]["count"] = len(param_values)
                 if param.map in self.min_list_params:
                     data[param.map]["min"] = self.min_list_params[param.map]
                 if param.map in self.max_list_params:
