@@ -196,6 +196,9 @@ class DeffeConfigSampling:
         self.arguments = ""
         if data != None and "arguments" in data:
             self.arguments = os.path.expandvars(data["arguments"])
+        self.validate_module = ""
+        if data != None and "validate_module" in data:
+            self.validate_module = os.path.expandvars(data["validate_module"])
 
 
 class DeffeConfigEvaluate:

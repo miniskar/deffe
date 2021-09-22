@@ -176,6 +176,12 @@ class Parameters:
             perm_index = perm_index + val_index * permutation_index
         return perm_index
 
+    def GetPermutationKeyValues(self, nd_index):
+        val = self.GetPermutationSelection(nd_index)
+        val_hash = { param.name:param_values[val[index]] 
+            for index, (param, param_values, pindex, permutation_index) in enumerate(self.selected_params) }
+        return val_hash
+
     def GetPermutationSelection(self, nd_index, selected_params=None):
         if selected_params == None:
             selected_params = self.selected_params

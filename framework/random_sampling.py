@@ -15,6 +15,7 @@ from numpy import random
 import pdb
 import argparse
 import shlex
+from deffe_utils import *
 
 class DeffeRandomSampling:
     """
@@ -59,6 +60,11 @@ class DeffeRandomSampling:
         self._shuffle = True
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
+        self.validate_module = None
+        if self.framework.args.validate_samples and self.config.validate_module != '':
+            validate_module_name = self.config.validate_module
+            if os.path.isfile(validate_module_name):
+                self.validate_module = LoadModuleNoParent(validate_module_name)
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):
@@ -79,6 +85,21 @@ class DeffeRandomSampling:
         parser.add_argument("-fixed-samples", type=int, dest="fixed_samples", default=-1)
         parser.add_argument("-method", dest="method", default='random')
         return parser
+  
+    def GetValidSamples(self, seq, start_pos, count):
+        valid_samples = []
+        new_pos = start_pos
+        for comb in range(start_pos, len(seq)):
+            if len(valid_samples) >= count:
+                break
+            if self.IsValidParameters(seq[comb]): 
+                valid_samples.append(seq[comb])
+            new_pos = comb
+        return np.array(valid_samples), new_pos+1
+
+    def IsValidParameters(self, comb):
+        val_hash = self.framework.parameters.GetPermutationKeyValues(comb)
+        return self.validate_module.Validate(val_hash)
 
     def GenerateSamples(self):
         selected_pruned_params = self.parameters.selected_pruned_params
@@ -190,9 +211,14 @@ class DeffeRandomSampling:
             n_train, n_val, self._len
         )
 
-        self._train_idx = self._seq[0 : self._n_train]
-        self._val_idx = self._seq[self._n_train : self._n_train + self._n_val]
-        self._pos = self._n_train + self._n_val
+        if self.validate_module != None:
+            self._train_idx, train_pos = self.GetValidSamples(self._seq, 0, self._n_train)
+            self._val_idx, val_pos  = self.GetValidSamples(self._seq, train_pos, self._n_val)
+            self._pos = val_pos
+        else:
+            self._train_idx = self._seq[0 : self._n_train]
+            self._val_idx = self._seq[self._n_train : self._n_train + self._n_val]
+            self._pos = self._n_train + self._n_val
         # print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
 
     def GetCurrentStep(self):
@@ -238,6 +264,8 @@ class DeffeRandomSampling:
         if self._exhausted:
             return False
         if len(self.custom_samples) != 0:
+            # This support is not yet complete. TODO. Revisit this.
+            # TODO: Is it supported for valid samples only?
             if self.custom_samples_index >= len(self.custom_samples):
                 self._exhausted = True
                 return False
@@ -275,7 +303,12 @@ class DeffeRandomSampling:
             self._step = self._step + 1
         if new_pos >= self._len:
             new_pos = self._len
-        new_val = self._seq[self._pos : new_pos]
+        previous_pos = self._pos
+        if self.validate_module != None:
+            previous_pos = len(self._train_idx)+len(self._val_idx)
+            new_val, new_pos = self.GetValidSamples(self._seq, self._pos, new_pos-self._pos)
+        else:
+            new_val = self._seq[self._pos : new_pos]
         tmp = len(self._val_idx) // 2
         if tmp != 0:
             self._train_idx = np.concatenate(
@@ -285,9 +318,8 @@ class DeffeRandomSampling:
                 (self._val_idx[range(tmp, len(self._val_idx))], new_val), axis=None
             )
         else:
-            total_count = len(self._train_idx)
-            self._val_idx = self._seq[total_count:new_pos]
-        self._previous_pos = self._pos
+            self._val_idx = new_val
+        self._previous_pos = previous_pos
         self._pos = new_pos
         print(
             "Training: "

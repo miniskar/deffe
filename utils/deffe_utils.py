@@ -21,6 +21,12 @@ def LoadModule(parent, py_file):
     py_mod = importlib.import_module(py_mod_name)
     return py_mod.GetObject(parent)
 
+# Generic loading of python module
+def LoadModuleNoParent(py_file):
+    py_mod_name = pathlib.Path(py_file).stem
+    py_mod = importlib.import_module(py_mod_name)
+    return py_mod.GetObject()
+
 # Remove whitespaces in line
 def RemoveWhiteSpaces(line):
     line = re.sub(r"\r", "", line)
