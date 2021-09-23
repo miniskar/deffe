@@ -89,7 +89,7 @@ class DeffeFramework:
         parser.add_argument("-max-samples", type=int, dest='max_samples', default=1000000, help='Max number of samples to be explored')
         parser.add_argument("-train-test-split", dest="train_test_split", default="")
         parser.add_argument("-validation-split", dest="validation_split", default="")
-        parser.add_argument("-init-batch-samples", dest="init_batch_samples", default="100")
+        parser.add_argument("-init-batch-samples", type=int, dest="init_batch_samples", default=-1)
         parser.add_argument("-load-train-test", dest="load_train_test", action="store_true")
         parser.add_argument("-hold-evaluated-data", dest="hold_evaluated_data", action="store_true")
         parser.add_argument("-no-slurm", dest="no_slurm", action="store_true", help="No slurm usage")
@@ -107,7 +107,9 @@ class DeffeFramework:
         config = DeffeConfig(self.args.config, config_data)
         self.config = config
         self.config_dir = os.path.dirname(self.config.json_file)
-        self.init_n_train = int(self.args.init_batch_samples) 
+        self.init_n_train = self.args.init_batch_samples 
+        if self.init_n_train == -1:
+            self.init_n_train = self.batch_size
         self.init_n_val = 2 * self.init_n_train
         self.InitializePythonPaths()
         self.predicted_flag = 0
