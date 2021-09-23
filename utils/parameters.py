@@ -120,13 +120,17 @@ class Parameters:
         output_params = []
         for param_name, (param, param_values) in \
                 sorted(param_unique_hash.items(), key=lambda x: x[0]):
+            if param.base == None:
+                param.base = 0
+            else:
+                param.base = param_values.index(param.base)
             output_params.append((param, param_values, 
                         len(output_params), total_permutations))
             total_permutations = len(param_values) * total_permutations 
         self.selected_params = output_params
         self.total_permutations = total_permutations
         self.selected_pruned_params = \
-                       self.GetPrunedSelectedParams(self.selected_params)
+                 self.GetPrunedSelectedParams(self.selected_params)
         for (param, param_values, pindex, permutation_index) in \
                 self.selected_params:
             is_numbers = self.IsParameterNumber(param_values)
@@ -163,6 +167,15 @@ class Parameters:
         for (param, param_values, pindex, permutation_index) in pruned_param_list:
             indexes.append(pindex)
         return [param[indexes,] for param in parameters]
+
+    def EncodePermutationFromArray(self, sel_param_indices, selected_params=None):
+        if selected_params == None:
+            selected_params = self.selected_pruned_params
+        perm_index = 0
+        for index, (param, param_values, pindex, permutation_index) in enumerate(selected_params):
+            val_index = sel_param_indices[index] 
+            perm_index = perm_index + val_index * permutation_index
+        return perm_index
 
     def EncodePermutation(self, sel_param_hash, selected_params=None):
         if selected_params == None:

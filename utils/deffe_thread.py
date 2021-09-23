@@ -72,7 +72,7 @@ class DeffeThread:
             dest_list = [dest_list]
         for name in name_list:
             for dest in dest_list:
-                queue = Queue()
+                queue = Queue(maxsize=2)
                 if name not in source.out_ports:
                     source.out_ports[name] = []
                 source.out_ports[name].append(queue)

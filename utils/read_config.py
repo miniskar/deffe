@@ -81,11 +81,14 @@ class DeffeConfigKnob:
         self.values = []
         self.groups = []
         self.map = self.name
+        self.base = None
         self.groups_configured = False
         if "map" in data:
             self.map = data["map"]
         if "values" in data:
             self.values = DeffeConfigValues(data["values"])
+        if "base" in data:
+            self.base =data['base']
         if "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
             self.groups_configured = True
@@ -100,6 +103,7 @@ class DeffeConfigScenarios:
         self.name = data["name"]
         self.values = []
         self.groups = []
+        self.base = None
         self.map = self.name
         self.groups_configured = False
         if "map" in data:
@@ -295,8 +299,8 @@ class DeffeConfigSlurm:
             self.user_script_configured = True
 
 class DeffeConfig:
-    def __init__(self, file_name=None):
-        self.data = None
+    def __init__(self, file_name=None, data=None):
+        self.data = data 
         self.json_file = file_name
         if file_name != None:
             self.data = self.ReadFile(file_name)

@@ -21,8 +21,6 @@ import matplotlib.colors as mcolors
 import glob
 import os
 import tensorflow as tf
-from keras.callbacks.callbacks import Callback
-from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 import keras.backend as K
 import keras.losses
@@ -370,6 +368,8 @@ class KerasCNN(BaseMLModel):
         self.cost_models[cost_index].load_weights(model_name)
 
     def TrainCost(self, cost_index):
+        from keras.callbacks.callbacks import Callback
+        from keras.callbacks import ModelCheckpoint
         class TestCallback(Callback):
             def __init__(self, test_data, fh):
                 self.test_data = test_data

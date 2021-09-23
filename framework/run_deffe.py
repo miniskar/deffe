@@ -13,21 +13,15 @@ import socket
 import pdb
 import signal
 
-framework_path = os.getenv("DEFFE_DIR")
-if framework_path == None:
-    framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    os.environ["DEFFE_DIR"] = framework_path
-print("Deffe framework is found in path: "+os.getenv("DEFFE_DIR"))
-sys.path.insert(0, os.getenv("DEFFE_DIR"))
-sys.path.insert(0, os.path.join(framework_path, "utils"))
-sys.path.insert(0, os.path.join(framework_path, "ml_models"))
-sys.path.insert(0, os.path.join(framework_path, "framework"))
 from framework import *
 
 # Main function
 def main():
+    config_data = None
     framework = DeffeFramework()
-    framework.Initialize()
+    framework.InitParser()
+    framework.ReadArguments()
+    framework.Initialize(config_data)
     framework.Run()
 
 if __name__ == "__main__":

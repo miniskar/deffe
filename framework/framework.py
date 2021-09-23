@@ -12,14 +12,24 @@ import glob, os, sys
 import socket
 import pdb
 import signal
-
-
-from read_config import *
-from parameters import *
 import numpy as np
-from workload_excel import *
-from deffe_utils import *
-from deffe_thread import *
+import time
+import argparse
+import shlex
+
+def InitializeDeffe():
+    framework_path = os.getenv("DEFFE_DIR")
+    #print("File:"+__file__)
+    if framework_path == None:
+        framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        os.environ["DEFFE_DIR"] = framework_path
+    print("Deffe framework is found in path: "+os.getenv("DEFFE_DIR"))
+    sys.path.insert(0, os.getenv("DEFFE_DIR"))
+    sys.path.insert(0, os.path.join(framework_path, "utils"))
+    sys.path.insert(0, os.path.join(framework_path, "ml_models"))
+    sys.path.insert(0, os.path.join(framework_path, "framework"))
+    None
+
 # Requirements
 # * Scenario based evaluation and ml model creation
 # * Support multi-scenario exploration
@@ -30,18 +40,24 @@ from deffe_thread import *
 #   ** Example: Mapping of core0_l1d_size and core1_l1d_size to l1d_size parameter in the evaluation and ml-model
 # * Should support prediction and exploration on pre-evaluated data
 class DeffeFramework:
-    def __init__(self):
-        self.parser = self.AddArgumentsToParser()
-        self.args = self.ReadArguments()
+    def __init__(self, parser=None):
+        self.parser = None
+        self.args = None
+        InitializeDeffe()
 
     # Read arguments provided in JSON configuration file
-    def ReadArguments(self):
-        args = self.parser.parse_args()
-        return args
+    def ReadArguments(self, args_string=None, args=None):
+        if args != None:
+            self.args = args
+        elif args_string != None:
+            self.args = self.parser.parse_args(shlex.split(args_string))
+        else:
+            self.args = self.parser.parse_args()
 
     # Add command line arguments to parser
-    def AddArgumentsToParser(self):
-        parser = argparse.ArgumentParser()
+    def InitParser(self, parser=None):
+        if parser == None:
+            parser = argparse.ArgumentParser()
         parser.add_argument("-config", dest="config", default="config.json")
         parser.add_argument(
             "-only-preloaded-data-exploration",
@@ -50,6 +66,7 @@ class DeffeFramework:
         )
         parser.add_argument("-no-run", dest="no_run", action="store_true", help="Dryrun: Do not run!")
         parser.add_argument("-no-train", dest="no_train", action="store_true", help="No training on evaluated metrics")
+        parser.add_argument("-validate-samples", dest="validate_samples", action="store_true")
         parser.add_argument("-bounds-no-check", dest="bounds_no_check", action="store_true")
         parser.add_argument("-step-increment", type=int, dest="step_inc", default=1)
         parser.add_argument("-step-start", type=int, dest="step_start", default=0)
@@ -68,7 +85,8 @@ class DeffeFramework:
         parser.add_argument(
             "-full-exploration", dest="full_exploration", action="store_true"
         )
-        parser.add_argument("-fixed-samples", type=int, dest="fixed_samples", default=-1)
+        parser.add_argument("-fixed-samples", type=int, dest="fixed_samples", default=-1, help='Optional fixed set of samples in each batch')
+        parser.add_argument("-max-samples", type=int, dest='max_samples', default=1000000, help='Max number of samples to be explored')
         parser.add_argument("-train-test-split", dest="train_test_split", default="")
         parser.add_argument("-validation-split", dest="validation_split", default="")
         parser.add_argument("-init-batch-samples", dest="init_batch_samples", default="100")
@@ -78,11 +96,15 @@ class DeffeFramework:
         parser.add_argument("-sequential", dest="sequential", action="store_true", help="Use sequential mode of deffe evaluation instead of stream mode")
         parser.add_argument("-icp", dest="icp", default="")
         parser.add_argument("-loss", dest="loss", default="")
-        return parser
+        self.parser = parser
 
     # Initialize the class objects with default values
-    def Initialize(self):
-        config = DeffeConfig(self.args.config)
+    def Initialize(self, config_data=None):
+        from deffe_utils import LoadModule
+        from read_config import DeffeConfig
+        from workload_excel import Workload
+        from parameters import Parameters
+        config = DeffeConfig(self.args.config, config_data)
         self.config = config
         self.config_dir = os.path.dirname(self.config.json_file)
         self.init_n_train = int(self.args.init_batch_samples) 
@@ -212,6 +234,7 @@ class DeffeFramework:
         return pruned_headers, param_list, pruned_param_list
 
     def GetBatchSamples(self, exp_index):
+        from deffe_utils import Log
         samples = self.sampling.GetNewBatch()
         step = self.sampling.GetCurrentStep()
         Log("***** Exploration:{}/{} Step {} Current "
@@ -264,6 +287,7 @@ class DeffeFramework:
     def Train(self, samples, 
             pruned_headers, parameters_normalize, 
             batch_output, step, threading_model=False):
+        from deffe_utils import Log
         self.model.InitializeSamples(
             samples,
             pruned_headers,
@@ -327,6 +351,7 @@ class DeffeFramework:
 
     # Run the framework
     def RunParallel(self):
+        from deffe_thread import DeffeThread, DeffeThreadData
         threading_model = True
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
@@ -338,6 +363,7 @@ class DeffeFramework:
                 self.InitializeModulesForExploration(exp_index,
                     explore_groups)
             def GetSamplesThread(self, exp_index, threading_model=True):
+                # OUT Ports: samples
                 if threading_model:
                     while not self.sampling.IsCompleted():
                         samples_with_step = self.GetBatchSamples(exp_index)
@@ -359,6 +385,8 @@ class DeffeFramework:
 
             def ExtractParamValuesThread(self, exp_index, threading_model=True):
                 global_th_end = False
+                # IN Ports: samples
+                # OUT Ports: samples, parameter_values, parameters_normalize
                 while True:
                     #LogModule("Inside")
                     (samples_with_step, th_end) = \
@@ -388,6 +416,9 @@ class DeffeFramework:
 
             def InferenceThread(self, threading_model=True):
                 global_th_end = False
+                # IN Ports: samples
+                # IN Ports (Cond): parameter_values, parameters_normalize
+                # OUT Ports: batch_output_inference
                 while True:
                     #LogModule(" Inside")
                     data_hash = self.inference_thread.GetAll()
@@ -416,11 +447,14 @@ class DeffeFramework:
                 if global_th_end:
                     self.inference_thread.SendEnd()
 
-            def EvaluateExtractThread(self, threading_model=True):
+            def EvaluateThread(self, threading_model=True):
                 global_th_end = False
+                # IN Ports: samples
+                # IN Ports (Cond): parameter_values, parameters_normalize
+                # OUT Ports: samples, parameter_values, parameters_normalize, eval_output
                 while True:
                     #LogModule(" Inside")
-                    data_hash = self.evaluate_extract_thread.GetAll()
+                    data_hash = self.evaluate_thread.GetAll()
                     #LogModule(" Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
                     #LogModule(" Received "+str(samples_with_step))
@@ -433,6 +467,42 @@ class DeffeFramework:
                         parameter_values = data_hash['parameter_values'].GetData()
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
                         eval_output = self.evaluate.Run(parameter_values)
+                        data_hash = {
+                            'samples' : DeffeThreadData(samples_with_step),
+                            'parameter_values' : 
+                                DeffeThreadData(parameter_values),
+                            'parameters_normalize' : 
+                                DeffeThreadData(parameters_normalize),
+                            'eval_output' : 
+                                DeffeThreadData(eval_output),
+                        }
+                        self.evaluate_thread.PutAll(data_hash)
+                    if not threading_model:
+                        break
+                if global_th_end:
+                    self.evaluate_thread.SendEnd()
+
+            def ExtractResultsThread(self, threading_model=True):
+                global_th_end = False
+                # IN Ports: samples
+                # IN Ports (Cond): parameter_values, parameters_normalize, eval_output
+                # OUT Ports: samples, parameter_values, parameters_normalize, 
+                #            batch_output, batch_output_evaluate, batch_output_inference
+                while True:
+                    #LogModule(" Inside")
+                    data_hash = self.extract_thread.GetAll()
+                    #LogModule(" Got Data")
+                    (samples_with_step, th_end) = data_hash['samples'].Get()
+                    #LogModule(" Received "+str(samples_with_step))
+                    global_th_end = th_end
+                    if global_th_end:
+                        break
+                    # Check if model is already ready
+                    if not (self.IsModelReady() or self.args.inference_only):
+                        #LogModule(" Started Evaluation "+str(samples_with_step))
+                        parameter_values = data_hash['parameter_values'].GetData()
+                        parameters_normalize = data_hash['parameters_normalize'].GetData()
+                        eval_output = data_hash['eval_output'].GetData()
                         batch_output = self.extract.Run(
                             parameter_values, param_list, eval_output
                         )
@@ -448,13 +518,16 @@ class DeffeFramework:
                                 DeffeThreadData((parameter_values,
                                             batch_output)),
                         }
-                        self.evaluate_extract_thread.PutAll(data_hash)
+                        self.extract_thread.PutAll(data_hash)
                     if not threading_model:
                         break
                 if global_th_end:
-                    self.evaluate_extract_thread.SendEnd()
+                    self.extract_thread.SendEnd()
 
             def MLTrainThread(self, threading_model=True):
+                # IN Ports: samples
+                # IN Ports (Cond): parameter_values, parameters_normalize, batch_output
+                # OUT Ports: NONE
                 while True:
                     #LogModule(" Inside")
                     data_hash = self.ml_train_thread.GetAll()
@@ -483,6 +556,7 @@ class DeffeFramework:
 
                 global_eval_th = False
                 global_inf_th = False
+                # OUT Ports: batch_output_evaluate, batch_output_inference
                 while True:
                     #LogModule(" Inside")
                     while self.write_thread.IsEmpty('batch_output_evaluate') \
@@ -518,8 +592,10 @@ class DeffeFramework:
                     )
             self.inference_thread = DeffeThread(
                     InferenceThread, (self, threading_model), True)
-            self.evaluate_extract_thread = DeffeThread(
-                    EvaluateExtractThread, (self, threading_model), True)
+            self.evaluate_thread = DeffeThread(
+                    EvaluateThread, (self, threading_model), True)
+            self.extract_thread = DeffeThread(
+                    ExtractResultsThread, (self, threading_model), True)
             self.ml_train_thread = DeffeThread(
                     MLTrainThread, (self, threading_model), True)
             self.write_thread = DeffeThread(
@@ -528,13 +604,16 @@ class DeffeFramework:
             DeffeThread.Connect(self.samples_thread, self.param_thread, 
                     'samples')
             DeffeThread.Connect(self.param_thread, 
-                    [self.inference_thread, self.evaluate_extract_thread],
+                    [self.inference_thread, self.evaluate_thread],
                     ['samples', 'parameter_values', 'parameters_normalize'])
-            DeffeThread.Connect(self.evaluate_extract_thread, 
+            DeffeThread.Connect(self.evaluate_thread, 
+                    [self.extract_thread],
+                    ['samples', 'parameter_values', 'parameters_normalize', 'eval_output'])
+            DeffeThread.Connect(self.extract_thread, 
                     self.ml_train_thread,
                     ['samples', 'parameter_values', 
                     'parameters_normalize', 'batch_output'])
-            DeffeThread.Connect(self.evaluate_extract_thread, 
+            DeffeThread.Connect(self.extract_thread, 
                     self.write_thread,
                     ['batch_output_evaluate'])
             DeffeThread.Connect(self.inference_thread, 
@@ -543,14 +622,16 @@ class DeffeFramework:
             if threading_model:
                 self.samples_thread.StartThread()
                 self.param_thread.StartThread()
-                self.evaluate_extract_thread.StartThread()
+                self.evaluate_thread.StartThread()
+                self.extract_thread.StartThread()
                 self.inference_thread.StartThread()
                 self.ml_train_thread.StartThread()
                 self.write_thread.StartThread()
 
                 self.samples_thread.JoinThread()
                 self.param_thread.JoinThread()
-                self.evaluate_extract_thread.JoinThread()
+                self.evaluate_thread.JoinThread()
+                self.extract_thread.JoinThread()
                 self.inference_thread.JoinThread()
                 self.ml_train_thread.JoinThread()
                 self.write_thread.JoinThread()
@@ -561,7 +642,8 @@ class DeffeFramework:
                         break
                     ExtractParamValuesThread(self, exp_index, threading_model)
                     InferenceThread(self, threading_model)
-                    EvaluateExtractThread(self, threading_model)
+                    EvaluateThread(self, threading_model)
+                    ExtractResultsThread(self, threading_model)
                     MLTrainThread(self, threading_model)
                     WriteThread(self, threading_model)
             

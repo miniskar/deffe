@@ -101,19 +101,70 @@ class DeffeRandomSampling:
         val_hash = self.framework.parameters.GetPermutationKeyValues(comb)
         return self.validate_module.Validate(val_hash)
 
+    def SelectSmartSamples(self, max_samples, params):
+        s = []
+        for (param, param_values, pindex, permutation_index) in params:
+            count = len(param_values)
+            dist = np.random.choice(count, size=max_samples, replace=True).tolist()
+            s.append(dist)
+        s = np.array(s).transpose()
+        seq = [ self.parameters.EncodePermutationFromArray(x) for x in s]
+        seq = np.unique(np.array(seq)) 
+        np.random.shuffle(seq)
+        return seq
+
+    def SelectOneDimSamples(self, params):
+        base_params = []
+        s = []
+        for (param, param_values, pindex, permutation_index) in params:
+            base_params.append(param.base)
+        seq = [ base_params.copy() ]
+        count = 0
+        for index, (param, param_values, pindex, permutation_index) in enumerate(params):
+            count += len(param_values)
+            for vindex, val in enumerate(param_values):
+                if base_params[index] != vindex:
+                    obase = base_params.copy()
+                    obase[index] = vindex
+                    seq.append(obase)
+        seq = np.array([ self.parameters.EncodePermutationFromArray(x) for x in seq])
+        np.random.shuffle(seq)
+        return seq
+            
     def GenerateSamples(self):
         selected_pruned_params = self.parameters.selected_pruned_params
         param_dict =  { param.name : param_values 
             for (param, param_values, pindex, permutation_index) in 
                 selected_pruned_params }
         n_samples = self._n_samples
-        max_samples = min(1000000, self._n_samples)
+        max_samples = min(self.framework.args.max_samples, self._n_samples)
         sampling_method = self.args.method
         if sampling_method == 'random':
             # _n_samples is the permutation count of all parameters, which can be very high
             # Hence, generate samples of maximum 1000000 for training.
             org_seq = np.random.choice(
                 n_samples, size=max_samples, replace=False)
+            self._seq = org_seq
+        elif sampling_method == 'onedim':
+            # _n_samples is the permutation count of all parameters, which can be very high
+            # Hence, generate samples of maximum 1000000 for training.
+            org_seq = self.SelectOneDimSamples(selected_pruned_params)
+            self._seq = org_seq
+        elif sampling_method == 'smart':
+            # _n_samples is the permutation count of all parameters, which can be very high
+            # Hence, generate samples of maximum 1000000 for training.
+            org_seq = self.SelectSmartSamples(max_samples, 
+                    selected_pruned_params)
+            self._seq = org_seq
+        elif sampling_method == 'onedim_with_smart':
+            # _n_samples is the permutation count of all parameters, which can be very high
+            # Hence, generate samples of maximum 1000000 for training.
+            seq1 = self.SelectOneDimSamples(selected_pruned_params)
+            seq2 = self.SelectSmartSamples(max_samples, 
+                    selected_pruned_params)
+            org_seq = np.concatenate((seq1, seq2))
+            _, i = np.unique(org_seq, return_index=True)
+            org_seq = org_seq[np.sort(i)]
             self._seq = org_seq
         else:
             sample_mat = None
