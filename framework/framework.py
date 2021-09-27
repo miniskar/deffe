@@ -451,6 +451,9 @@ class DeffeFramework:
 
             def EvaluateThread(self, threading_model=True):
                 global_th_end = False
+                def callbackEvaluate(self, index, eval_flag, param_val, pre_eval_cost):
+                    #print(f"Received call back Evaluate index:{index}")
+                    None 
                 # IN Ports: samples
                 # IN Ports (Cond): parameter_values, parameters_normalize
                 # OUT Ports: samples, parameter_values, parameters_normalize, eval_output
@@ -468,7 +471,7 @@ class DeffeFramework:
                         #LogModule(" Started Evaluation "+str(samples_with_step))
                         parameter_values = data_hash['parameter_values'].GetData()
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
-                        eval_output = self.evaluate.Run(parameter_values)
+                        eval_output = self.evaluate.Run(parameter_values, (self, callbackEvaluate))
                         data_hash = {
                             'samples' : DeffeThreadData(samples_with_step),
                             'parameter_values' : 

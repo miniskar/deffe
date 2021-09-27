@@ -166,10 +166,10 @@ class DeffeEvaluate:
     # Run method will evaluate the set of parameters
     # ** If it is available in the pre-loaded data, it returns that value
     # ** Else, it evaluate in traditional way
-    def Run(self, parameters):
+    def Run(self, parameters, callback=None):
         eval_output = []
         mt = MultiThreadBatchRun(self.batch_size, self.framework)
-        for param_val in parameters:
+        for pindex, param_val in enumerate(parameters):
             # Check if data already existing 
             param_cost = self.param_data.GetParamterCost(param_val)
             if type(param_cost) == np.ndarray and len(param_cost) > 0:
@@ -179,10 +179,12 @@ class DeffeEvaluate:
                         param_cost,
                     )
                 )
+                if callback != None:
+                    callback[0].callback[1](pindex, self.framework.pre_evaluated_flag, param_val, param_cost)
             else:
                 (output, cmd) = self.CreateEvaluateCase(param_val)
                 eval_output.append((self.framework.evaluate_flag, output))
-                mt.Run([cmd])
+                mt.Run([(cmd, pindex, self.framework.pre_evaluated_flag, param_val, None)], callback=callback)
         mt.Close()
         return eval_output
 

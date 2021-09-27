@@ -171,21 +171,25 @@ def test1(count=100):
     example1.StopThread(True)
     example2.StopThread(True)
 
-class ProdCons:
+class ProdConsBase:
     def __init__(self, tag, count=10):
+        self.tag = tag
+        self.count = count
+
+    def Initialize(self, tag, count=10):
         self.tag = tag
         self.count = count
 
     def ConsRun(self):
         for i in range(self.count):
             data = self.cons_obj.Get('samples')
-            print(self.tag+": Received data:"+str(data))
+            print(self.tag+": Received data1:"+str(data))
         self.cons_obj.StopThread(False)
         
     def ProdRun(self):
         for i in range(self.count):
             self.prod_obj.Put('samples', i+100)
-            print(self.tag+": Sent data:"+str(i+100))
+            print(self.tag+": Sent data1:"+str(i+100))
         self.prod_obj.StopThread(False)
 
     def RunSameObject(self):
@@ -196,6 +200,23 @@ class ProdCons:
         self.cons_obj.StartThread()
         self.prod_obj.JoinThread()
         self.cons_obj.JoinThread()
+
+class ProdCons(ProdConsBase):
+    def __init__(self, tag, count=10):
+        ProdConsBase.Initialize(self, tag, count)
+    
+    def ConsRun(self):
+        for i in range(self.count):
+            data = self.cons_obj.Get('samples')
+            print(self.tag+": Received data2:"+str(data))
+        self.cons_obj.StopThread(False)
+        
+    def ProdRun(self):
+        for i in range(self.count):
+            self.prod_obj.Put('samples', i+100)
+            print(self.tag+": Sent data2:"+str(i+100))
+        self.prod_obj.StopThread(False)
+
 
 def test2(count):
     example = ProdCons("example", count)

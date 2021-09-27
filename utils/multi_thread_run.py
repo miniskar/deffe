@@ -24,24 +24,39 @@ class MultiThreadBatchRun:
         self.framework = framework
         None
 
-    def RunCommand(self, index, cmd):
+    def RunCommand(self, index, cmd, callback=None):
         # os.system(cmd)
+        #print("Received command: "+str(cmd))
         start = time.time()
-        LogCmd(str(index) +": "+ cmd)
-        os.system(cmd)
+        os_cmd = cmd
+        call_back_args = ()
+        if type(cmd)==tuple:
+            os_cmd = cmd[0]
+            call_back_args = tuple(list(cmd)[1:])
+        LogCmd(str(index) +": "+ os_cmd)
+        os.system(os_cmd)
         end = time.time()
         self.results[index] = 1
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
         Log("Lapsed time:" + str(lapsed_time))
+        if callback != None:
+            callback[1](callback[0], *call_back_args)
 
-    def Run(self, cmds, is_popen=False):
+    def Run(self, cmds, is_popen=False, callback=None):
         # print("Start running commands now:"+str(is_popen))
         for index, cmd in enumerate(cmds):
             self.results.append(0)
             if self.framework == None or not self.framework.args.no_run:
-                self.pool.apply_async(self.RunCommand, (self.index, cmd))
+                self.pool.apply_async(self.RunCommand, (self.index, cmd, callback))
             else:
-                print(cmd)
+                os_cmd = cmd
+                call_back_args = ()
+                if type(cmd)==tuple:
+                    os_cmd = cmd[0]
+                    call_back_args = tuple(list(cmd)[1:])
+                LogCmd(str(self.index) +": "+ os_cmd)
+                if callback != None:
+                    callback[1](callback[0], *call_back_args)
             self.index = self.index + 1
         # print("Jobs submitted")
 
