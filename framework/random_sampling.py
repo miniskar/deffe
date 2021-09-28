@@ -223,6 +223,7 @@ class DeffeRandomSampling:
                     ) \
                     for rec in np_records 
                     ]).astype("int")
+        Log(f"Total samples in sampling: {len(self._seq)}")
         if self._shuffle:
             np.random.shuffle(self._seq)
         return

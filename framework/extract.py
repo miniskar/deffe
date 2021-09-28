@@ -33,14 +33,25 @@ class DeffeExtract:
                 self.framework.config_dir, self.config.sample_extract_script
             )
         self.fr_config = self.framework.fr_config
-        self.batch_size = int(self.config.batch_size)
+        self.batch_size = self.config.batch_size
         if self.framework.args.batch_size!= -1:
             self.batch_size = self.framework.args.batch_size
         if self.framework.args.extract_batch_size!= -1:
             self.batch_size = self.framework.args.extract_batch_size
+        self.output_flow = self.batch_size
+        if self.config.output_flow != -1:
+            self.output_flow = self.config.output_flow
+        if self.framework.args.extract_out_flow != -1:
+            self.output_flow = self.framework.args.extract_out_flow
         self.parameters = self.framework.parameters
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
+
+    def GetBatchSize(self):
+        return self.batch_size
+
+    def GetOutputFlow(self):
+        return self.output_flow
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):
@@ -123,7 +134,6 @@ class DeffeExtract:
     def Run(self, param_val, param_list, eval_output):
         batch_output = []
         mt = MultiThreadBatchRun(self.batch_size, self.framework)
-
         for index, (flag, output) in enumerate(eval_output):
             (param_pattern, param_hash, param_dict) = \
                     self.parameters.GetParamHash(

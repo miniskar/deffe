@@ -53,6 +53,8 @@ class DeffeFramework:
             self.args = self.parser.parse_args(shlex.split(args_string))
         else:
             self.args = self.parser.parse_args()
+        from deffe_utils import Log
+        Log("python3 {} {}".format(__file__, " ".join(sys.argv)))
 
     # Add command line arguments to parser
     def InitParser(self, parser=None):
@@ -75,6 +77,8 @@ class DeffeFramework:
         parser.add_argument("-batch-size", dest="batch_size", type=int, default=-1, help="Size of batch for sampling, evaluation and extraction")
         parser.add_argument("-evaluate-batch-size", type=int, dest="evaluate_batch_size", default=-1, help="Size of batch for evaluation")
         parser.add_argument("-extract-batch-size", type=int, dest="extract_batch_size", default=-1, help="Size of batch for extraction")
+        parser.add_argument("-evaluate-out-flow", dest="evaluate_out_flow", type=int, default=-1, help="Evaluate samples output flow (by default it is evaluate batch size")
+        parser.add_argument("-extract-out-flow", dest="extract_out_flow", type=int, default=-1, help="Extract samples output flow (by default it is evaluate batch size")
         parser.add_argument("-inference-only", dest="inference_only", action="store_true", help="Use pretrained model for inference")
         parser.add_argument("-input", dest="input", default="")
         parser.add_argument("-output", dest="output", default="")
@@ -109,7 +113,7 @@ class DeffeFramework:
         self.config_dir = os.path.dirname(self.config.json_file)
         self.init_n_train = self.args.init_batch_samples 
         if self.init_n_train == -1:
-            self.init_n_train = self.batch_size
+            self.init_n_train = self.args.batch_size
         self.init_n_val = 2 * self.init_n_train
         self.InitializePythonPaths()
         self.predicted_flag = 0
@@ -159,8 +163,13 @@ class DeffeFramework:
     # Log exploration output into file
     def WriteExplorationOutput(self, parameter_values, batch_output):
         for index, (valid_flag, eval_type, cost_metrics) in enumerate(batch_output):
-            param_val = parameter_values[index].tolist()
+            #print("Writing output to parameters")
+            param_val = parameter_values[index]
+            if type(param_val) != list:
+                param_val = param_val.tolist()
+            #print("Completed1 Writing output to parameters")
             cost_metrics = cost_metrics.tolist()
+            #print("Completed2 Writing output to parameters")
             if eval_type == self.evaluate_flag:
                 self.evaluation_table.WriteDataInCSV(param_val + cost_metrics)
                 self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
@@ -372,6 +381,7 @@ class DeffeFramework:
                         #LogModule("Generating samples")
                         self.samples_thread.Put('samples', 
                                 DeffeThreadData(samples_with_step))
+                    #print("Samples: Sending last sample end")
                     self.samples_thread.SendEnd()
                     return True
                 else:
@@ -382,6 +392,7 @@ class DeffeFramework:
                                 DeffeThreadData(samples_with_step))
                         return False
                     else:
+                        #print("Samples: Sending last sample end")
                         self.samples_thread.SendEnd()
                         return True
 
@@ -414,6 +425,7 @@ class DeffeFramework:
                     if not threading_model:
                         break
                 if global_th_end:
+                    #print("ExtractParams: Sending last sample end")
                     self.param_thread.SendEnd()
 
             def InferenceThread(self, threading_model=True):
@@ -447,45 +459,106 @@ class DeffeFramework:
                     if not threading_model:
                         break
                 if global_th_end:
+                    #print("Inference: Sending last sample end")
                     self.inference_thread.SendEnd()
 
             def EvaluateThread(self, threading_model=True):
+                from threading import Lock
                 global_th_end = False
-                def callbackEvaluate(self, index, eval_flag, param_val, pre_eval_cost):
-                    #print(f"Received call back Evaluate index:{index}")
-                    None 
+                eval_output_list = []
+                eval_stats = [0, 0, False, False] # Submitted, Completed, Th-End, End-packet-Flag
+                def pushDataToQueue(self, eval_output_list, in_data_hash):
+                    np_list = np.array(eval_output_list).transpose().tolist()
+                    samples_with_step = in_data_hash['samples']
+                    samples_step = samples_with_step[0]
+                    samples = np.array(samples_with_step[1])[np_list[0]].tolist()
+                    samples_with_step = (samples_step, samples)
+                    parameter_values = np.array(in_data_hash['parameter_values'])[np_list[0]].tolist()
+                    parameters_normalize = np.array(in_data_hash['parameters_normalize'])[np_list[0]].tolist()
+                    out_data_hash = {
+                        'samples' : DeffeThreadData(samples_with_step),
+                        'parameter_values' : 
+                            DeffeThreadData(parameter_values),
+                        'parameters_normalize' : 
+                            DeffeThreadData(parameters_normalize),
+                        'eval_output' : 
+                            DeffeThreadData(np_list[1]),
+                    }
+                    #print("Prepared data to send to extract")
+                    self.evaluate_thread.PutAll(out_data_hash)
+                    #print("Completed putall data to send to extract")
+                    eval_output_list.clear()
+                    
+                def callbackEvaluate(self, update_mutex, eval_output_list, eval_stats, in_data_hash, index, eval_output):
+                    update_mutex.acquire(1)
+                    #print("Acquiring the lock")
+                    eval_output_list.append([index, eval_output])
+                    eval_stats[1] += 1
+                    th_end = eval_stats[2]
+                    eval_out_flow = self.evaluate.GetOutputFlow()
+                    is_it_last_sample = th_end and eval_stats[0] == eval_stats[1]
+                    #print("Is last sample:"+str(is_it_last_sample)+" th.end:"+str(th_end))
+                    #print(f"Evaluate index:{index} completed size:"+str(len(eval_output_list))+" Eval stats:"+str(eval_stats))
+                    if len(eval_output_list) >= eval_out_flow or is_it_last_sample:
+                        #print("Send of batch:"+str(len(eval_output_list)))
+                        pushDataToQueue(self, eval_output_list, in_data_hash)
+                        #print("Successfully Sent of batch:"+str(len(eval_output_list)))
+                        if is_it_last_sample and not eval_stats[3]:
+                            #print("Ealuate Sending last sample end")
+                            self.evaluate_thread.SendEnd()
+                            eval_stats[3] = True
+                        #print("Completed Send of batch:"+str(len(eval_output_list)))
+                    #print("Releasing the lock")
+                    update_mutex.release()
                 # IN Ports: samples
                 # IN Ports (Cond): parameter_values, parameters_normalize
                 # OUT Ports: samples, parameter_values, parameters_normalize, eval_output
+                #send_mutex = Lock()
+                update_mutex = Lock()
                 while True:
                     #LogModule(" Inside")
                     data_hash = self.evaluate_thread.GetAll()
                     #LogModule(" Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
-                    #LogModule(" Received "+str(samples_with_step))
+                    #print("Evaluate: Received "+str(samples_with_step)+" th_end:"+str(th_end))
+                    eval_stats[2] = th_end
                     global_th_end = th_end
                     if global_th_end:
+                        update_mutex.acquire(1)
+                        if eval_stats[0] == eval_stats[1] and not eval_stats[3]:
+                            self.evaluate_thread.SendEnd()
+                        update_mutex.release()
                         break
                     # Check if model is already ready
                     if not (self.IsModelReady() or self.args.inference_only):
                         #LogModule(" Started Evaluation "+str(samples_with_step))
                         parameter_values = data_hash['parameter_values'].GetData()
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
-                        eval_output = self.evaluate.Run(parameter_values, (self, callbackEvaluate))
-                        data_hash = {
-                            'samples' : DeffeThreadData(samples_with_step),
-                            'parameter_values' : 
-                                DeffeThreadData(parameter_values),
-                            'parameters_normalize' : 
-                                DeffeThreadData(parameters_normalize),
-                            'eval_output' : 
-                                DeffeThreadData(eval_output),
+                        in_data_hash={
+                            'th_end' : th_end,
+                            'samples' : samples_with_step,
+                            'parameter_values' : parameter_values,
+                            'parameters_normalize' : parameters_normalize
                         }
-                        self.evaluate_thread.PutAll(data_hash)
+                        eval_stats[0] += len(parameter_values)
+                        eval_output = self.evaluate.Run(parameter_values, 
+                                (self, callbackEvaluate, update_mutex, 
+                                     eval_output_list, eval_stats, in_data_hash), 
+                                use_global_thread_queue=True)
+                        #data_hash = {
+                        #    'samples' : DeffeThreadData(samples_with_step),
+                        #    'parameter_values' : 
+                        #        DeffeThreadData(parameter_values),
+                        #    'parameters_normalize' : 
+                        #        DeffeThreadData(parameters_normalize),
+                        #    'eval_output' : 
+                        #        DeffeThreadData(eval_output),
+                        #}
+                        #self.evaluate_thread.PutAll(data_hash)
                     if not threading_model:
                         break
-                if global_th_end:
-                    self.evaluate_thread.SendEnd()
+                #if global_th_end:
+                    #self.evaluate_thread.SendEnd()
 
             def ExtractResultsThread(self, threading_model=True):
                 global_th_end = False
@@ -511,7 +584,7 @@ class DeffeFramework:
                         batch_output = self.extract.Run(
                             parameter_values, param_list, eval_output
                         )
-                        data_hash = {
+                        out_data_hash = {
                             'samples' : DeffeThreadData(samples_with_step),
                             'parameter_values' : 
                                 DeffeThreadData(parameter_values),
@@ -523,10 +596,11 @@ class DeffeFramework:
                                 DeffeThreadData((parameter_values,
                                             batch_output)),
                         }
-                        self.extract_thread.PutAll(data_hash)
+                        self.extract_thread.PutAll(out_data_hash)
                     if not threading_model:
                         break
                 if global_th_end:
+                    #print("Extract: Inference last sample end")
                     self.extract_thread.SendEnd()
 
             def MLTrainThread(self, threading_model=True):
