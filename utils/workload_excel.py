@@ -987,15 +987,17 @@ def PlotGraph(args, group_data, x_axis_index,
         if len(group_key_hash) > 0 and key not in group_key_hash:
             continue
         (xydata, min_max_std_data, zdata, anndata) = graph_data[key]
+        x = np.array(xydata[0])
+        y = np.array(xydata[1])
+        z = np.array(zdata)
+        if len(x) == 0:
+            continue
         print("Identified group key:" + str(key) + " count:" + str(len(xydata[0])))
         for data in xydata[0]:
             if data not in xtick_labels_hash:
                 xtick_labels_hash[data] = len(xtick_labels)
                 xtick_labels.append(data)
         total_xlabels = max(total_xlabels, len(xtick_labels))
-        x = np.array(xydata[0])
-        y = np.array(xydata[1])
-        z = np.array(zdata)
         if not IsFloat(x[0]):
             xdatatype = 'str'
         if args.plot_normalize:
@@ -1145,6 +1147,17 @@ def PlotGraph(args, group_data, x_axis_index,
     if len(args.xticks_labels) > 0:
         xtick_args["ticks"] = np.arange(total_xlabels)
         xtick_args["labels"] = args.xticks_labels 
+    if args.xticks_range != "":
+        xticks_range = re.split(r"\s*[,:]\s*", args.xticks_range)
+        xticks_range = [int(x) for x in xticks_range]
+        if len(xticks_range) > 2:
+            xtick_args['ticks'] = np.arange(xticks_range[0], xticks_range[1], xticks_range[2])
+        elif len(xticks_range) == 2:
+            xtick_args['ticks'] = np.arange(xticks_range[0], xticks_range[1])
+        elif len(xticks_range) == 1:
+            xtick_args['ticks'] = np.arange(xticks_range[0])
+        if args.xlog:
+            xtick_args['ticks'] = [int(args.xlog) ** x for x in xtick_args['ticks']]
     if args.xticks_rotation != "":
         xtick_args["rotation"] = int(args.xticks_rotation)
     plt.xticks(**xtick_args)
@@ -1542,6 +1555,7 @@ def InitializeWorkloadArgParse(parser):
     parser.add_argument(
         "-xticks-labels", nargs="*", action="store", dest="xticks_labels", default=""
     )
+    parser.add_argument("-xticks-range", dest="xticks_range", default="")
     parser.add_argument("-xticks-rotation", dest="xticks_rotation", default="")
     parser.add_argument("-yticks-rotation", dest="yticks_rotation", default="")
     parser.add_argument("-xlim", dest="xlim", default="")
