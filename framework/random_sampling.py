@@ -122,6 +122,7 @@ class DeffeRandomSampling:
         count = 0
         for index, (param, param_values, pindex, permutation_index) in enumerate(params):
             count += len(param_values)
+            print(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
             for vindex, val in enumerate(param_values):
                 if base_params[index] != vindex:
                     obase = base_params.copy()

@@ -38,7 +38,7 @@ class MultiThreadBatchRun:
         end = time.time()
         self.results[index] = 1
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
-        Log("Lapsed time:" + str(lapsed_time))
+        Log(f"Index:{index} Lapsed time:" + str(lapsed_time))
         if callback != None:
             other_callbacks = callback[0:1]+callback[2:]+call_back_args
             callback[1](*other_callbacks)
