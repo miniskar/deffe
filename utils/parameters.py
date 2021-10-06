@@ -41,6 +41,8 @@ def IsFloat(x):
         "^[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?$"
     )
     float_re = re.compile(float_pattern, re.VERBOSE)
+    if type(x) == bool:
+        return False
     if IsNumber(x):
         return True
     if float_re.findall(x):

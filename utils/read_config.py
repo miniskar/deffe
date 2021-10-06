@@ -54,6 +54,11 @@ class DeffeConfigValues:
             sub_values = [prefix+str(i)+postfix for i in range(start, end, inc)]
             values_extract.extend(sub_values)
         else:
+            #if type(value) == str and value.lower() == 'true':
+            #    values_extract.append(True)
+            #elif type(value) == str and value.lower() == 'false':
+            #    values_extract.append(False)
+            #else:
             values_extract.append(os.path.expandvars(value))
 
     def ExtractValues(self, values, delim=','):
@@ -83,12 +88,19 @@ class DeffeConfigKnob:
         self.map = self.name
         self.base = None
         self.groups_configured = False
+        self.onedim_combination = False
         if "map" in data:
             self.map = data["map"]
         if "values" in data:
             self.values = DeffeConfigValues(data["values"])
         if "base" in data:
             self.base =data['base']
+        if "onedim_combination" in data:
+            onedim_combination = data['onedim_combination']
+            if type(onedim_combination) == str and onedim_combination.lower() == 'true':
+                self.onedim_combination = True
+            else:
+                self.onedim_combination = data['onedim_combination']
         if "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
             self.groups_configured = True
