@@ -54,6 +54,11 @@ class DeffeConfigValues:
             sub_values = [prefix+str(i)+postfix for i in range(start, end, inc)]
             values_extract.extend(sub_values)
         else:
+            #if type(value) == str and value.lower() == 'true':
+            #    values_extract.append(True)
+            #elif type(value) == str and value.lower() == 'false':
+            #    values_extract.append(False)
+            #else:
             values_extract.append(os.path.expandvars(value))
 
     def ExtractValues(self, values, delim=','):
@@ -83,12 +88,19 @@ class DeffeConfigKnob:
         self.map = self.name
         self.base = None
         self.groups_configured = False
+        self.onedim_combination = False
         if "map" in data:
             self.map = data["map"]
         if "values" in data:
             self.values = DeffeConfigValues(data["values"])
         if "base" in data:
             self.base =data['base']
+        if "onedim_combination" in data:
+            onedim_combination = data['onedim_combination']
+            if type(onedim_combination) == str and onedim_combination.lower() == 'true':
+                self.onedim_combination = True
+            else:
+                self.onedim_combination = data['onedim_combination']
         if "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
             self.groups_configured = True
@@ -214,9 +226,12 @@ class DeffeConfigEvaluate:
         self.arguments = ""
         if data != None and "arguments" in data:
             self.arguments = os.path.expandvars(data["arguments"])
-        self.batch_size = "20"
+        self.batch_size = 20
         if data != None and "batch_size" in data:
-            self.batch_size = data["batch_size"]
+            self.batch_size = int(data["batch_size"])
+        self.output_flow = -1
+        if data != None and "output_flow" in data:
+            self.output_flow = int(data["output_flow"])
         self.output_log = "evaluate.log"
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])
@@ -240,9 +255,12 @@ class DeffeConfigExtract:
         self.arguments = ""
         if data != None and "arguments" in data:
             self.arguments = os.path.expandvars(data["arguments"])
-        self.batch_size = "20"
+        self.batch_size = 20
         if data != None and "batch_size" in data:
-            self.batch_size = data["batch_size"]
+            self.batch_size = int(data["batch_size"])
+        self.output_flow = -1
+        if data != None and "output_flow" in data:
+            self.output_flow = int(data["output_flow"])
         self.hold_evaluated_data = False
         if data != None and "hold_evaluated_data" in data and \
                    data["hold_evaluated_data"].lower() == "true":

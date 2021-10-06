@@ -38,9 +38,10 @@ class MultiThreadBatchRun:
         end = time.time()
         self.results[index] = 1
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
-        Log("Lapsed time:" + str(lapsed_time))
+        Log(f"Index:{index} Lapsed time:" + str(lapsed_time))
         if callback != None:
-            callback[1](callback[0], *call_back_args)
+            other_callbacks = callback[0:1]+callback[2:]+call_back_args
+            callback[1](*other_callbacks)
 
     def Run(self, cmds, is_popen=False, callback=None):
         # print("Start running commands now:"+str(is_popen))
@@ -56,7 +57,8 @@ class MultiThreadBatchRun:
                     call_back_args = tuple(list(cmd)[1:])
                 LogCmd(str(self.index) +": "+ os_cmd)
                 if callback != None:
-                    callback[1](callback[0], *call_back_args)
+                    other_callbacks = callback[0:1]+callback[2:]+call_back_args
+                    callback[1](*other_callbacks)
             self.index = self.index + 1
         # print("Jobs submitted")
 

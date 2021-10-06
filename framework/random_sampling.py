@@ -15,6 +15,7 @@ from numpy import random
 import pdb
 import argparse
 import shlex
+import itertools
 from deffe_utils import *
 
 class DeffeRandomSampling:
@@ -120,13 +121,41 @@ class DeffeRandomSampling:
             base_params.append(param.base)
         seq = [ base_params.copy() ]
         count = 0
+        params_list = []
+        comb_params_list = []
+        comb_params_values = []
         for index, (param, param_values, pindex, permutation_index) in enumerate(params):
-            count += len(param_values)
-            for vindex, val in enumerate(param_values):
-                if base_params[index] != vindex:
-                    obase = base_params.copy()
-                    obase[index] = vindex
-                    seq.append(obase)
+            if param.onedim_combination:
+                comb_params_list.append(index)
+                comb_params_values.append([i for i in range(len(param_values))])
+            else:
+                params_list.append(index)
+        if len(comb_params_values) > 0:
+            comb_list = list(itertools.product(*comb_params_values))
+            for comb in comb_list:
+                comb_params = base_params.copy()
+                for eindex, index in enumerate(comb_params_list):
+                    (param, param_values, pindex, permutation_index) = params[index]
+                    comb_params[index] = comb[eindex]
+                for index in params_list:
+                    (param, param_values, pindex, permutation_index) = params[index]
+                    count += len(param_values)
+                    print(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
+                    for vindex, val in enumerate(param_values):
+                        if base_params[index] != vindex:
+                            obase = comb_params.copy()
+                            obase[index] = vindex
+                            seq.append(obase)
+        else:
+            for index in params_list:
+                (param, param_values, pindex, permutation_index) = params[index]
+                count += len(param_values)
+                print(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
+                for vindex, val in enumerate(param_values):
+                    if base_params[index] != vindex:
+                        obase = base_params.copy()
+                        obase[index] = vindex
+                        seq.append(obase)
         seq = np.array([ self.parameters.EncodePermutationFromArray(x) for x in seq])
         np.random.shuffle(seq)
         return seq
@@ -223,6 +252,7 @@ class DeffeRandomSampling:
                     ) \
                     for rec in np_records 
                     ]).astype("int")
+        Log(f"Total samples in sampling: {len(self._seq)}")
         if self._shuffle:
             np.random.shuffle(self._seq)
         return

@@ -9,6 +9,8 @@
 # **************************************************************************
 ###
 from __future__ import absolute_import, division, print_function, unicode_literals
+import warnings
+warnings.filterwarnings('ignore')
 import pdb
 import re
 import shlex
@@ -27,7 +29,6 @@ import keras.losses
 from tensorflow.python.ops import math_ops
 from tensorflow import keras
 from tensorflow.keras import layers
-
 tf.keras.backend.clear_session()  # For easy reset of notebook state.
 
 from baseml import *

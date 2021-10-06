@@ -42,11 +42,23 @@ class DeffeEvaluate:
             self.batch_size = self.framework.args.batch_size
         if self.framework.args.evaluate_batch_size != -1:
             self.batch_size = self.framework.args.evaluate_batch_size
+        self.output_flow = self.batch_size
+        if self.config.output_flow != -1:
+            self.output_flow = self.config.output_flow
+        if self.framework.args.evaluate_out_flow != -1:
+            self.output_flow = self.framework.args.evaluate_out_flow
         self.preload_data = []
         self.preload_header = []
         self.parameters = self.framework.parameters
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
+        self.mt = None
+
+    def GetBatchSize(self):
+        return self.batch_size
+
+    def GetOutputFlow(self):
+        return self.output_flow
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):
@@ -166,28 +178,38 @@ class DeffeEvaluate:
     # Run method will evaluate the set of parameters
     # ** If it is available in the pre-loaded data, it returns that value
     # ** Else, it evaluate in traditional way
-    def Run(self, parameters, callback=None):
-        eval_output = []
-        mt = MultiThreadBatchRun(self.batch_size, self.framework)
+    def Run(self, parameters, callback=None, use_global_thread_queue=False):
+        eval_output_list = []
+        mt = None
+        if use_global_thread_queue and self.mt == None:
+            self.mt = MultiThreadBatchRun(self.batch_size, self.framework)
+            mt = self.mt
+        elif use_global_thread_queue:
+            mt = self.mt
+        elif not use_global_thread_queue:
+            mt = MultiThreadBatchRun(self.batch_size, self.framework)
         for pindex, param_val in enumerate(parameters):
             # Check if data already existing 
             param_cost = self.param_data.GetParamterCost(param_val)
             if type(param_cost) == np.ndarray and len(param_cost) > 0:
-                eval_output.append(
-                    (
-                        self.framework.pre_evaluated_flag,
-                        param_cost,
-                    )
-                )
+                eval_output = (self.framework.pre_evaluate_flag, param_cost)
+                eval_output_list.append(eval_output)
                 if callback != None:
-                    callback[0].callback[1](pindex, self.framework.pre_evaluated_flag, param_val, param_cost)
+                    out_args = callback[0:1]+callback[2:]+(pindex, eval_output)
+                    callback[1](*out_args)
             else:
                 (output, cmd) = self.CreateEvaluateCase(param_val)
-                eval_output.append((self.framework.evaluate_flag, output))
-                mt.Run([(cmd, pindex, self.framework.pre_evaluated_flag, param_val, None)], callback=callback)
-        mt.Close()
-        return eval_output
+                eval_output = (self.framework.evaluate_flag, output)
+                eval_output_list.append(eval_output)
+                mt.Run([(cmd, pindex, eval_output)], callback=callback)
+        if not use_global_thread_queue:
+            self.WaitForThreads(mt)
+        return eval_output_list
 
+    def WaitForThreads(self, mt=None):
+        if mt == None:
+            mt = self.mt
+        mt.Close()
 
 # Get object of evaluate
 def GetObject(framework):
