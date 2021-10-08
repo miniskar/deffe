@@ -97,7 +97,7 @@ class DeffeFramework:
         parser.add_argument("-load-train-test", dest="load_train_test", action="store_true")
         parser.add_argument("-hold-evaluated-data", dest="hold_evaluated_data", action="store_true")
         parser.add_argument("-no-slurm", dest="no_slurm", action="store_true", help="No slurm usage")
-        parser.add_argument("-sequential", dest="sequential", action="store_true", help="Use sequential mode of deffe evaluation instead of stream mode")
+        parser.add_argument("-pipeline", dest="pipeline", action="store_true", help="Use pipeline model of deffe instead of sequential execution of modules")
         parser.add_argument("-icp", dest="icp", default="")
         parser.add_argument("-loss", dest="loss", default="")
         self.parser = parser
@@ -314,7 +314,7 @@ class DeffeFramework:
         return stats_data
 
     def Run(self):
-        if self.args.sequential:
+        if not self.args.pipeline:
             self.RunSequential()
         else:
             self.RunParallel()
@@ -363,6 +363,7 @@ class DeffeFramework:
     # Run the framework
     def RunParallel(self):
         from deffe_thread import DeffeThread, DeffeThreadData
+        from deffe_utils import Log, LogModule
         threading_model = True
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
