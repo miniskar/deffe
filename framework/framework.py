@@ -260,19 +260,24 @@ class DeffeFramework:
         return (step, samples)
 
     def ExtractParameterValues(self, samples, param_list, pruned_param_list):
+        from deffe_utils import Log, LogModule, DebugLogModule
         parameter_values = None
         parameters_normalize = None
         # Check if the data point already exist in pre-computed data
         if self.only_preloaded_data_exploration:
+            DebugLogModule("Loading pre evaluated parameters")
             parameter_values = self.param_data.GetPreEvaluatedParameters(
                 samples, param_list
             )
+            DebugLogModule("Get pruned selected values")
             pruned_parameter_values = self.parameters.GetPrunedSelectedValues(
                 parameter_values, pruned_param_list
             )
+            DebugLogModule("Get normalized parameters")
             parameters_normalize = self.parameters.GetNormalizedParameters(
                 np.array(pruned_parameter_values), pruned_param_list
             )
+            DebugLogModule("Completed")
         else:
             parameter_values = self.parameters.GetParameters(
                 samples, param_list
@@ -363,7 +368,7 @@ class DeffeFramework:
     # Run the framework
     def RunParallel(self):
         from deffe_thread import DeffeThread, DeffeThreadData
-        from deffe_utils import Log, LogModule
+        from deffe_utils import Log, DebugLogModule
         threading_model = True
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
@@ -379,22 +384,26 @@ class DeffeFramework:
                 if threading_model:
                     while not self.sampling.IsCompleted():
                         samples_with_step = self.GetBatchSamples(exp_index)
-                        #LogModule("Generating samples")
+                        DebugLogModule("Generating samples")
                         self.samples_thread.Put('samples', 
                                 DeffeThreadData(samples_with_step))
-                    #print("Samples: Sending last sample end")
+                        DebugLogModule("Sent samples:"+str(len(samples_with_step[1])))
+                    DebugLogModule("Samples: Sending last sample end")
                     self.samples_thread.SendEnd()
                     return True
                 else:
                     if not self.sampling.IsCompleted():
                         samples_with_step = self.GetBatchSamples(exp_index)
-                        #LogModule("Generating samples")
+                        #DebugLogModule("Generating samples")
+                        DebugLogModule("Sending data:"+str(len(samples_with_step[1])))
                         self.samples_thread.Put('samples', 
                                 DeffeThreadData(samples_with_step))
+                        DebugLogModule("Sent data:"+str(len(samples_with_step[1])))
                         return False
                     else:
-                        #print("Samples: Sending last sample end")
+                        DebugLogModule("Samples: Sending last sample end")
                         self.samples_thread.SendEnd()
+                        DebugLogModule("Samples: Sent last sample end")
                         return True
 
             def ExtractParamValuesThread(self, exp_index, threading_model=True):
@@ -402,50 +411,56 @@ class DeffeFramework:
                 # IN Ports: samples
                 # OUT Ports: samples, parameter_values, parameters_normalize
                 while True:
-                    #LogModule("Inside")
+                    DebugLogModule("Inside Param Threads")
+                    DebugLogModule("Trying to fetch Param Threads")
                     (samples_with_step, th_end) = \
                                      self.param_thread.Get('samples').Get()
                     # Check if valid sample, otherwise exit
-                    #LogModule(" Received "+str(samples_with_step))
                     global_th_end = th_end
                     if global_th_end:
+                        DebugLogModule("Received thread end")
                         break
-
-                    #LogModule(" Got Data")
+                    DebugLogModule("Received "+str(len(samples_with_step[1])))
+                    DebugLogModule("Got Data")
                     (step, samples) = samples_with_step
+                    DebugLogModule("Extracting parameter values data")
                     parameter_values, parameters_normalize = \
                                 self.ExtractParameterValues(samples, 
                                         param_list, pruned_param_list)
+                    DebugLogModule("Extracted parameter values data")
                     send_data = {
                         'samples' : DeffeThreadData(samples_with_step),
                         'parameter_values' : DeffeThreadData(parameter_values),
                         'parameters_normalize' : 
                             DeffeThreadData(parameters_normalize),
                     }
+                    DebugLogModule("Sending data:"+str(len(parameter_values)))
                     self.param_thread.PutAll(send_data)
+                    DebugLogModule("Data sent")
                     if not threading_model:
                         break
                 if global_th_end:
-                    #print("ExtractParams: Sending last sample end")
+                    DebugLogModule("ExtractParams: Sending last sample end")
                     self.param_thread.SendEnd()
 
-            def InferenceThread(self, threading_model=True):
+            def MLInferenceThread(self, threading_model=True):
                 global_th_end = False
                 # IN Ports: samples
                 # IN Ports (Cond): parameter_values, parameters_normalize
                 # OUT Ports: batch_output_inference
                 while True:
-                    #LogModule(" Inside")
+                    DebugLogModule("Inside")
                     data_hash = self.inference_thread.GetAll()
-                    #LogModule(" Got Data")
+                    DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
-                    #LogModule(" Received "+str(samples_with_step))
                     global_th_end = th_end
                     if global_th_end:
+                        DebugLogModule("Received thread end")
                         break
+                    DebugLogModule("Received "+str(len(samples_with_step[1])))
                     # Check if model is already ready
                     if self.IsModelReady() or self.args.inference_only:
-                        #LogModule(" Inferencing now")
+                        DebugLogModule("Inferencing now")
                         (step, samples) = samples_with_step
                         parameter_values = data_hash['parameter_values'].GetData()
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
@@ -456,11 +471,13 @@ class DeffeFramework:
                                 DeffeThreadData((parameter_values,
                                             batch_output)),
                         }
+                        DebugLogModule("Sending data:"+str(len(parameter_values)))
                         self.inference_thread.PutAll(data_hash)
+                        DebugLogModule("Sent data:"+str(len(parameter_values)))
                     if not threading_model:
                         break
                 if global_th_end:
-                    #print("Inference: Sending last sample end")
+                    DebugLogModule("Inference: Sending last sample end")
                     self.inference_thread.SendEnd()
 
             def EvaluateThread(self, threading_model=True):
@@ -486,7 +503,9 @@ class DeffeFramework:
                             DeffeThreadData(np_list[1]),
                     }
                     #print("Prepared data to send to extract")
+                    DebugLogModule("Sending data:"+str(len(parameter_values)))
                     self.evaluate_thread.PutAll(out_data_hash)
+                    DebugLogModule("Sent data:"+str(len(parameter_values)))
                     #print("Completed putall data to send to extract")
                     eval_output_list.clear()
                     
@@ -506,6 +525,7 @@ class DeffeFramework:
                         #print("Successfully Sent of batch:"+str(len(eval_output_list)))
                         if is_it_last_sample and not eval_stats[3]:
                             #print("Ealuate Sending last sample end")
+                            DebugLogModule("Sending End data")
                             self.evaluate_thread.SendEnd()
                             eval_stats[3] = True
                         #print("Completed Send of batch:"+str(len(eval_output_list)))
@@ -517,22 +537,23 @@ class DeffeFramework:
                 #send_mutex = Lock()
                 update_mutex = Lock()
                 while True:
-                    #LogModule(" Inside")
+                    DebugLogModule("Inside")
                     data_hash = self.evaluate_thread.GetAll()
-                    #LogModule(" Got Data")
+                    DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
-                    #print("Evaluate: Received "+str(samples_with_step)+" th_end:"+str(th_end))
                     eval_stats[2] = th_end
                     global_th_end = th_end
                     if global_th_end:
+                        DebugLogModule("Received thread end")
                         update_mutex.acquire(1)
                         if eval_stats[0] == eval_stats[1] and not eval_stats[3]:
                             self.evaluate_thread.SendEnd()
                         update_mutex.release()
                         break
+                    DebugLogModule("Received "+str(len(samples_with_step[1])))
                     # Check if model is already ready
                     if not (self.IsModelReady() or self.args.inference_only):
-                        #LogModule(" Started Evaluation "+str(samples_with_step))
+                        DebugLogModule("Started Evaluation "+str(len(samples_with_step)))
                         parameter_values = data_hash['parameter_values'].GetData()
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
                         in_data_hash={
@@ -568,17 +589,18 @@ class DeffeFramework:
                 # OUT Ports: samples, parameter_values, parameters_normalize, 
                 #            batch_output, batch_output_evaluate, batch_output_inference
                 while True:
-                    #LogModule(" Inside")
+                    DebugLogModule("Inside")
                     data_hash = self.extract_thread.GetAll()
-                    #LogModule(" Got Data")
+                    DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
-                    #LogModule(" Received "+str(samples_with_step))
+                    DebugLogModule("Received "+str(len(samples_with_step)))
                     global_th_end = th_end
                     if global_th_end:
+                        DebugLogModule("Received thread end")
                         break
                     # Check if model is already ready
                     if not (self.IsModelReady() or self.args.inference_only):
-                        #LogModule(" Started Evaluation "+str(samples_with_step))
+                        DebugLogModule("Started Evaluation "+str(len(samples_with_step)))
                         parameter_values = data_hash['parameter_values'].GetData()
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
                         eval_output = data_hash['eval_output'].GetData()
@@ -597,11 +619,13 @@ class DeffeFramework:
                                 DeffeThreadData((parameter_values,
                                             batch_output)),
                         }
+                        DebugLogModule("Sending data")
                         self.extract_thread.PutAll(out_data_hash)
+                        DebugLogModule("Sent data")
                     if not threading_model:
                         break
                 if global_th_end:
-                    #print("Extract: Inference last sample end")
+                    DebugLogModule("Extract: Inference last sample end")
                     self.extract_thread.SendEnd()
 
             def MLTrainThread(self, threading_model=True):
@@ -609,13 +633,14 @@ class DeffeFramework:
                 # IN Ports (Cond): parameter_values, parameters_normalize, batch_output
                 # OUT Ports: NONE
                 while True:
-                    #LogModule(" Inside")
+                    DebugLogModule("Inside")
                     data_hash = self.ml_train_thread.GetAll()
-                    #LogModule(" Got Data")
+                    DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
-                    #LogModule(" Received "+str(samples_with_step))
                     if th_end:
+                        DebugLogModule("Received thread end")
                         break
+                    DebugLogModule("Received "+str(len(samples_with_step[1])))
                     # Check if model is already ready
                     if not (self.IsModelReady() or self.args.inference_only):
                         (step, samples) = samples_with_step
@@ -623,6 +648,7 @@ class DeffeFramework:
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
                         batch_output = data_hash['batch_output'].GetData()
                         if not self.no_train_flag:
+                            DebugLogModule("Started training")
                             self.Train(samples, 
                                 pruned_headers, parameters_normalize, 
                                 batch_output, step, threading_model)
@@ -638,11 +664,11 @@ class DeffeFramework:
                 global_inf_th = False
                 # OUT Ports: batch_output_evaluate, batch_output_inference
                 while True:
-                    #LogModule(" Inside")
+                    DebugLogModule("Inside")
                     while self.write_thread.IsEmpty('batch_output_evaluate') \
                         and self.write_thread.IsEmpty('batch_output_inference'):
                         None
-                    #LogModule(" Got Data")
+                    DebugLogModule("Got Data")
                     if not self.write_thread.IsEmpty('batch_output_evaluate'):
                         (eval_data, eval_th)  = \
                             self.write_thread.Get('batch_output_evaluate').Get()
@@ -664,6 +690,7 @@ class DeffeFramework:
                     if not threading_model:
                         break
 
+            print("********************************************")
             self.samples_thread = DeffeThread(GetSamplesThread, 
                     (self, exp_index, threading_model), True)
             self.param_thread = DeffeThread(
@@ -671,7 +698,7 @@ class DeffeFramework:
                     (self, exp_index, threading_model), True
                     )
             self.inference_thread = DeffeThread(
-                    InferenceThread, (self, threading_model), True)
+                    MLInferenceThread, (self, threading_model), True)
             self.evaluate_thread = DeffeThread(
                     EvaluateThread, (self, threading_model), True)
             self.extract_thread = DeffeThread(
@@ -721,7 +748,7 @@ class DeffeFramework:
                     if sampling_status:
                         break
                     ExtractParamValuesThread(self, exp_index, threading_model)
-                    InferenceThread(self, threading_model)
+                    MLInferenceThread(self, threading_model)
                     EvaluateThread(self, threading_model)
                     ExtractResultsThread(self, threading_model)
                     MLTrainThread(self, threading_model)

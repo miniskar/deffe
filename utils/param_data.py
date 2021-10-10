@@ -175,9 +175,12 @@ class ParamData:
     def GetPreEvaluatedParameters(self, samples, param_list):
         indexes = samples
         out_params = []
-        for nd_index in indexes:
-            params = self.GetParamsFullList(self.param_data[nd_index])
-            out_params.append(params)
+        selected = self.param_data[indexes]
+        rows = selected.shape[0]
+        unused_cols = len(self.unused_params_values)
+        rev_param = np.repeat(self.unused_params_values, rows, axis=0).reshape(unused_cols, rows).transpose()
+        all_params = np.concatenate((selected, rev_param), axis=1)
+        out_params = all_params.transpose()[self.rev_param_extract_indexes].transpose()
         return out_params
 
 

@@ -92,9 +92,12 @@ class DeffeThread:
             data_hash[k] = self.Get(k, block_flag)
         return data_hash
 
-    def SendEnd(self):
-        for k in self.out_ports.keys():
-            self.Put(k, DeffeThreadData(None, True))
+    def SendEnd(self, key=None, out_data=None):
+        if key == None:
+            for k in self.out_ports.keys():
+                self.Put(k, DeffeThreadData(out_data, True))
+        else:
+            self.Put(key, DeffeThreadData(out_data, True))
 
     def Put(self, port_name, data, block_flag=True):
         caller_name = sys._getframe().f_back.f_code.co_name

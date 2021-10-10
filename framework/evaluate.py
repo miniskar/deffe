@@ -188,6 +188,7 @@ class DeffeEvaluate:
             mt = self.mt
         elif not use_global_thread_queue:
             mt = MultiThreadBatchRun(self.batch_size, self.framework)
+            callback = None
         for pindex, param_val in enumerate(parameters):
             # Check if data already existing 
             param_cost = self.param_data.GetParamterCost(param_val)

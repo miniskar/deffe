@@ -61,6 +61,8 @@ class DeffeMLModel:
         params_valid_indexes = []
         cost_metrics = []
         indexes = samples
+        if type(params) == list:
+            params = np.array(params)
         if cost != None:
             cost_metrics = []
             for index, (flag, eval_type, actual_cost) in enumerate(cost):

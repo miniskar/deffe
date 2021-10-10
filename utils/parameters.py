@@ -165,10 +165,9 @@ class Parameters:
         return is_numbers
 
     def GetPrunedSelectedValues(self, parameters, pruned_param_list):
-        indexes = []
-        for (param, param_values, pindex, permutation_index) in pruned_param_list:
-            indexes.append(pindex)
-        return [param[indexes,] for param in parameters]
+        indexes = [pindex for (param, param_values, pindex, permutation_index) in pruned_param_list]
+        arr = parameters.transpose()[indexes].transpose()
+        return arr.tolist()
 
     def EncodePermutationFromArray(self, sel_param_indices, selected_params=None):
         if selected_params == None:

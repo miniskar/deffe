@@ -15,6 +15,10 @@ import sys
 import pdb
 import inspect
 
+debug_flag = False
+def EnableDebugFlag():
+    global debug_flag
+    debug_flag = True
 # Generic loading of python module
 def LoadModule(parent, py_file):
     py_mod_name = pathlib.Path(py_file).stem
@@ -50,12 +54,27 @@ def LogCmd(message, type='Cmd'):
 
 def LogModule(message, type='Info', caller_name=None):
     #called_name = sys._getframe().f_code.co_name
+    if type == 'Debug' and not debug_flag:
+        return
     if caller_name == None:
         stack = inspect.stack()
         caller_class = stack[1][0].f_locals["self"].__class__.__name__
         caller_name = sys._getframe().f_back.f_code.co_name
     message = GetFmtMsg(message)
     print("["+type+"] ("+caller_class+"."+caller_name+"): "+message)
+    sys.stdout.flush()
+    
+def DebugLogModule(message, caller_name=None):
+    #called_name = sys._getframe().f_code.co_name
+    if not debug_flag:
+        return
+    if caller_name == None:
+        stack = inspect.stack()
+        caller_class = stack[1][0].f_locals["self"].__class__.__name__
+        caller_name = sys._getframe().f_back.f_code.co_name
+    message = GetFmtMsg(message)
+    print("["+type+"] ("+caller_class+"."+caller_name+"): "+message)
+    sys.stdout.flush()
     
 if __name__ == "__main__":
     class A:
