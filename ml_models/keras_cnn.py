@@ -21,9 +21,9 @@ import matplotlib.colors as mcolors
 import glob
 import os
 import tensorflow as tf
-from keras.utils import plot_model
-from keras.callbacks.callbacks import Callback
-from keras.callbacks import ModelCheckpoint
+#from keras.utils import plot_model
+from tensorflow.keras.callbacks import Callback
+from tensorflow.keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 import keras.backend as K
 import keras.losses
@@ -191,7 +191,7 @@ class KerasCNN(BaseMLModel):
         self.model_name = "model.png"
         if name != "":
             self.model_name = name + "_model.png"
-        tf.keras.utils.plot_model(self.model, to_file=self.model_name)
+        #tf.keras.utils.plot_model(self.model, to_file=self.model_name)
         self.model.summary()
         self.loss_fn = args.loss
         if self.framework.args.loss != "":
