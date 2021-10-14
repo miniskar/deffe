@@ -139,6 +139,9 @@ class DeffeConfigModel:
         self.output_log = "ml_model.log"
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])
+        self.batch_size = -1
+        if data != None and "batch_size" in data:
+            self.batch_size = int(data["batch_size"])
         self.pyscript = "ml_model.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])

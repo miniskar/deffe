@@ -115,7 +115,7 @@ class KerasCNN(BaseMLModel):
         )
         parser.add_argument("-icp", dest="icp", default="")
         parser.add_argument("-epochs", dest="epochs", default="50")
-        parser.add_argument("-batch-size", dest="batch_size", default="256")
+        parser.add_argument("-batch-size", dest="batch_size", type=int, default=-1)
         parser.add_argument("-cost-scaling-factor", dest="cost_scaling_factor", default="1")
         parser.add_argument("-freeze-layers", dest="tl_freeze_layers", default="-1")
         parser.add_argument("-convs", dest="convs", default="2")
@@ -231,9 +231,15 @@ class KerasCNN(BaseMLModel):
         self.n_in_fmaps = parameters_data.shape[1]
         self.last_layer_nodes = int(args.last_layer_nodes)
         self.name = name
-        batch_size = int(args.batch_size)
-        if self.framework.args.batch_size != "-1":
+        batch_size = int(self.config.batch_size)
+        if args.batch_size != -1:
+            batch_size = args.batch_size
+        if self.framework.args.batch_size != -1:
             batch_size = int(self.framework.args.batch_size)
+        if self.framework.args.mlmodel_batch_size != -1:
+            batch_size = int(self.framework.args.mlmodel_batch_size)
+        if batch_size == -1:
+            batch_size = self.parameters_data.shape[0]
         self.batch_size = min(self.parameters_data.shape[0], batch_size)
         self.cost_models = []
         for index, cost in enumerate(self.cost_names):
@@ -356,8 +362,11 @@ class KerasCNN(BaseMLModel):
         predictions = self.cost_models[cost_index].predict(
                 self.x_train, batch_size=self.GetBatchSize())
         if outfile != None:
+            col = self.y_train
+            if self.y_train.size != 0 and self.y_train.shape[0] > cost_index:
+                col = self.y_train[cost_index]
             BaseMLModel.WritePredictionsToFile(
-                self, self.x_train, self.y_train[cost_index], 
+                self, self.x_train, col, 
                 predictions, outfile
             )
         return predictions.reshape((predictions.shape[0],))

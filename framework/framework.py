@@ -77,6 +77,7 @@ class DeffeFramework:
         parser.add_argument("-batch-size", dest="batch_size", type=int, default=-1, help="Size of batch for sampling, evaluation and extraction")
         parser.add_argument("-evaluate-batch-size", type=int, dest="evaluate_batch_size", default=-1, help="Size of batch for evaluation")
         parser.add_argument("-extract-batch-size", type=int, dest="extract_batch_size", default=-1, help="Size of batch for extraction")
+        parser.add_argument("-mlmodel-batch-size", type=int, dest="mlmodel_batch_size", default=-1, help="Size of batch for ML model")
         parser.add_argument("-evaluate-out-flow", dest="evaluate_out_flow", type=int, default=-1, help="Evaluate samples output flow (by default it is evaluate batch size")
         parser.add_argument("-extract-out-flow", dest="extract_out_flow", type=int, default=-1, help="Extract samples output flow (by default it is evaluate batch size")
         parser.add_argument("-inference-only", dest="inference_only", action="store_true", help="Use pretrained model for inference")
@@ -167,8 +168,12 @@ class DeffeFramework:
             param_val = parameter_values[index]
             if type(param_val) != list:
                 param_val = param_val.tolist()
+            if type(param_val) != list:
+                param_val = [param_val]
             #print("Completed1 Writing output to parameters")
-            cost_metrics = cost_metrics.tolist()
+            cost_metrics = cost_metrics.astype(str).tolist()
+            if type(cost_metrics) != list:
+                cost_metrics = [cost_metrics]
             #print("Completed2 Writing output to parameters")
             if eval_type == self.evaluate_flag:
                 self.evaluation_table.WriteDataInCSV(param_val + cost_metrics)
@@ -231,7 +236,7 @@ class DeffeFramework:
             explore_groups.evaluation_table,
             hdrs_write_list + self.config.GetCosts(),
         )
-        if not self.no_train_flag:
+        if not self.no_train_flag or self.args.inference_only:
             self.ml_predict_table.WriteHeaderInCSV(
                 explore_groups.ml_predict_table,
                 hdrs_write_list + self.config.GetCosts(),
