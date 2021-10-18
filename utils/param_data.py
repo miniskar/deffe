@@ -14,6 +14,11 @@ class ParamData:
         self.param_data_hash = {}
         self.param_extract_indexes = []
         self.unused_params_values = []
+        self.cost_data = np.array([])
+
+    def GetCostData(self, samples):
+        indexes = samples
+        return [(self.framework.valid_flag, self.framework.pre_evaluated_flag, x) for x in self.cost_data[indexes].tolist()]
 
     # Initialize method should be called for every new instance of new batch of samples.
     # Parameters to be passed: Parameters list, Pruned parameters list, Cost metrics names, and also

@@ -177,7 +177,7 @@ class BaseMLModel:
 
     def WritePredictionsToFile(self, x_train, y_train, predictions, outfile):
         print("Loading checkpoint file:" + self.icp)
-        predictions = np.exp(predictions.reshape((predictions.shape[0],)))
+        #predictions = predictions.reshape((predictions.shape[0],))
         out_data_hash = {}
         x_train_tr = x_train.transpose()
         for index, hdr in enumerate(self.headers):

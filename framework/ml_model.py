@@ -86,6 +86,7 @@ class DeffeMLModel:
                     cost_metrics, axis=0)
             self.samples = np.append(self.samples, 
                     valid_indexes, axis=0)
+        #print("Headers:{}".format(headers))
         self.ml_model_script.Initialize(
             step,
             headers,
@@ -98,8 +99,7 @@ class DeffeMLModel:
         self.ml_model_script.PreLoadData()
 
     # Run the prediction/inference
-    def Inference(self, output_file=""):
-        cost_index = 0
+    def Inference(self, output_file="", cost_index=0):
         all_output = self.ml_model_script.Inference(cost_index, output_file)
         cost = []
         for output in all_output:
@@ -114,7 +114,7 @@ class DeffeMLModel:
         return self.accuracy
 
     # Evaluate model results
-    def EvaluateModel(self, all_files, outfile="test-output.csv"):
+    def EvaluateModel(self, all_files, outfile="evaluate-model-output.csv"):
         self.ml_model_script.EvaluateModel(all_files, outfile)
 
     # Preload the pretrained model

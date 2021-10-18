@@ -85,7 +85,7 @@ class DeffeFramework:
         parser.add_argument("-output", dest="output", default="")
         parser.add_argument("-model-extract-dir", dest="model_extract_dir", default="")
         parser.add_argument(
-            "-model-stats-output", dest="model_stats_output", default="test-output.csv"
+            "-model-stats-output", dest="model_stats_output", default="evaluate-model-output.csv"
         )
         parser.add_argument(
             "-full-exploration", dest="full_exploration", action="store_true"
@@ -264,6 +264,10 @@ class DeffeFramework:
                     self.parameters.total_permutations))
         return (step, samples)
 
+    def ExtractCostValues(self, samples):
+        cost_data = self.param_data.GetCostData(samples)
+        return cost_data
+
     def ExtractParameterValues(self, samples, param_list, pruned_param_list):
         from deffe_utils import Log, LogModule, DebugLogModule
         parameter_values = None
@@ -296,11 +300,11 @@ class DeffeFramework:
         return parameter_values, parameters_normalize
 
     def Inference(self, samples, 
-            pruned_headers, parameters_normalize, step
-            ):
+            pruned_headers, parameters_normalize, step,
+            cost_data=None):
         self.model.InitializeSamples(
             samples, pruned_headers, 
-            parameters_normalize, None, step
+            parameters_normalize, cost_data, step
         )
         batch_output = self.model.Inference(self.args.output)
         return batch_output
@@ -348,8 +352,9 @@ class DeffeFramework:
                                     param_list, pruned_param_list)
                 # Check if model is already ready
                 if self.IsModelReady() or self.args.inference_only:
+                    cost_data = self.ExtractCostValues(samples)
                     batch_output =self.Inference(samples, pruned_headers, 
-                            parameters_normalize, step)
+                            parameters_normalize, step, cost_data)
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(

@@ -123,9 +123,7 @@ class KerasCNN(BaseMLModel):
         parser.add_argument("-tl-samples", dest="tl_samples", action="store_true")
         parser.add_argument("-no-run", dest="no_run", action="store_true")
         parser.add_argument("-evaluate-only", dest="evaluate", action="store_true")
-        parser.add_argument(
-            "-load-train-test", dest="load_train_test", action="store_true"
-        )
+        parser.add_argument("-load-train-test", dest="load_train_test", action="store_true")
         parser.add_argument("-plot-loss", dest="plot_loss", action="store_true")
         parser.add_argument("-loss", dest="loss", default="")
         parser.add_argument("-nodes", dest="nodes", default="256")
@@ -361,6 +359,8 @@ class KerasCNN(BaseMLModel):
         self.load_model(self.icp, cost_index)
         predictions = self.cost_models[cost_index].predict(
                 self.x_train, batch_size=self.GetBatchSize())
+        predictions = np.exp(predictions)
+        predictions = predictions.reshape((predictions.shape[0],))
         if outfile != None:
             col = self.y_train
             if self.y_train.size != 0 and self.y_train.shape[0] > cost_index:
@@ -369,7 +369,7 @@ class KerasCNN(BaseMLModel):
                 self, self.x_train, col, 
                 predictions, outfile
             )
-        return predictions.reshape((predictions.shape[0],))
+        return predictions
 
     # Load the model from the hdf5
     def load_model(self, model_name, cost_index):
@@ -541,7 +541,7 @@ class KerasCNN(BaseMLModel):
             step = self.step
         return (step, cost_index, epoch, train_loss, val_loss, traincount, valcount)
     
-    def EvaluateModel(self, all_files, outfile="test-output.csv"):
+    def EvaluateModel(self, all_files, outfile="evaluate-model-output.csv"):
         # step2-train350-val350-weights-improvement-610-loss0.1988-valloss0.1341.hdf5
         with open(outfile, "w") as fh:
             hdrs = ["Epoch", "CostIndex", "TrainLoss", "ValLoss", "TestLoss", "AllLoss"]
