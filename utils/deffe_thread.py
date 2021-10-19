@@ -59,6 +59,7 @@ class DeffeThread:
         self.method = method
         self.arguments = arguments
         self.thread = threading.Thread(target=self.RunThread, args=())
+        self.thread.setName(method.__name__)
         self.thread.daemon = True  # Daemonize thread
         self.thread_status = self.INIT
         if start_flag:

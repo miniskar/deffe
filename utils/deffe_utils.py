@@ -73,7 +73,7 @@ def DebugLogModule(message, caller_name=None):
         caller_class = stack[1][0].f_locals["self"].__class__.__name__
         caller_name = sys._getframe().f_back.f_code.co_name
     message = GetFmtMsg(message)
-    print("["+type+"] ("+caller_class+"."+caller_name+"): "+message)
+    print("[Debug] ("+caller_class+"."+caller_name+"): "+message)
     sys.stdout.flush()
     
 if __name__ == "__main__":

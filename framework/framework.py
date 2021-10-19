@@ -53,7 +53,9 @@ class DeffeFramework:
             self.args = self.parser.parse_args(shlex.split(args_string))
         else:
             self.args = self.parser.parse_args()
-        from deffe_utils import Log
+        from deffe_utils import Log, EnableDebugFlag
+        if self.args.debug:
+            EnableDebugFlag()
         Log("python3 {} {}".format(__file__, " ".join(sys.argv)))
 
     # Add command line arguments to parser
@@ -96,6 +98,7 @@ class DeffeFramework:
         parser.add_argument("-validation-split", dest="validation_split", default="")
         parser.add_argument("-init-batch-samples", type=int, dest="init_batch_samples", default=-1)
         parser.add_argument("-load-train-test", dest="load_train_test", action="store_true")
+        parser.add_argument("-debug", dest="debug", action="store_true")
         parser.add_argument("-hold-evaluated-data", dest="hold_evaluated_data", action="store_true")
         parser.add_argument("-no-slurm", dest="no_slurm", action="store_true", help="No slurm usage")
         parser.add_argument("-pipeline", dest="pipeline", action="store_true", help="Use pipeline model of deffe instead of sequential execution of modules")
@@ -430,6 +433,7 @@ class DeffeFramework:
                     if global_th_end:
                         DebugLogModule("Received thread end")
                         break
+                    DebugLogModule("SSSSS:{}".format(samples_with_step))
                     DebugLogModule("Received "+str(len(samples_with_step[1])))
                     DebugLogModule("Got Data")
                     (step, samples) = samples_with_step

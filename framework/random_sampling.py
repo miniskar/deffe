@@ -96,6 +96,7 @@ class DeffeRandomSampling:
             if self.IsValidParameters(seq[comb]): 
                 valid_samples.append(seq[comb])
             new_pos = comb
+        print(f"Sample count:{len(seq)} valid:{len(valid_samples)}")
         return np.array(valid_samples), new_pos+1
 
     def IsValidParameters(self, comb):
@@ -158,6 +159,7 @@ class DeffeRandomSampling:
                         seq.append(obase)
         seq = np.array([ self.parameters.EncodePermutationFromArray(x) for x in seq])
         np.random.shuffle(seq)
+        print(f"Samples derived with onedim sampling: {len(seq)}")
         return seq
             
     def GenerateSamples(self):

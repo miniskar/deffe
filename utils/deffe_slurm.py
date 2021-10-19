@@ -18,6 +18,7 @@ class DeffeSlurm:
         self.nodes = self.config.nodes
         self.cpus_per_task = self.config.cpus_per_task
         self.mem = self.config.mem
+        self.exclude = self.config.exclude
         self.constraint = self.config.constraint
 
     def CreateSlurmScript(self, cmd, slurm_filename):
@@ -27,6 +28,8 @@ class DeffeSlurm:
                 fh.write("#SBATCH --nodes=" + self.nodes + "\n")
             if self.cpus_per_task != '':
                 fh.write("#SBATCH --cpus-per-task=" + self.cpus_per_task + "\n")
+            if self.exclude != '':
+                fh.write("#SBATCH --exclude='" + self.exclude+ "'\n")
             fh.write('#SBATCH --constraint="' + self.constraint + '"\n')
             if self.mem != '':
                 fh.write('#SBATCH --mem='+self.mem+"\n")

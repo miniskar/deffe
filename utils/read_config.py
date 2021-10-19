@@ -302,6 +302,9 @@ class DeffeConfigSlurm:
         self.cpus_per_task = "1"
         if data != None and "cpus_per_task" in data:
             self.cpus_per_task = str(data["cpus_per_task"])
+        self.exclude = ""
+        if data != None and "exclude" in data:
+            self.exclude = data["exclude"]
         self.mem = ""
         if data != None and "mem" in data:
             self.mem= data["mem"]
