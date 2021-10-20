@@ -222,11 +222,11 @@ class DeffeFramework:
         if self.only_preloaded_data_exploration:
             n_samples = len(self.param_data.param_data_hash)
             if self.args.model_extract_dir != "" or self.full_exploration:
-                train_test_percentage = self.model.GetTrainTestSplit()
-                init_n_train = int(n_samples * train_test_percentage)
+                train_val_split = self.model.GetTrainValSplit()
+                init_n_train = int(n_samples * train_val_split)
                 init_n_val = n_samples - init_n_train
-        self.sampling.Initialize(self.parameters, 
-                n_samples, init_n_train, init_n_val
+        self.sampling.Initialize(self.parameters, n_samples,
+                init_n_train, init_n_val, True, self.model.GetTrainValSplit()
         )
 
         # Initialize writing of output log files

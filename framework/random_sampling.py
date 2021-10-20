@@ -259,16 +259,20 @@ class DeffeRandomSampling:
             np.random.shuffle(self._seq)
         return
 
-    def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True):
+    def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True, train_val_split=0.30):
         self.custom_samples = []
         self.parameters = parameters
         self.custom_samples_index = 0
+        self.train_val_split = train_val_split
         if self.args.custom_samples != "":
             self.custom_samples = [int(s) for s in self.args.custom_samples]
+            n_all = self.custom_samples[0]
+            self.custom_samples_index = 1
+            n_train = int(n_all * (1.0 - train_val_split))
+            n_val = n_all - n_train
         self._n_samples = n_samples
         self._shuffle = shuffle
         self.GenerateSamples()
-
         self._n_train = n_train
         self._n_val = n_val
         if self.args.fixed_samples != -1 or self.framework.args.fixed_samples != -1:
@@ -282,7 +286,7 @@ class DeffeRandomSampling:
         self._exhausted = False
 
         if n_val+n_train > self._len:
-            n_val = int(self._len * 0.30)
+            n_val = int(self._len * train_val_split)
             n_train = self._len - n_val
             self._n_train = n_train
             self._n_val = n_val
@@ -354,7 +358,7 @@ class DeffeRandomSampling:
                 return False
             total_count = self.custom_samples[self.custom_samples_index]
             prev_count = len(self._train_idx) + len(self._val_idx)
-            train_count = int(total_count * 0.7)
+            train_count = int(total_count * (1.0-self.train_val_split))
             val_count = total_count - train_count
             all_idx = None
             if total_count > prev_count:
@@ -431,10 +435,12 @@ class DeffeRandomSampling:
         )
 
     def GetBatch(self):
+        #Log(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
         samples = self.training_seq.tolist()+self.val_seq.tolist()
         return samples
 
     def GetNewBatch(self):
+        #Log(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
         samples = self.training_seq.tolist()+self.val_seq.tolist()
         return samples[self._previous_pos:]
 
