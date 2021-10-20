@@ -166,8 +166,9 @@ class DeffeFramework:
 
     # Log exploration output into file
     def WriteExplorationOutput(self, parameter_values, batch_output):
+        from deffe_utils import Log, LogModule, DebugLogModule
         for index, (valid_flag, eval_type, cost_metrics) in enumerate(batch_output):
-            #print("Writing output to parameters")
+            #DebugLogModule(f"Writing output to parameters {index}")
             param_val = parameter_values[index]
             if type(param_val) != list:
                 param_val = param_val.tolist()
@@ -226,7 +227,7 @@ class DeffeFramework:
                 init_n_train = int(n_samples * train_val_split)
                 init_n_val = n_samples - init_n_train
         self.sampling.Initialize(self.parameters, n_samples,
-                init_n_train, init_n_val, True, self.model.GetTrainValSplit()
+                init_n_train, init_n_val, True, self.model.GetTrainValSplit(), self.full_exploration
         )
 
         # Initialize writing of output log files
@@ -307,7 +308,7 @@ class DeffeFramework:
             cost_data=None):
         self.model.InitializeSamples(
             samples, pruned_headers, 
-            parameters_normalize, cost_data, step
+            parameters_normalize, cost_data, step, False
         )
         batch_output = self.model.Inference(self.args.output)
         return batch_output

@@ -259,12 +259,13 @@ class DeffeRandomSampling:
             np.random.shuffle(self._seq)
         return
 
-    def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True, train_val_split=0.30):
+    def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True, train_val_split=0.30, full_exploration=False):
         self.custom_samples = []
+        self.full_exploration = full_exploration
         self.parameters = parameters
         self.custom_samples_index = 0
         self.train_val_split = train_val_split
-        if self.args.custom_samples != "":
+        if self.args.custom_samples != "" and not self.full_exploration:
             self.custom_samples = [int(s) for s in self.args.custom_samples]
             n_all = self.custom_samples[0]
             self.custom_samples_index = 1
@@ -357,6 +358,8 @@ class DeffeRandomSampling:
                 self._exhausted = True
                 return False
             total_count = self.custom_samples[self.custom_samples_index]
+            if total_count > len(self._seq):
+                total_count = len(self._seq)
             prev_count = len(self._train_idx) + len(self._val_idx)
             train_count = int(total_count * (1.0-self.train_val_split))
             val_count = total_count - train_count
@@ -373,6 +376,8 @@ class DeffeRandomSampling:
             self.custom_samples_index = self.custom_samples_index + 1
             self._previous_pos = self._pos
             self._pos = len(self._train_idx)+len(self._val_idx)
+            if self._pos >= len(self._seq):
+                return False
             return True
         if self._pos >= self._len:
             self._exhausted = True
@@ -435,12 +440,12 @@ class DeffeRandomSampling:
         )
 
     def GetBatch(self):
-        #Log(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
+        DebugLogModule(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
         samples = self.training_seq.tolist()+self.val_seq.tolist()
         return samples
 
     def GetNewBatch(self):
-        #Log(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
+        DebugLogModule(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
         samples = self.training_seq.tolist()+self.val_seq.tolist()
         return samples[self._previous_pos:]
 

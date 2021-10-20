@@ -57,7 +57,7 @@ class DeffeMLModel:
         return self.ml_model_script.GetTrainTestSplit()
 
     # Initialize model parameters and costs
-    def InitializeSamples(self, samples, headers, params, cost=None, step=0):
+    def InitializeSamples(self, samples, headers, params, cost=None, step=0, expand_list=True):
         params_valid_indexes = []
         cost_metrics = []
         indexes = samples
@@ -75,7 +75,7 @@ class DeffeMLModel:
             params_valid_indexes = range(len(indexes))
         cost_metrics = np.array(cost_metrics)
         valid_indexes = np.array(samples)[params_valid_indexes,]
-        if len(self.parameters) == 0:
+        if len(self.parameters) == 0 or not expand_list:
             self.parameters = params[params_valid_indexes,]
             self.cost_output = cost_metrics
             self.samples = valid_indexes
