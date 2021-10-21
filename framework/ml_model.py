@@ -22,6 +22,12 @@ class DeffeMLModel:
         self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
         self.accuracy = (0.0, 0.0)
 
+    def IsValidCost(self, cost):
+        if len(self.valid_costs) > 0:
+            if cost not in self.valid_costs:
+                return False
+        return True
+
     # Initialize the members
     def Initialize(self, cost_names, valid_costs):
         self.parser = self.AddArgumentsToParser()
@@ -57,7 +63,7 @@ class DeffeMLModel:
         return self.ml_model_script.GetTrainTestSplit()
 
     # Initialize model parameters and costs
-    def InitializeSamples(self, samples, headers, params, cost=None, step=0, expand_list=True):
+    def InitializeSamples(self, samples, headers, params, cost=None, step=0, expand_list=True, preload_cost_checkpoints=False):
         params_valid_indexes = []
         cost_metrics = []
         indexes = samples
@@ -86,6 +92,7 @@ class DeffeMLModel:
                     cost_metrics, axis=0)
             self.samples = np.append(self.samples, 
                     valid_indexes, axis=0)
+        self.params_valid_indexes=params_valid_indexes
         #print("Headers:{}".format(headers))
         self.ml_model_script.Initialize(
             step,
@@ -94,19 +101,15 @@ class DeffeMLModel:
             self.valid_costs,
             self.parameters,
             self.cost_output,
-            self.samples
+            self.samples,
+            preload_cost_checkpoints = False
         )
         self.ml_model_script.PreLoadData()
 
     # Run the prediction/inference
-    def Inference(self, output_file="", cost_index=0):
-        all_output = self.ml_model_script.Inference(cost_index, output_file)
-        cost = []
-        for output in all_output:
-            cost.append(
-                (self.framework.valid_flag, self.framework.predicted_flag, output)
-            )
-        return cost
+    def Inference(self):
+        all_output = self.ml_model_script.Inference()
+        return all_output.tolist()
 
     # Train the model
     def Train(self, threading_model=False):

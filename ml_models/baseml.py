@@ -13,16 +13,16 @@ import re
 import pdb
 import pandas as pd
 from deffe_thread import *
+from deffe_utils import Log, ReshapeCosts
+
 checkpoint_dir = "checkpoints"
-
-
 class BaseMLModel:
     def __init__(self):
         None
 
     def Initialize(self, headers, cost_names, valid_costs,
             parameters, cost_data, samples, cost_scaling_factor):
-        print("Headers: " + str(headers))
+        Log("Headers: " + str(headers))
         orig_cost_data = cost_data
         self.headers = headers
         self.cost_names = cost_names
@@ -31,12 +31,18 @@ class BaseMLModel:
         self.cost_data = cost_data.astype('float') * cost_scaling_factor
         self.orig_cost_data = orig_cost_data.astype('float') * cost_scaling_factor 
         self.sample_actual_indexes = samples
+        self.cost_models = []
 
     def IsValidCost(self, cost):
         if len(self.valid_costs) > 0:
             if cost not in self.valid_costs:
                 return False
         return True
+
+    def GetModel(self, index):
+        if index < len(self.cost_models):
+            return self.cost_models[index]
+        return None
 
     def Train(self, threading_model=False):
         output = []
@@ -61,13 +67,6 @@ class BaseMLModel:
         for th in train_threads_list:
             th.JoinThread()
         return output
-
-    def ReshapeCosts(self, train):
-        ntrain = []
-        for i in range(train.shape[1]):
-            one_train = train.transpose()[i].reshape(train.shape[0], 1)
-            ntrain.append(one_train)
-        return np.array(ntrain)
 
     def PreLoadData(self, step, train_test_split, validation_split, shuffle=False):
         parameters = self.parameters_data
@@ -103,10 +102,10 @@ class BaseMLModel:
             z_train = orig_cost_data[training_idx, :]
             y_test = cost_data[test_idx, :]
             z_test = orig_cost_data[test_idx, :]
-            y_train = self.ReshapeCosts(y_train)
-            z_train = self.ReshapeCosts(z_train)
-            y_test = self.ReshapeCosts(y_test)
-            z_test = self.ReshapeCosts(z_test)
+            y_train = ReshapeCosts(y_train)
+            z_train = ReshapeCosts(z_train)
+            y_test = ReshapeCosts(y_test)
+            z_test = ReshapeCosts(z_test)
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
 
@@ -151,10 +150,10 @@ class BaseMLModel:
         x_test = parameters[test_idx, :].astype("float")
         y_test = cost_data[test_idx, :].astype("float")
         z_test = orig_cost_data[test_idx, :].astype("float")
-        y_train = self.ReshapeCosts(y_train)
-        z_train = self.ReshapeCosts(z_train)
-        y_test = self.ReshapeCosts(y_test)
-        z_test = self.ReshapeCosts(z_test)
+        y_train = ReshapeCosts(y_train)
+        z_train = ReshapeCosts(z_train)
+        y_test = ReshapeCosts(y_test)
+        z_test = ReshapeCosts(z_test)
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
         self.train_count = len(training_idx) * (1 - self.validation_split)
@@ -162,38 +161,21 @@ class BaseMLModel:
         self.test_count = len(test_idx)
 
     def get_last_cp_model(self, all_files):
-        epoch_re = re.compile(r"weights-improvement-([0-9]+)-")
+        epoch_re = re.compile(r"step([0-9]+).*weights-improvement-([0-9]+)-")
         max_epoch = 0
         last_icp = ""
         for index, icp_file in enumerate(all_files):
             epoch_flag = epoch_re.search(icp_file)
             epoch = 0  # loss0.4787-valloss0.4075.hdf5a
+            step = 0  # loss0.4787-valloss0.4075.hdf5a
             if epoch_flag:
-                epoch = int(epoch_flag.group(1))
-            if epoch > max_epoch:
-                max_epoch = epoch
+                step = int(epoch_flag.group(1))
+                epoch = int(epoch_flag.group(2))
+            step_epoch = step * 10000000 + epoch
+            if step_epoch > max_epoch:
+                max_epoch = step_epoch
                 last_icp = icp_file
         return last_icp
-
-    def WritePredictionsToFile(self, x_train, y_train, predictions, outfile):
-        print("Loading checkpoint file:" + self.icp)
-        #predictions = predictions.reshape((predictions.shape[0],))
-        out_data_hash = {}
-        x_train_tr = x_train.transpose()
-        for index, hdr in enumerate(self.headers):
-            out_data_hash[hdr] = x_train_tr[index].tolist()
-        out_data_hash["predicted"] = predictions.tolist()
-        if y_train.size != 0:
-            y_train = y_train.reshape((y_train.shape[0],))
-            error = np.abs(y_train - predictions)
-            error_percent = error / y_train
-            out_data_hash["original_cost"] = y_train.tolist()
-            out_data_hash["error"] = error.tolist()
-            out_data_hash["error-percent"] = error_percent.tolist()
-            print("Error: " + str(np.mean(error_percent)))
-        df = pd.DataFrame(out_data_hash)
-        df.to_csv(outfile, index=False, sep=",", encoding="utf-8")
-        return None
 
     # Evalaute model results
     def EvaluateModel(self, all_files, outfile="test-output.csv"):

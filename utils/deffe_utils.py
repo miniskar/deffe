@@ -14,6 +14,7 @@ import importlib, pathlib
 import sys
 import pdb
 import inspect
+import numpy as np
 
 debug_flag = False
 def EnableDebugFlag():
@@ -64,6 +65,13 @@ def LogModule(message, type='Info', caller_name=None):
     print("["+type+"] ("+caller_class+"."+caller_name+"): "+message)
     sys.stdout.flush()
     
+def ReshapeCosts(cost_data):
+    out_cost_data = []
+    for i in range(cost_data.shape[1]):
+        one_train = cost_data.transpose()[i].reshape(cost_data.shape[0], 1)
+        out_cost_data.append(one_train)
+    return np.array(out_cost_data)
+
 def DebugLogModule(message, caller_name=None):
     #called_name = sys._getframe().f_code.co_name
     if not debug_flag:

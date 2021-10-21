@@ -271,12 +271,16 @@ class DeffeRandomSampling:
             self.custom_samples_index = 1
             n_train = int(n_all * (1.0 - train_val_split))
             n_val = n_all - n_train
+        elif self.full_exploration:
+            n_all = n_samples
+            n_train = int(n_all * (1.0 - train_val_split))
+            n_val = n_all - n_train
         self._n_samples = n_samples
         self._shuffle = shuffle
         self.GenerateSamples()
         self._n_train = n_train
         self._n_val = n_val
-        if self.args.fixed_samples != -1 or self.framework.args.fixed_samples != -1:
+        if (self.args.fixed_samples != -1 or self.framework.args.fixed_samples != -1) and not self.full_exploration:
             self._n_val = 0
         self._previous_pos = 0
         self._pos = 0
@@ -413,12 +417,17 @@ class DeffeRandomSampling:
             self._val_idx = new_val
         self._previous_pos = previous_pos
         self._pos = new_pos
-        print(
+        Log(
             "Training: "
             + str(len(self._train_idx))
             + " Val: "
             + str(len(self._val_idx))
         )
+        if self._pos >= len(self._seq):
+            return False
+        samples = self._train_idx.tolist() + self._val_idx.tolist()
+        if len(samples[self._previous_pos:]) == 0:
+            return False
         return True
 
     @property

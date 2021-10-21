@@ -32,7 +32,7 @@ from tensorflow.keras import layers
 tf.keras.backend.clear_session()  # For easy reset of notebook state.
 
 from baseml import *
-
+from deffe_utils import *
 
 def mean_squared_error(y_true, y_pred):
     return K.mean(K.square(y_pred - y_true), axis=-1)
@@ -89,7 +89,7 @@ class KerasCNN(BaseMLModel):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
         self.icp = self.args.icp
-        if self.framework.args.icp != "":
+        if len(self.framework.args.icp) > 0:
             self.icp = self.framework.args.icp
         self.no_run = self.args.no_run or self.framework.args.no_run
         self.disable_icp = False
@@ -113,7 +113,7 @@ class KerasCNN(BaseMLModel):
         parser.add_argument(
             "-validation-split", dest="validation_split", default="0.20"
         )
-        parser.add_argument("-icp", dest="icp", default="")
+        parser.add_argument("-icp", dest="icp", nargs='*', default=[])
         parser.add_argument("-epochs", dest="epochs", default="50")
         parser.add_argument("-batch-size", dest="batch_size", type=int, default=-1)
         parser.add_argument("-cost-scaling-factor", dest="cost_scaling_factor", default="1")
@@ -129,9 +129,6 @@ class KerasCNN(BaseMLModel):
         parser.add_argument("-nodes", dest="nodes", default="256")
         parser.add_argument("-last-layer-nodes", dest="last_layer_nodes", default="32")
         return parser
-
-    def GetModel(self, index):
-        return self.cost_models[index]
 
     def CreateKerasModel(self):
         model = None
@@ -212,6 +209,7 @@ class KerasCNN(BaseMLModel):
         cost_data,
         samples,
         name="network",
+        preload_cost_checkpoints = False
     ):
         BaseMLModel.Initialize(
             self, headers, cost_names,
@@ -239,13 +237,14 @@ class KerasCNN(BaseMLModel):
         if batch_size == -1:
             batch_size = self.parameters_data.shape[0]
         self.batch_size = min(self.parameters_data.shape[0], batch_size)
-        self.cost_models = []
         for index, cost in enumerate(self.cost_names):
             if self.IsValidCost(cost):
                 model = self.CreateKerasModel()
                 self.cost_models.append(model)
             else:
                 self.cost_models.append(None)
+        if preload_cost_checkpoints:
+            self.LoadCostCheckPoints()
 
     def get_compiled_model(
         self,
@@ -280,8 +279,8 @@ class KerasCNN(BaseMLModel):
             if self.IsValidCost(cost):
                 self.PreLoadDataCore(index)
 
-    def PreLoadDataCore(self, cost_index):
-        if self.args.tl_samples and self.step != self.step_start:
+    def PreLoadDataCore(self, cost_index, best=False):
+        if self.args.tl_samples and self.step != self.step_start and not best:
             all_files = glob.glob(
                 os.path.join(checkpoint_dir, 
                     "step{}-cost{}-*.hdf5".format(self.prev_step,
@@ -293,7 +292,9 @@ class KerasCNN(BaseMLModel):
                 self.disable_icp = True
         else:
             all_files = glob.glob(
-                os.path.join(checkpoint_dir, "*weights-improvement-*.hdf5")
+                os.path.join(checkpoint_dir, 
+                    "*-cost{}-*weights-improvement*.hdf5".format(
+                        cost_index))
             )
             last_cp = BaseMLModel.get_last_cp_model(self, all_files)
             if last_cp != "":
@@ -354,26 +355,41 @@ class KerasCNN(BaseMLModel):
         )
         # print(tags+" MeanAct: ", np.mean(estimation_act_error), "MaxAct: ", np.max(estimation_act_error), "MinAct: ", np.min(estimation_act_error))
 
+    def LoadCostCheckPoints(self):
+        icp_list = self.icp
+        for index, cost in enumerate(self.cost_names):
+            if not self.IsValidCost(cost):
+                continue
+            icp = ""
+            if index < len(icp_list):
+                icp = icp_list[index]
+            else:
+                files = glob.glob(
+                    os.path.join(checkpoint_dir, 
+                        re_tag.format(cost_index)))
+                icp = BaseMLModel.get_last_cp_model(self, files)
+            self.load_model(icp, cost_index)
+        
     # Inference on samples, which is type of model specific
-    def Inference(self, cost_index, outfile=""):
-        self.load_model(self.icp, cost_index)
-        predictions = self.cost_models[cost_index].predict(
-                self.x_train, batch_size=self.GetBatchSize())
-        predictions = np.exp(predictions)
-        predictions = predictions.reshape((predictions.shape[0],))
-        if outfile != None:
-            col = self.y_train
-            if self.y_train.size != 0 and self.y_train.shape[0] > cost_index:
-                col = self.y_train[cost_index]
-            BaseMLModel.WritePredictionsToFile(
-                self, self.x_train, col, 
-                predictions, outfile
-            )
-        return predictions
+    def Inference(self):
+        #cost_data = ReshapeCosts(cost_data)
+        re_tag = "*-cost{}-*weights-improvement*.hdf5"
+        parameters_data = self.x_train
+        all_predictions = []
+        for index, cost in enumerate(self.cost_names):
+            if not self.IsValidCost(cost):
+                continue
+            predictions = self.cost_models[index].predict(
+                parameters_data, batch_size=self.GetBatchSize())
+            predictions = np.exp(predictions)
+            predictions = predictions.reshape((predictions.shape[0],))
+            all_predictions.append(predictions.tolist())
+        all_predictions = np.array(all_predictions).transpose()
+        return all_predictions
 
     # Load the model from the hdf5
     def load_model(self, model_name, cost_index):
-        print("Loading the checkpoint: " + model_name)
+        Log("Loading checkpoint file: " + model_name)
         keras.losses.custom_loss = self.loss_function
         self.cost_models[cost_index].load_weights(model_name)
 
@@ -407,7 +423,7 @@ class KerasCNN(BaseMLModel):
         if self.no_run:
             return (self.step, 0, 0, 0.0, 0.0, len(x_train), 0)
         if self.args.evaluate and self.icp != "":
-            print("Loading checkpoint file:" + self.icp)
+            Log("Loading checkpoint file:" + self.icp)
             self.load_model(self.icp, cost_index)
             print("\n# Evaluate on test data")
             self.evaluate(cost_index, x_train, y_train, z_train, "training")

@@ -11,8 +11,8 @@
 import argparse
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LassoLars
 from sklearn import metrics
+from sklearn.linear_model import LassoLars
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 import os, sys, logging
@@ -31,6 +31,9 @@ class SKlearnRF(BaseMLModel):
         self.step = -1
         self.step_start = framework.args.step_start
         self.step_end = framework.args.step_end
+        self.validation_split = float(self.args.validation_split)
+        if self.framework.args.validation_split != "":
+            self.validation_split = float(self.framework.args.validation_split)
 
     def GetTrainValSplit(self):
         return float(self.args.train_test_split)
@@ -50,10 +53,14 @@ class SKlearnRF(BaseMLModel):
         parser.add_argument("-rf_crtiterion", default="mse")
         parser.add_argument("-rf_max_depth", default=None, type=int)
         parser.add_argument("-rf_n_jobs", default=None, type=int)
+        parser.add_argument("-method", default='RandomForestRegressor')
         parser.add_argument(
             "-real-objective", dest="real_objective", action="store_true"
         )
         parser.add_argument("-alpha", default=0.5, type=float)
+        parser.add_argument(
+            "-validation-split", dest="validation_split", default="0.20"
+        )
         parser.add_argument(
             "-train-test-split", dest="train_test_split", default="1.00"
         )
@@ -98,15 +105,26 @@ class SKlearnRF(BaseMLModel):
         rf_dict["n_jobs"] = rf_n_jobs
         rf_dict["alpha"] = alpha
         self.rf_dict = rf_dict
-        self.model = RandomForestRegressor(
-            n_estimators=rf_n_estimators,
-            max_depth=rf_max_depth,
-            random_state=rf_random_state,
-            n_jobs=rf_n_jobs,
-        )
+
+        method = RandomForestRegressor
+        if self.args.method == 'RandomForestRegressor':
+            method = RandomForestRegressor
+        elif self.args.method == 'SVR':
+            method = SVR 
+        elif self.args.method == 'LassoLars':
+            method = LassoLars
+        for index, cost in enumerate(self.cost_names):
+            self.cost_models.append(None)
+            if self.IsValidCost(cost):
+                self.cost_models[index] = method(
+                    n_estimators=rf_n_estimators,
+                    max_depth=rf_max_depth,
+                    random_state=rf_random_state,
+                    n_jobs=rf_n_jobs,
+                )
 
     def PreLoadData(self):
-        BaseMLModel.PreLoadData(self, self.step, self.GetTrainTestSplit(), 0.20)
+        BaseMLModel.PreLoadData(self, self.step, self.GetTrainTestSplit(), self.validation_split)
         x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
         x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
         y_train = np.log(y_train.reshape((y_train.shape[0],)))
@@ -120,11 +138,11 @@ class SKlearnRF(BaseMLModel):
 
     # Inference on samples, which is type of model specific
     def Inference(self, cost_index, outfile=""):
-        self.model.load_weights(self.icp)
-        predictions = self.model.predict(self.x_train)
+        self.cost_models[cost_index].load_weights(self.icp)
+        predictions = self.cost_models[cost_index].predict(self.x_train)
         if outfile != None:
             BaseMLModel.WritePredictionsToFile(
-                self, self.x_train, self.y_train, predictions, outfile
+                self, self.x_train, self.y_train[cost_index], predictions, outfile
             )
         return predictions.reshape((predictions.shape[0],))
 
@@ -140,11 +158,11 @@ class SKlearnRF(BaseMLModel):
         max_depth = rf_dict["max_depth"]
         n_jobs = rf_dict["n_jobs"]
         alpha = rf_dict["alpha"]
-        rf = self.model
+        rf = self.cost_models[cost_index]
 
-        obj_train = y_train
+        obj_train = y_train[cost_index]
         if self.args.real_objective:
-            obj_train = z_train
+            obj_train = z_train[cost_index]
         start = time.time()
         rf.fit(x_train, obj_train)
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
@@ -164,17 +182,17 @@ class SKlearnRF(BaseMLModel):
 
         y_train_data = z_train_data = y_test_data = z_test_data = [0.0]
         if self.args.real_objective:
-            y_train_data = self.compute_error(y_train, np.log(np.abs(obj_pred_train)))
-            z_train_data = self.compute_error(z_train, obj_pred_train)
+            y_train_data = self.compute_error(y_train[cost_index], np.log(np.abs(obj_pred_train)))
+            z_train_data = self.compute_error(z_train[cost_index], obj_pred_train)
             if obj_pred_test != None:
-                y_test_data = self.compute_error(y_test, np.log(np.abs(obj_pred_test)))
-                z_test_data = self.compute_error(z_test, obj_pred_test)
+                y_test_data = self.compute_error(y_test[cost_index], np.log(np.abs(obj_pred_test)))
+                z_test_data = self.compute_error(z_test[cost_index], obj_pred_test)
         else:
-            y_train_data = self.compute_error(y_train, obj_pred_train)
-            z_train_data = self.compute_error(z_train, np.exp(obj_pred_train))
+            y_train_data = self.compute_error(y_train[cost_index], obj_pred_train)
+            z_train_data = self.compute_error(z_train[cost_index], np.exp(obj_pred_train))
             if obj_pred_test != None:
-                y_test_data = self.compute_error(y_test, obj_pred_test)
-                z_test_data = self.compute_error(z_test, np.exp(obj_pred_test))
+                y_test_data = self.compute_error(y_test[cost_index], obj_pred_test)
+                z_test_data = self.compute_error(z_test[cost_index], np.exp(obj_pred_test))
         return (
             self.step,
             0,
