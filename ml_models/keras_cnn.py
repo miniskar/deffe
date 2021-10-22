@@ -422,9 +422,9 @@ class KerasCNN(BaseMLModel):
         # the entire dataset for a given number of "epochs"
         if self.no_run:
             return (self.step, 0, 0, 0.0, 0.0, len(x_train), 0)
-        if self.args.evaluate and self.icp != "":
-            Log("Loading checkpoint file:" + self.icp)
-            self.load_model(self.icp, cost_index)
+        if self.args.evaluate and cost_index < len(self.icp):
+            Log("Loading checkpoint file:" + self.icp[cost_index])
+            self.load_model(self.icp[cost_index], cost_index)
             print("\n# Evaluate on test data")
             self.evaluate(cost_index, x_train, y_train, z_train, "training")
             self.evaluate(cost_index, x_test, y_test, z_test, "test")
@@ -434,8 +434,8 @@ class KerasCNN(BaseMLModel):
             loss, acc = self.cost_models[cost_index].evaluate(
                     x_test, y_test, verbose=0)
             print("Test Loss: " + str(loss))
-        elif self.icp != "" and not self.disable_icp:
-            self.load_model(self.icp, cost_index)
+        elif cost_index < len(self.icp) and not self.disable_icp:
+            self.load_model(self.icp[cost_index], cost_index)
             # self.model = keras.models.load_model(self.args.icp)
             # print('\n# Evaluate on test data')
             # self.evaluate(x_train, y_train, z_train, "training")
