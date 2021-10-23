@@ -20,7 +20,8 @@ import time
 from baseml import *
 import shlex
 import pdb
-
+import joblib
+import glob
 
 class SKlearnRF(BaseMLModel):
     def __init__(self, framework):
@@ -34,12 +35,15 @@ class SKlearnRF(BaseMLModel):
         self.validation_split = float(self.args.validation_split)
         if self.framework.args.validation_split != "":
             self.validation_split = float(self.framework.args.validation_split)
+        self.train_test_split = float(self.args.train_test_split)
+        if self.framework.args.train_test_split != "":
+            self.train_test_split = float(self.framework.args.train_test_split)
 
     def GetTrainValSplit(self):
-        return float(self.args.train_test_split)
+        return self.validation_split
 
     def GetTrainTestSplit(self):
-        return float(self.args.train_test_split)
+        return self.train_test_split
 
     def ReadArguments(self):
         arg_string = self.config.ml_arguments
@@ -49,7 +53,7 @@ class SKlearnRF(BaseMLModel):
     def AddArgumentsToParser(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("-rf_random_state", default=0, type=int)
-        parser.add_argument("-rf_n_estimators", default=10, type=int)
+        parser.add_argument("-rf_n_estimators", default=100, type=int)
         parser.add_argument("-rf_crtiterion", default="mse")
         parser.add_argument("-rf_max_depth", default=None, type=int)
         parser.add_argument("-rf_n_jobs", default=None, type=int)
@@ -76,6 +80,7 @@ class SKlearnRF(BaseMLModel):
         cost_data,
         samples,
         name="network",
+        preload_cost_checkpoints = False
     ):
         BaseMLModel.Initialize(
             self, headers, 
@@ -122,22 +127,52 @@ class SKlearnRF(BaseMLModel):
                     random_state=rf_random_state,
                     n_jobs=rf_n_jobs,
                 )
+        if preload_cost_checkpoints:
+            self.LoadCostCheckPoints()
+
+    # Load the model from the joblib
+    def load_model(self, model_name, cost_index):
+        model = joblib.load(model_name)
+        self.cost_models[cost_index] = model
 
     def PreLoadData(self):
         BaseMLModel.PreLoadData(self, self.step, self.GetTrainTestSplit(), self.validation_split)
-        x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
-        x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
-        y_train = np.log(y_train.reshape((y_train.shape[0],)))
-        z_train = z_train.reshape((z_train.shape[0],))
-        y_test = np.log(y_test.reshape((y_test.shape[0],)))
-        z_test = z_test.reshape((z_test.shape[0],))
-        self.y_train = y_train
-        self.z_train = z_train
-        self.y_test = y_test
-        self.z_test = z_test
+        for index, cost in enumerate(self.cost_names):
+            if self.IsValidCost(cost):
+                self.PreLoadDataCore(index)
 
+    def PreLoadDataCore(self, cost_index, best=False):
+        last_cp = ""
+        pattern = "*-cost{}-*weights-improvement*.jbl.lzma".format(cost_index)
+        if self.step != self.step_start and not best:
+            pattern = "step{}-cost{}-*.jbl.lzma".format(self.prev_step, cost_index)
+        all_files = glob.glob(
+            os.path.join(checkpoint_dir, pattern)
+        )
+        last_cp = BaseMLModel.get_last_cp_model(self, all_files)
+        if last_cp != "":
+            self.load_model(last_cp, cost_index)
+            self.disable_icp = True
+
+    # Load checkpoint for all costs
+    def LoadCostCheckPoints(self):
+        icp_list = self.icp
+        re_tag = ".*-cost{}-.*.jbl.lzma"
+        for index, cost in enumerate(self.cost_names):
+            if not self.IsValidCost(cost):
+                continue
+            icp = ""
+            if index < len(icp_list):
+                icp = icp_list[index]
+            else:
+                files = glob.glob(
+                    os.path.join(checkpoint_dir, 
+                        re_tag.format(cost_index)))
+                icp = BaseMLModel.get_last_cp_model(self, files)
+            self.load_model(icp, cost_index)
+        
     # Inference on samples, which is type of model specific
-    def Inference(self, cost_index, outfile=""):
+    def Inference(self):
         self.cost_models[cost_index].load_weights(self.icp)
         predictions = self.cost_models[cost_index].predict(self.x_train)
         if outfile != None:
@@ -164,7 +199,11 @@ class SKlearnRF(BaseMLModel):
         if self.args.real_objective:
             obj_train = z_train[cost_index]
         start = time.time()
-        rf.fit(x_train, obj_train)
+        rf.fit(x_train, obj_train.reshape((-1)))
+        train_count = len(self.x_train)
+        test_count = len(self.x_test)
+        chk_pnt_name = f"step{self.step}-cost{cost_index}-train{train_count}-val{val_count}-weights-improvement-0.jbl.lzma"
+        joblib.dump(rf, chk_pnt_name)
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
         print("Total runtime of script: " + lapsed_time)
 

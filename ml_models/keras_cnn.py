@@ -306,7 +306,7 @@ class KerasCNN(BaseMLModel):
             return
         print("***********************************************")
         print("\n# Generate predictions for 3 samples of " + tags)
-        predictions = self.cost_models[cost_index].predict(x_test, batch_size=self.GetBatchSize())
+        predictions = self.cost_models[cost_index].predict(x_test)
         print(
             predictions[0],
             np.log(y_test[0]),
@@ -355,8 +355,10 @@ class KerasCNN(BaseMLModel):
         )
         # print(tags+" MeanAct: ", np.mean(estimation_act_error), "MaxAct: ", np.max(estimation_act_error), "MinAct: ", np.min(estimation_act_error))
 
+    # Load checkpoint for all costs
     def LoadCostCheckPoints(self):
         icp_list = self.icp
+        re_tag = "*-cost{}-*weights-improvement*.hdf5"
         for index, cost in enumerate(self.cost_names):
             if not self.IsValidCost(cost):
                 continue
@@ -373,16 +375,18 @@ class KerasCNN(BaseMLModel):
     # Inference on samples, which is type of model specific
     def Inference(self):
         #cost_data = ReshapeCosts(cost_data)
-        re_tag = "*-cost{}-*weights-improvement*.hdf5"
         parameters_data = self.x_train
         all_predictions = []
         for index, cost in enumerate(self.cost_names):
             if not self.IsValidCost(cost):
+                all_predictions.append(np.zeros(len(parameters_data)).tolist())
                 continue
             predictions = self.cost_models[index].predict(
-                parameters_data, batch_size=self.GetBatchSize())
+                parameters_data)
             predictions = np.exp(predictions)
             predictions = predictions.reshape((predictions.shape[0],))
+            loss, mse = self.cost_models[index].evaluate(self.x_train, self.y_train[index])
+            print(f"Loss:{loss} MSE:{mse}")
             all_predictions.append(predictions.tolist())
         all_predictions = np.array(all_predictions).transpose()
         return all_predictions
