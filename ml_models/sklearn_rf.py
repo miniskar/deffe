@@ -23,6 +23,7 @@ import pdb
 import joblib
 import glob
 
+checkpoint_dir = "checkpoints"
 class SKlearnRF(BaseMLModel):
     def __init__(self, framework):
         self.framework = framework
@@ -183,8 +184,8 @@ class SKlearnRF(BaseMLModel):
 
     def TrainCost(self, cost_index=0):
         BaseMLModel.SaveTrainValTestData(self, self.step)
-        x_train, y_train, z_train = self.x_train, self.y_train, self.z_train
-        x_test, y_test, z_test = self.x_test, self.y_test, self.z_test
+        x_train, y_train, z_train = self.x_train, self.y_train[cost_index].astype(float).reshape((-1)), self.z_train[cost_index].astype(float).reshape((-1))
+        x_test, y_test, z_test = self.x_test, self.y_test[cost_index].astype(float).reshape((-1)), self.z_test[cost_index].astype(float).reshape((-1))
 
         rf_dict = self.rf_dict
         n_estimators = rf_dict["n_estimators"]
@@ -195,15 +196,16 @@ class SKlearnRF(BaseMLModel):
         alpha = rf_dict["alpha"]
         rf = self.cost_models[cost_index]
 
-        obj_train = y_train[cost_index]
+        obj_train = y_train
         if self.args.real_objective:
-            obj_train = z_train[cost_index]
+            obj_train = z_train
+        obj_train = obj_train
         start = time.time()
-        rf.fit(x_train, obj_train.reshape((-1)))
+        rf.fit(x_train, obj_train)
         train_count = len(self.x_train)
         test_count = len(self.x_test)
-        chk_pnt_name = f"step{self.step}-cost{cost_index}-train{train_count}-val{val_count}-weights-improvement-0.jbl.lzma"
-        joblib.dump(rf, chk_pnt_name)
+        chk_pnt_name = f"step{self.step}-cost{cost_index}-train{train_count}-val{test_count}-weights-improvement-0.jbl.lzma"
+        joblib.dump(rf, os.path.join(checkpoint_dir,chk_pnt_name))
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
         print("Total runtime of script: " + lapsed_time)
 
@@ -221,17 +223,23 @@ class SKlearnRF(BaseMLModel):
 
         y_train_data = z_train_data = y_test_data = z_test_data = [0.0]
         if self.args.real_objective:
-            y_train_data = self.compute_error(y_train[cost_index], np.log(np.abs(obj_pred_train)))
-            z_train_data = self.compute_error(z_train[cost_index], obj_pred_train)
+            y_train_data = self.compute_error(cost_index, y_train, np.log(np.abs(obj_pred_train)))
+            z_train_data = self.compute_error(cost_index, z_train, obj_pred_train)
             if obj_pred_test != None:
-                y_test_data = self.compute_error(y_test[cost_index], np.log(np.abs(obj_pred_test)))
-                z_test_data = self.compute_error(z_test[cost_index], obj_pred_test)
+                y_test_data = self.compute_error(cost_index, y_test, np.log(np.abs(obj_pred_test)))
+                z_test_data = self.compute_error(cost_index, z_test, obj_pred_test)
         else:
-            y_train_data = self.compute_error(y_train[cost_index], obj_pred_train)
-            z_train_data = self.compute_error(z_train[cost_index], np.exp(obj_pred_train))
+            y_train_data = self.compute_error(cost_index, y_train, obj_pred_train)
+            if (y_train == z_train).all():
+                z_train_data = y_train_data
+            else:
+                z_train_data = self.compute_error(cost_index, z_train, np.exp(obj_pred_train))
             if obj_pred_test != None:
-                y_test_data = self.compute_error(y_test[cost_index], obj_pred_test)
-                z_test_data = self.compute_error(z_test[cost_index], np.exp(obj_pred_test))
+                y_test_data = self.compute_error(cost_index, y_test, obj_pred_test)
+                if (y_train == z_train).all():
+                    z_test_data = y_test_datat
+                else:
+                    z_test_data = self.compute_error(cost_index, z_test, np.exp(obj_pred_test))
         return (
             self.step,
             0,
@@ -241,21 +249,17 @@ class SKlearnRF(BaseMLModel):
             x_test.shape[0],
         )
 
-    def compute_error(self, test, pred):
-        all_errors = np.zeros(pred.shape)
-        for i in range(len(test)):
-            out_val = test[i]
-            pred_val = pred[i]
-            error_percentage = np.abs(out_val - pred_val) / out_val
-            all_errors[i] = error_percentage
+    def compute_error(self, cost_index, test, pred):
+        all_errors = np.abs(test-pred)
+        all_errors = np.divide(all_errors, test, out=np.zeros_like(all_errors), where=test!=0)
         mean_error = np.mean(all_errors)
         max_error = np.max(all_errors)
         min_error = np.min(all_errors)
         median_error = np.median(all_errors)
         std_error = np.std(all_errors)
         print(
-            "Mean:{} Max:{} Min:{} Median:{} Std:{}".format(
-                mean_error, max_error, min_error, median_error, std_error
+            "Cost:{} Mean:{} Max:{} Min:{} Median:{} Std:{}".format(
+                cost_index, mean_error, max_error, min_error, median_error, std_error
             )
         )
         return [mean_error, max_error, min_error, median_error, std_error]
