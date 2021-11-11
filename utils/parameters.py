@@ -13,7 +13,9 @@ import pdb
 import numpy as np
 import re
 import sys
+import pathlib
 from read_config import *
+from deffe_utils import *
 
 def IsNumber(x):
     allowed_types = [
@@ -308,8 +310,8 @@ class Parameters:
         return nparams
 
     def GetParameters(
-        self, samples, selected_params=None, with_indexing=False, with_normalize=False
-    ):
+        self, samples, selected_params=None, 
+        with_indexing=False, with_normalize=False):
         if selected_params == None:
             selected_params = self.selected_params
         nparams = self.GetNumpyParameters(
@@ -327,9 +329,47 @@ class Parameters:
         ]
 
     def GetHeaders(self, param_list):
-        return [param.name for (param, pvalues, pindex, permutation_index) in param_list]
+        return [param.name 
+            for (param, pvalues, pindex, permutation_index) in param_list]
 
-    def CreateRunScript(self, script, run_dir, param_pattern, param_val_with_escapechar_hash):
+    def CreateRunScript(self, script, fixed_arguments, excludes, 
+            run_dir, param_pattern, 
+            param_val_with_escapechar_hash,
+            bash_param_val_with_escapechar_hash):
+        out_script = script
+        is_python_script = False
+        if pathlib.Path(script).suffix == '.py' and os.path.exists(script):
+            is_python_script = True
+        if is_python_script:
+            out_script = os.path.splitext(os.path.basename(script))[0]+".sh"
+            excludes_list = re.split('\s*,\s*', excludes)
+            with open(   
+                os.path.join(run_dir, 
+                    os.path.basename(out_script)), "w"
+                ) as wfh:
+                arg_list = ["python3", os.path.abspath(script)]
+                arg_list.append(fixed_arguments)
+                for k,v in param_val_with_escapechar_hash.items():
+                    if k in excludes:
+                        continue
+                    if type(v) == bool:
+                        if v == True:
+                            arg_list.append("--"+k)
+                    elif v == 'True':
+                        arg_list.append("--"+k)
+                    elif v == 'False':
+                        None
+                    else:
+                        #print(f"K:{k} V:{v}")
+                        arg_list.append("--"+k+" "+v)
+                wline = " ".join(arg_list)
+                #print(f"WLINE:{wline}")
+                wline = param_pattern.sub(
+                    lambda m: bash_param_val_with_escapechar_hash.get(re.escape(re.escape(m.group(0))), m.group(0)), wline
+                )
+                wfh.write(wline)
+                wfh.close()
+                return out_script
         if not os.path.exists(script):
             with open(script, "w") as wfh:
                 wfh.write("")
@@ -340,47 +380,45 @@ class Parameters:
             lines = rfh.readlines()
             for line in lines:
                 wline = param_pattern.sub(
-                    lambda m: param_val_with_escapechar_hash.get(re.escape(m.group(0)), m.group(0)), line
+                    lambda m: bash_param_val_with_escapechar_hash.get(re.escape(m.group(0)), m.group(0)), line
                 )
                 wfh.write(wline)
             rfh.close()
             wfh.close()
+        return out_script
 
     def GetParamHash(self, param_val, param_list=None):
         if param_list == None:
             param_list = self.selected_params
+        bash_param_val_hash = {}
         param_val_hash = {}
         index = 0
         for (param, param_values, pindex, permutation_index) in param_list:
-            param_key1 = "${" + param.name + "}"
-            param_key2 = "$" + param.name+""
             if index >= len(param_val):
                 pdb.set_trace()
                 None
-            param_val_hash[param_key1] = param_val[index]
-            param_val_hash[param_key2] = param_val[index]
-            param_key1 = "${" + param.map + "}"
-            param_key2 = "$" + param.map+""
+            AddBashKeyValue(bash_param_val_hash, 
+                    param.name, param_val[index])
+            param_val_hash[param.name] = param_val[index]
             if param.name != param.map:
-                if param_key1 in param_val_hash:
+                if param.map in param_val_hash:
                     print(
                         "[Error] Multiple map_name(s):"
                         + param.map
                         + " used in the evaluation"
                     )
-                param_val_hash[param_key1] = param_val[index]
-                if param_key2 in param_val_hash:
-                    print(
-                        "[Error] Multiple map_name(s):"
-                        + param.map
-                        + " used in the evaluation"
-                    )
-                param_val_hash[param_key2] = param_val[index]
+                AddBashKeyValue(bash_param_val_hash, 
+                        param.map, param_val[index])
+                param_val_hash[param.map] = param_val[index]
             index = index + 1
         param_val_with_escapechar_hash = dict((re.escape(k), v) 
                 for k, v in param_val_hash.items())
+        bash_param_val_with_escapechar_hash = dict((re.escape(k), v) 
+                for k, v in bash_param_val_hash.items())
         param_pattern = re.compile(r'\$[{]?\b[a-zA-Z0-9_]+\b[}]?')
-        return (param_pattern, param_val_hash, param_val_with_escapechar_hash)
+        return (param_pattern, 
+                param_val_hash, param_val_with_escapechar_hash, 
+                bash_param_val_hash, bash_param_val_with_escapechar_hash)
 
 
 if __name__ == "__main__":

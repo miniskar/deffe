@@ -247,6 +247,12 @@ class DeffeConfigEvaluate:
         self.sample_evaluate_script = "evaluate.sh"
         if data != None and "sample_evaluate_script" in data:
             self.sample_evaluate_script = os.path.expandvars(data["sample_evaluate_script"])
+        self.sample_evaluate_arguments = ""
+        if data != None and "sample_evaluate_arguments" in data:
+            self.sample_evaluate_arguments = os.path.expandvars(data["sample_evaluate_arguments"])
+        self.sample_evaluate_excludes = ""
+        if data != None and "sample_evaluate_excludes" in data:
+            self.sample_evaluate_excludes = os.path.expandvars(data["sample_evaluate_excludes"])
 
 
 class DeffeConfigExtract:

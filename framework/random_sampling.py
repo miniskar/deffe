@@ -265,8 +265,8 @@ class DeffeRandomSampling:
         self.parameters = parameters
         self.custom_samples_index = 0
         self.train_val_split = train_val_split
-        n_train = 0
-        n_val = 0
+        #n_train = 0
+        #n_val = 0
         if self.args.custom_samples != "" and not self.full_exploration:
             self.custom_samples = [int(s) for s in self.args.custom_samples]
             n_all = self.custom_samples[0]

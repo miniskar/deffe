@@ -12,12 +12,12 @@ import os
 import pdb
 import re
 import sys
+import shlex
+import argparse
 import numpy as np
 import pandas as pd
 from multi_thread_run import *
 from deffe_utils import *
-import argparse
-import shlex
 
 """ DeffeEvaluate class to evaluate the batch of samples with 
     multi-thread execution environment either with/without 
@@ -102,10 +102,12 @@ class DeffeEvaluate:
 
     # Create environment for evaluating one sample
     def CreateEvaluateCase(self, param_val):
-        (param_pattern, param_val_hash, 
-         param_val_with_escapechar_hash) = self.parameters.GetParamHash(
-            param_val, self.param_list
-        )
+        (param_pattern, 
+         param_val_hash, param_val_with_escapechar_hash,
+         bash_param_val_hash, bash_param_val_with_escapechar_hash) = \
+            self.parameters.GetParamHash(
+                param_val, self.param_list
+            )
         run_dir = self.fr_config.run_directory
         dir_name = os.path.join(run_dir, "evaluate_" + str(self.counter))
         run_dir = dir_name
@@ -113,35 +115,46 @@ class DeffeEvaluate:
             os.makedirs(run_dir)
         scripts = []
         run_dir = os.path.abspath(run_dir)
-        evaluate_replacements_hash = { 
-            k:v for k,v in param_val_with_escapechar_hash.items() 
-        }
-        evaluate_replacements_hash[re.escape("${evaluate_index}")] = str(self.counter)
-        evaluate_replacements_hash[re.escape("$evaluate_index")] = str(self.counter)
-        if "${command_file}" in param_val_hash:
-            filename = param_val_hash["${command_file}"]
+        bash_evaluate_replacements_hash = GetHashCopy(
+                bash_param_val_with_escapechar_hash)
+        evaluate_replacements_hash = GetHashCopy(
+                param_val_with_escapechar_hash)
+        AddBashKeyValue(bash_evaluate_replacements_hash, 
+                "evaluate_index", str(self.counter))
+        evaluate_replacements_hash['evaluate_index'] = str(self.counter)
+        if "${command_file}" in bash_param_val_hash:
+            filename = bash_param_val_hash["${command_file}"]
             if not os.path.exists(filename):
                 filename = os.path.join(self.framework.config_dir, filename)
-            self.parameters.CreateRunScript(
-                filename, run_dir, 
-                param_pattern, evaluate_replacements_hash
+            filename = self.parameters.CreateRunScript(
+                filename, "", "", run_dir, 
+                param_pattern, 
+                evaluate_replacements_hash,
+                bash_evaluate_replacements_hash
             )
             scripts.append((run_dir, filename))
-        if "${command_option}" in param_val_hash:
-            filename = param_val_hash["${command_option}"]
+        if "${command_option}" in bash_param_val_hash:
+            filename = bash_param_val_hash["${command_option}"]
             if not os.path.exists(filename):
                 filename = os.path.join(self.framework.config_dir, filename)
-            self.parameters.CreateRunScript(
-                filename, run_dir, 
-                param_pattern, evaluate_replacements_hash
+            filename = self.parameters.CreateRunScript(
+                filename, "", "", run_dir, 
+                param_pattern, 
+                evaluate_replacements_hash,
+                bash_evaluate_replacements_hash
             )
             scripts.append((run_dir, filename))
-        self.parameters.CreateRunScript(
-            self.config.sample_evaluate_script, run_dir, 
-            param_pattern, evaluate_replacements_hash
+        sample_evaluate_script = self.parameters.CreateRunScript(
+            self.config.sample_evaluate_script, 
+            self.config.sample_evaluate_arguments, 
+            self.config.sample_evaluate_excludes, 
+            run_dir, 
+            param_pattern, 
+            evaluate_replacements_hash,
+            bash_evaluate_replacements_hash
         )
         scripts.append((run_dir, 
-                    os.path.basename(self.config.sample_evaluate_script)))
+                    os.path.basename(sample_evaluate_script)))
         cmd = ""
         for index, (rdir, filename) in enumerate(scripts):
             redirect_symbol = ">>"

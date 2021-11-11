@@ -70,13 +70,19 @@ class DeffeExtract:
         self.cost_list = cost_list
         self.param_data = param_data
 
-    def GetExtractCommand(self, output, param_pattern, param_dict):
+    def GetExtractCommand(self, output, 
+            param_pattern, 
+            param_val_with_escapechar_hash,
+            bash_param_val_with_escapechar_hash):
         (run_dir, evaluate_script) = output
         extract_script = self.config.sample_extract_script
         if not os.path.isfile(extract_script):
             return None
-        self.parameters.CreateRunScript(
-            extract_script, run_dir, param_pattern, param_dict
+        extract_script = self.parameters.CreateRunScript(
+            extract_script, "", "", run_dir, 
+            param_pattern, 
+            param_val_with_escapechar_hash,
+            bash_param_val_with_escapechar_hash
         )
         cmd = (
             "cd "
@@ -116,7 +122,8 @@ class DeffeExtract:
                 with open(file_path, "r") as fh:
                     lines = fh.readlines()
                     if len(lines) == 0:
-                        return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
+                        return (self.framework.not_valid_flag, 
+                                flag, np.array([0,]).astype("str"))
                     flines = [RemoveWhiteSpaces(lines[index]) 
                                 if index < len(lines) else 0 
                                 for index in range(len(self.cost_list)) ]
@@ -128,40 +135,53 @@ class DeffeExtract:
                         self.framework.valid_flag, flag,
                         result,
                     )
-        return (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
+        return (self.framework.not_valid_flag, 
+                flag, np.array([0,]).astype("str"))
 
     # Run the extraction
     def Run(self, param_val, param_list, eval_output):
         batch_output = []
         mt = MultiThreadBatchRun(self.batch_size, self.framework)
         for index, (flag, output) in enumerate(eval_output):
-            (param_pattern, param_hash, param_dict) = \
+            (param_pattern, 
+             param_val_hash, param_val_with_escapechar_hash,
+             bash_param_val_hash, bash_param_val_with_escapechar_hash) = \
                     self.parameters.GetParamHash(
                             param_val[index], self.param_list
                     )
             if flag == self.framework.pre_evaluated_flag:
-                batch_output.append((self.framework.valid_flag, flag, output))
+                batch_output.append((self.framework.valid_flag, 
+                            flag, output))
             elif flag == self.framework.evaluate_flag:
-                cmd = self.GetExtractCommand(output, param_pattern, param_dict)
+                cmd = self.GetExtractCommand(output, 
+                        param_pattern, 
+                        param_val_with_escapechar_hash,
+                        bash_param_val_with_escapechar_hash)
                 (run_dir, eval_script_filename) = output
                 if cmd != None:
                     if self.slurm_flag:
-                        slurm_script_filename = os.path.join(run_dir, "slurm_extract.sh")
-                        self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
-                        cmd = self.framework.slurm.GetSlurmJobCommand(slurm_script_filename)
+                        slurm_script_filename = os.path.join(run_dir, 
+                                "slurm_extract.sh")
+                        self.framework.slurm.CreateSlurmScript(cmd, 
+                                slurm_script_filename)
+                        cmd = self.framework.slurm.GetSlurmJobCommand(
+                                slurm_script_filename)
                     mt.Run([cmd])
                 batch_output.append(
-                    (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
+                    (self.framework.not_valid_flag, 
+                     flag, np.array([0,]).astype("str"))
                 )
             else:
                 print("[Error] Unknow flag received in DeffeExtract::Run")
                 batch_output.append(
-                    (self.framework.not_valid_flag, flag, np.array([0,]).astype("str"))
+                    (self.framework.not_valid_flag, 
+                     flag, np.array([0,]).astype("str"))
                 )
         mt.Close()
         for index, (flag, output) in enumerate(eval_output):
             if flag == self.framework.evaluate_flag:
-                batch_output[index] = self.GetResult(flag, param_val[index], output)
+                batch_output[index] = self.GetResult(flag, 
+                        param_val[index], output)
         return batch_output
 
 
