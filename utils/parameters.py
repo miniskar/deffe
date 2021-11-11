@@ -365,7 +365,7 @@ class Parameters:
                 wline = " ".join(arg_list)
                 #print(f"WLINE:{wline}")
                 wline = param_pattern.sub(
-                    lambda m: bash_param_val_with_escapechar_hash.get(re.escape(re.escape(m.group(0))), m.group(0)), wline
+                    lambda m: bash_param_val_with_escapechar_hash.get(re.escape(m.group(0)), m.group(0)), wline
                 )
                 wfh.write(wline)
                 wfh.close()
@@ -411,10 +411,8 @@ class Parameters:
                         param.map, param_val[index])
                 param_val_hash[param.map] = param_val[index]
             index = index + 1
-        param_val_with_escapechar_hash = dict((re.escape(k), v) 
-                for k, v in param_val_hash.items())
-        bash_param_val_with_escapechar_hash = dict((re.escape(k), v) 
-                for k, v in bash_param_val_hash.items())
+        param_val_with_escapechar_hash = GetHashCopy(param_val_hash, True)
+        bash_param_val_with_escapechar_hash = GetHashCopy(bash_param_val_hash, True)
         param_pattern = re.compile(r'\$[{]?\b[a-zA-Z0-9_]+\b[}]?')
         return (param_pattern, 
                 param_val_hash, param_val_with_escapechar_hash, 

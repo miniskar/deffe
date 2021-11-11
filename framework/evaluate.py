@@ -120,7 +120,7 @@ class DeffeEvaluate:
         evaluate_replacements_hash = GetHashCopy(
                 param_val_with_escapechar_hash)
         AddBashKeyValue(bash_evaluate_replacements_hash, 
-                "evaluate_index", str(self.counter))
+                "evaluate_index", str(self.counter), True)
         evaluate_replacements_hash['evaluate_index'] = str(self.counter)
         if "${command_file}" in bash_param_val_hash:
             filename = bash_param_val_hash["${command_file}"]

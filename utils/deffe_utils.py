@@ -84,14 +84,23 @@ def DebugLogModule(message, caller_name=None):
     print("[Debug] ("+caller_class+"."+caller_name+"): "+message)
     sys.stdout.flush()
     
-def AddBashKeyValue(hash_obj, key, val):
-    hash_obj[re.escape("${"+key+"}")] = val
-    hash_obj[re.escape("$"+key)] = val 
+def AddBashKeyValue(hash_obj, key, val, escape=False):
+    if escape:
+        hash_obj[re.escape("${"+key+"}")] = val
+        hash_obj[re.escape("$"+key)] = val 
+    else:
+        hash_obj["${"+key+"}"] = val
+        hash_obj["$"+key] = val 
     
-def GetHashCopy(obj):
-    new_obj = { 
-        k:v for k,v in obj.items() 
-    }
+def GetHashCopy(obj, escape_key=False):
+    if escape_key:
+        new_obj = { 
+            re.escape(k):v for k,v in obj.items() 
+        }
+    else:
+        new_obj = { 
+            k:v for k,v in obj.items() 
+        }
     return new_obj
 if __name__ == "__main__":
     class A:
