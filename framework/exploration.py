@@ -48,6 +48,6 @@ class DeffeExploration:
         None
 
 
-def GetObject(framework):
-    obj = DeffeExploration(framework)
+def GetObject(*args):
+    obj = DeffeExploration(*args)
     return obj

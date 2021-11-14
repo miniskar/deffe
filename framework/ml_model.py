@@ -125,6 +125,6 @@ class DeffeMLModel:
         self.ml_model_script.PreLoadData()
 
 
-def GetObject(framework):
-    obj = DeffeMLModel(framework)
+def GetObject(*args):
+    obj = DeffeMLModel(*args)
     return obj

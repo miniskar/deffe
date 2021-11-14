@@ -9,17 +9,21 @@
 # **************************************************************************
 ###
 import os
-
+import pdb
 
 class DeffeSlurm:
-    def __init__(self, framework):
+    def __init__(self, framework, slurm_config=None):
         self.framework = framework
-        self.config = self.framework.config.GetSlurm()
+        if slurm_config  != None:
+            self.config = slurm_config
+        else:
+            self.config = self.framework.config.GetSlurm()
         self.nodes = self.config.nodes
         self.cpus_per_task = self.config.cpus_per_task
         self.mem = self.config.mem
         self.exclude = self.config.exclude
         self.constraint = self.config.constraint
+        self.partition = self.config.partition
 
     def CreateSlurmScript(self, cmd, slurm_filename):
         with open(slurm_filename, "w") as fh:
@@ -30,14 +34,18 @@ class DeffeSlurm:
                 fh.write("#SBATCH --cpus-per-task=" + self.cpus_per_task + "\n")
             if self.exclude != '':
                 fh.write("#SBATCH --exclude='" + self.exclude+ "'\n")
-            fh.write('#SBATCH --constraint="' + self.constraint + '"\n')
+            if self.constraint != '':
+                fh.write('#SBATCH --constraint="' + self.constraint + '"\n')
+            if self.partition != '':
+                fh.write('#SBATCH --partition="' + self.partition+ '"\n')
             if self.mem != '':
                 fh.write('#SBATCH --mem='+self.mem+"\n")
+            fh.write("set -x;\n")
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')
             fh.write('echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"\n')
             fh.write("cd " + os.path.dirname(os.path.abspath(slurm_filename)) + " ; \n")
-            fh.write('echo "' + cmd + '"\n')
+            #fh.write('echo "' + cmd + '"\n')
             fh.write(cmd + "\n")
             fh.write("cd -\n")
             fh.write('echo "Completed job!"\n')
@@ -47,6 +55,6 @@ class DeffeSlurm:
         return "sbatch -W " + slurm_filename + " ; wait"
 
 
-def GetObject(framework):
-    obj = DeffeSlurm(framework)
+def GetObject(*args):
+    obj = DeffeSlurm(*args)
     return obj

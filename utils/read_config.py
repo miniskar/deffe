@@ -78,6 +78,44 @@ class DeffeConfigValues:
             self.GetRangeOfValues(range_value, values_extract, prefix, postfix)
         return values_extract
 
+def MergeTwoJsons(json1, json2):
+    def merge_two_json_lists(l1, l2):
+        is_dict_list = False
+        if len(l1) > 0:
+            if isinstance(l1[0], dict):
+                is_dict_list = True
+        if len(l2) > 0: 
+            if isinstance(l2[0], dict):
+                is_dict_list = True
+        if not is_dict_list:
+            return l1+l2
+        new_list = [] + l2
+        new_list_hash = { edict['name'] : (edict, index) for index, edict in enumerate(new_list) }
+        for edict in l1:
+            if edict['name'] in new_list_hash:
+                (olddict, index) = new_list_hash[edict['name']]
+                new_list[index] = dict(merge_two_jsons(edict, olddict))
+            else:
+                new_list.append(edict)
+        return new_list
+    def merge_two_jsons(dict1, dict2):
+        for k in set(dict1.keys()).union(dict2.keys()):
+            if k in dict1 and k in dict2:
+                if isinstance(dict1[k], dict) and isinstance(dict2[k], dict):
+                    yield (k, dict(merge_two_jsons(dict1[k], dict2[k])))
+                elif type(dict1[k]) == list and type(dict2[k]) == list:
+                    yield(k, merge_two_json_lists(dict1[k], dict2[k]))
+                else:
+                    # If one of the values is not a dict, you can't continue merging it.
+                    # Value from first dict overrides one in first and we move on.
+                    yield (k, dict1[k])
+                # Alternatively, replace this with exception raiser to alert you of value conflicts
+            elif k in dict1:
+                yield (k, dict1[k])
+            else:
+                yield (k, dict2[k])
+    return dict(merge_two_jsons(json1, json2))
+
 
 class DeffeConfigKnob:
     def __init__(self, data):
@@ -221,7 +259,7 @@ class DeffeConfigSampling:
 
 
 class DeffeConfigEvaluate:
-    def __init__(self, data):
+    def __init__(self, data, parent=None):
         self.data = data
         self.pyscript = "evaluate.py"
         if data != None and "pyscript" in data:
@@ -239,8 +277,18 @@ class DeffeConfigEvaluate:
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])
         self.slurm = False
-        if data != None and "slurm" in data and data["slurm"].lower() == "true":
-            self.slurm = True
+        self.slurm_config = {}
+        if data != None and "slurm" in data:
+            slurm_data = data['slurm']
+            if isinstance(slurm_data, dict):
+                self.slurm = True
+                self.slurm_config = slurm_data
+            elif type(slurm_data) == bool:
+                self.slurm  =  slurm_data
+            elif slurm_data.lower()=="true":
+                self.slurm = True
+        if parent != None and 'slurm' in parent:
+            self.slurm_config = MergeTwoJsons(self.slurm_config, parent['slurm'])
         self.batch = 40
         if data != None and "batch" in data:
             self.batch = int(data["batch"])
@@ -254,9 +302,13 @@ class DeffeConfigEvaluate:
         if data != None and "sample_evaluate_excludes" in data:
             self.sample_evaluate_excludes = os.path.expandvars(data["sample_evaluate_excludes"])
 
+    def GetSlurm(self):
+        if self.slurm:
+            return DeffeConfigSlurm(self.slurm_config)
+        return DeffeConfigSlurm(None)
 
 class DeffeConfigExtract:
-    def __init__(self, data):
+    def __init__(self, data, parent=None):
         self.data = data
         self.pyscript = "extract.py"
         if data != None and "pyscript" in data:
@@ -280,12 +332,33 @@ class DeffeConfigExtract:
         self.sample_extract_script = "extract.sh"
         if data != None and "sample_extract_script" in data:
             self.sample_extract_script = os.path.expandvars(data["sample_extract_script"])
+        self.sample_extract_arguments = ""
+        if data != None and "sample_extract_arguments" in data:
+            self.sample_extract_arguments = os.path.expandvars(data["sample_extract_arguments"])
+        self.sample_extract_excludes = ""
+        if data != None and "sample_extract_excludes" in data:
+            self.sample_extract_excludes = os.path.expandvars(data["sample_extract_excludes"])
         self.slurm = False
-        if data != None and "slurm" in data and data["slurm"].lower() == "true":
-            self.slurm = True
+        self.slurm_config = {}
+        if data != None and "slurm" in data:
+            slurm_data = data['slurm']
+            if isinstance(slurm_data, dict):
+                self.slurm_config = slurm_data
+                self.slurm = True
+            elif type(slurm_data) == bool:
+                self.slurm  =  slurm_data
+            elif slurm_data.lower()=="true":
+                self.slurm = True
+        if parent != None and 'slurm' in parent:
+            self.slurm_config = MergeTwoJsons(self.slurm_config, parent['slurm'])
         self.cost_output = "results.out"
         if data != None and "cost_output" in data:
             self.cost_output = os.path.expandvars(data["cost_output"])
+
+    def GetSlurm(self):
+        if self.slurm:
+            return DeffeConfigSlurm(self.slurm_config)
+        return DeffeConfigSlurm(None)
 
 
 class DeffeConfigFramework:
@@ -314,18 +387,19 @@ class DeffeConfigSlurm:
         self.mem = ""
         if data != None and "mem" in data:
             self.mem= data["mem"]
-        self.constraint = "x86_64,centos"
+        self.constraint = ""
         if data != None and "constraint" in data:
             self.constraint = data["constraint"]
+        self.partition = ""
+        if data != None and "partition" in data:
+            self.partition = data["partition"]
         self.pyscript = "deffe_slurm.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])
         self.user_script_configured = False
-        if (
-            data != None
+        if (data != None
             and "user_script_configured" in data
-            and data["user_script_configured"].lower() == "true"
-        ):
+            and data["user_script_configured"].lower() == "true"):
             self.user_script_configured = True
 
 class DeffeConfig:
@@ -336,41 +410,6 @@ class DeffeConfig:
             self.data = self.ReadFile(file_name)
 
     def ReadFile(self, filename):
-        def merge_two_json_lists(l1, l2):
-            is_dict_list = False
-            if len(l1) > 0:
-                if isinstance(l1[0], dict):
-                    is_dict_list = True
-            if len(l2) > 0: 
-                if isinstance(l2[0], dict):
-                    is_dict_list = True
-            if not is_dict_list:
-                return l1+l2
-            new_list = [] + l2
-            new_list_hash = { edict['name'] : (edict, index) for index, edict in enumerate(new_list) }
-            for edict in l1:
-                if edict['name'] in new_list_hash:
-                    (olddict, index) = new_list_hash[edict['name']]
-                    new_list[index] = dict(merge_two_jsons(edict, olddict))
-                else:
-                    new_list.append(edict)
-            return new_list
-        def merge_two_jsons(dict1, dict2):
-            for k in set(dict1.keys()).union(dict2.keys()):
-                if k in dict1 and k in dict2:
-                    if isinstance(dict1[k], dict) and isinstance(dict2[k], dict):
-                        yield (k, dict(merge_two_jsons(dict1[k], dict2[k])))
-                    elif type(dict1[k]) == list and type(dict2[k]) == list:
-                        yield(k, merge_two_json_lists(dict1[k], dict2[k]))
-                    else:
-                        # If one of the values is not a dict, you can't continue merging it.
-                        # Value from first dict overrides one in first and we move on.
-                        yield (k, dict1[k])
-                    # Alternatively, replace this with exception raiser to alert you of value conflicts
-                elif k in dict1:
-                    yield (k, dict1[k])
-                else:
-                    yield (k, dict2[k])
         self.file_name = os.path.expandvars(filename)
         if not os.path.exists(self.file_name):
             print("[Error] Json file:{} not available!".format(self.file_name))
@@ -384,11 +423,11 @@ class DeffeConfig:
                     for inc_file in includes:
                         inc_data = self.ReadFile(inc_file)
                         if inc_data != None:
-                            data = dict(merge_two_jsons(data, inc_data))
+                            data = MergeTwoJsons(data, inc_data)
                 else:
                     inc_data = self.ReadFile(includes)
                     if inc_data != None:
-                        data = dict(merge_two_jsons(data, inc_data))
+                        data = MergeTwoJsons(data, inc_data)
             return data
         return None
 
@@ -439,12 +478,12 @@ class DeffeConfig:
 
     def GetEvaluate(self):
         if self.data != None and "evaluate" in self.data:
-            return DeffeConfigEvaluate(self.data["evaluate"])
+            return DeffeConfigEvaluate(self.data["evaluate"], self.data)
         return DeffeConfigEvaluate(None)
 
     def GetExtract(self):
         if self.data != None and "extract" in self.data:
-            return DeffeConfigExtract(self.data["extract"])
+            return DeffeConfigExtract(self.data["extract"], self.data)
         return DeffeConfigExtract(None)
 
     def GetFramework(self):

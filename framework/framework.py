@@ -110,6 +110,7 @@ class DeffeFramework:
     # Initialize the class objects with default values
     def Initialize(self, config_data=None):
         from deffe_utils import LoadModule
+        from deffe_utils import LoadPyModule
         from read_config import DeffeConfig
         from workload_excel import Workload
         from parameters import Parameters
@@ -132,14 +133,14 @@ class DeffeFramework:
         self.ml_predict_table = Workload()
         self.evaluation_predict_table = Workload()
         self.parameters = Parameters(self.config, self)
-        self.train_model = LoadModule(self, self.config.GetModel().pyscript)
-        self.inference_model = LoadModule(self, self.config.GetModel().pyscript)
-        self.sampling = LoadModule(self, self.config.GetSampling().pyscript)
-        #self.exploration = LoadModule(self, self.config.GetExploration().pyscript)
-        self.evaluate = LoadModule(self, self.config.GetEvaluate().pyscript)
-        self.extract = LoadModule(self, self.config.GetExtract().pyscript)
-        self.slurm = LoadModule(self, self.config.GetSlurm().pyscript)
-        self.param_data = LoadModule(self, "param_data.py")
+        self.train_model = LoadPyModule(self.config.GetModel().pyscript, self)
+        self.inference_model = LoadPyModule(self.config.GetModel().pyscript, self)
+        self.sampling = LoadPyModule(self.config.GetSampling().pyscript, self)
+        #self.exploration = LoadPyModule(self.config.GetExploration().pyscript, self)
+        self.evaluate = LoadPyModule(self.config.GetEvaluate().pyscript, self)
+        self.extract = LoadPyModule(self.config.GetExtract().pyscript, self)
+        self.slurm = LoadPyModule(self.config.GetSlurm().pyscript, self, self.config.GetSlurm())
+        self.param_data = LoadPyModule("param_data.py", self)
         #self.exploration.Initialize()
         self.full_exploration = self.args.full_exploration
         if self.args.inference_only:

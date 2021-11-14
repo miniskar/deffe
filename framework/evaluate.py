@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 from multi_thread_run import *
 from deffe_utils import *
+from read_config import *
 
 """ DeffeEvaluate class to evaluate the batch of samples with 
     multi-thread execution environment either with/without 
@@ -29,6 +30,8 @@ class DeffeEvaluate:
         self.framework = framework
         self.config = framework.config.GetEvaluate()
         self.slurm_flag = self.config.slurm
+        self.slurm = LoadPyModule(self.config.GetSlurm().pyscript, 
+                self, self.config.GetSlurm())
         if self.framework.args.no_slurm:
             self.slurm_flag = False
         if not os.path.exists(self.config.sample_evaluate_script):
@@ -180,11 +183,12 @@ class DeffeEvaluate:
         self.counter = self.counter + 1
         out = ((run_dir, self.config.sample_evaluate_script), cmd)
         if self.slurm_flag:
-            slurm_script_filename = os.path.join(run_dir, "_slurm_evaluate.sh")
-            self.framework.slurm.CreateSlurmScript(cmd, slurm_script_filename)
-            slurm_script_cmd = self.framework.slurm.GetSlurmJobCommand(
-                slurm_script_filename
-            )
+            slurm_script_filename = os.path.join(run_dir, 
+                    "_slurm_evaluate.sh")
+            self.slurm.CreateSlurmScript(cmd, 
+                    slurm_script_filename)
+            slurm_script_cmd = self.slurm.GetSlurmJobCommand(
+                slurm_script_filename)
             out = ((run_dir, slurm_script_filename), slurm_script_cmd)
         return out
 
@@ -226,6 +230,6 @@ class DeffeEvaluate:
         mt.Close()
 
 # Get object of evaluate
-def GetObject(framework):
-    obj = DeffeEvaluate(framework)
+def GetObject(*args):
+    obj = DeffeEvaluate(*args)
     return obj

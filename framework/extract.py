@@ -26,11 +26,14 @@ class DeffeExtract:
         self.framework = framework
         self.config = framework.config.GetExtract()
         self.slurm_flag = self.config.slurm
+        self.slurm = LoadPyModule(self.config.GetSlurm().pyscript, 
+                self, self.config.GetSlurm())
         if self.framework.args.no_slurm:
             self.slurm_flag = False
-        if not os.path.exists(self.config.sample_extract_script):
-            self.config.sample_extract_script = os.path.join(
-                self.framework.config_dir, self.config.sample_extract_script
+        self.sample_extract_script = self.config.sample_extract_script
+        if not os.path.exists(self.sample_extract_script):
+            self.sample_extract_script = os.path.join(
+                self.framework.config_dir, self.sample_extract_script
             )
         self.fr_config = self.framework.fr_config
         self.batch_size = self.config.batch_size
@@ -75,11 +78,14 @@ class DeffeExtract:
             param_val_with_escapechar_hash,
             bash_param_val_with_escapechar_hash):
         (run_dir, evaluate_script) = output
-        extract_script = self.config.sample_extract_script
+        extract_script = self.sample_extract_script
         if not os.path.isfile(extract_script):
             return None
         extract_script = self.parameters.CreateRunScript(
-            extract_script, "", "", run_dir, 
+            extract_script, 
+            self.config.sample_extract_arguments,
+            self.config.sample_extract_excludes,
+            run_dir, 
             param_pattern, 
             param_val_with_escapechar_hash,
             bash_param_val_with_escapechar_hash
@@ -161,10 +167,10 @@ class DeffeExtract:
                 if cmd != None:
                     if self.slurm_flag:
                         slurm_script_filename = os.path.join(run_dir, 
-                                "slurm_extract.sh")
-                        self.framework.slurm.CreateSlurmScript(cmd, 
+                                "_slurm_extract.sh")
+                        self.slurm.CreateSlurmScript(cmd, 
                                 slurm_script_filename)
-                        cmd = self.framework.slurm.GetSlurmJobCommand(
+                        cmd = self.slurm.GetSlurmJobCommand(
                                 slurm_script_filename)
                     mt.Run([cmd])
                 batch_output.append(
@@ -185,6 +191,6 @@ class DeffeExtract:
         return batch_output
 
 
-def GetObject(framework):
-    obj = DeffeExtract(framework)
+def GetObject(*args):
+    obj = DeffeExtract(*args)
     return obj

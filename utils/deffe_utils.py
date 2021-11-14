@@ -27,6 +27,14 @@ def LoadModule(parent, py_file):
     return py_mod.GetObject(parent)
 
 # Generic loading of python module
+def LoadPyModule(*args):
+    py_file = args[0]
+    rargs = args[1:]
+    py_mod_name = pathlib.Path(py_file).stem
+    py_mod = importlib.import_module(py_mod_name)
+    return py_mod.GetObject(*rargs)
+
+# Generic loading of python module
 def LoadModuleNoParent(py_file):
     py_mod_name = pathlib.Path(py_file).stem
     py_mod = importlib.import_module(py_mod_name)

@@ -64,8 +64,11 @@ class DeffeRandomSampling:
         self.validate_module = None
         if self.framework.args.validate_samples and self.config.validate_module != '':
             validate_module_name = self.config.validate_module
+            if not os.path.exists(validate_module_name):
+                validate_module_name = os.path.join(
+                    self.framework.config_dir, validate_module_name)
             if os.path.isfile(validate_module_name):
-                self.validate_module = LoadModuleNoParent(validate_module_name)
+                self.validate_module = LoadPyModule(validate_module_name)
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):
@@ -497,8 +500,8 @@ def run_test2():
         counter = counter + 1
 
 
-def GetObject(framework):
-    obj = DeffeRandomSampling(framework)
+def GetObject(*args):
+    obj = DeffeRandomSampling(*args)
     return obj
 
 
