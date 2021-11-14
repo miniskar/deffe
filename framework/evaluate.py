@@ -34,11 +34,12 @@ class DeffeEvaluate:
                 self, self.config.GetSlurm())
         if self.framework.args.no_slurm:
             self.slurm_flag = False
-        if not os.path.exists(self.config.sample_evaluate_script):
-            self.config.sample_evaluate_script = os.path.join(
-                self.framework.config_dir, self.config.sample_evaluate_script
+        self.sample_evaluate_script = self.config.sample_evaluate_script
+        if not os.path.exists(self.sample_evaluate_script):
+            self.sample_evaluate_script = os.path.join(
+                self.framework.config_dir, self.sample_evaluate_script
             )
-        self.batch_size = int(self.config.batch_size)
+        self.batch_size = self.config.batch_size
         self.counter = 0
         self.fr_config = self.framework.fr_config
         if self.framework.args.batch_size!= -1:
@@ -73,25 +74,6 @@ class DeffeEvaluate:
     def AddArgumentsToParser(self):
         parser = argparse.ArgumentParser()
         return parser
-
-    def WriteSamplesToCSV(self):
-        n_samples = self.param_data.shape[0]
-        org_seq = np.random.choice(n_samples, 
-                size=min(20, n_samples), replace=False)
-        x_train = self.param_data[
-            org_seq,
-        ]
-        y_train = self.cost_data[
-            org_seq,
-        ]
-        y_train = y_train.reshape((y_train.shape[0],))
-        out_data_hash = {}
-        x_train_tr = x_train.transpose()
-        for index, hdr in enumerate(self.param_hdrs):
-            out_data_hash[hdr] = x_train_tr[index].tolist()
-        out_data_hash["cpu_cycles"] = y_train.tolist()
-        df = pd.DataFrame(out_data_hash)
-        df.to_csv("random-samples.csv", index=False, sep=",", encoding="utf-8")
 
     # Initialize method should be called for every 
     # new instance of new batch of samples.
@@ -148,7 +130,7 @@ class DeffeEvaluate:
             )
             scripts.append((run_dir, filename))
         sample_evaluate_script = self.parameters.CreateRunScript(
-            self.config.sample_evaluate_script, 
+            self.sample_evaluate_script, 
             self.config.sample_evaluate_arguments, 
             self.config.sample_evaluate_excludes, 
             run_dir, 
@@ -181,7 +163,7 @@ class DeffeEvaluate:
             fh.write(cmd)
             fh.close()
         self.counter = self.counter + 1
-        out = ((run_dir, self.config.sample_evaluate_script), cmd)
+        out = ((run_dir, self.sample_evaluate_script), cmd)
         if self.slurm_flag:
             slurm_script_filename = os.path.join(run_dir, 
                     "_slurm_evaluate.sh")

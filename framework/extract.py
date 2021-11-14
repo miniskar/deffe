@@ -35,8 +35,8 @@ class DeffeExtract:
             self.sample_extract_script = os.path.join(
                 self.framework.config_dir, self.sample_extract_script
             )
-        self.fr_config = self.framework.fr_config
         self.batch_size = self.config.batch_size
+        self.fr_config = self.framework.fr_config
         if self.framework.args.batch_size!= -1:
             self.batch_size = self.framework.args.batch_size
         if self.framework.args.extract_batch_size!= -1:
