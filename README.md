@@ -53,11 +53,15 @@ The above figures shows the main blocks and their corresponding python files in 
     - pydot 
     - tqdm 
     - torchsummary
-    - json
     - commentjson
+    - jsoncomment
     ```bash
     Install all required packages from requirements.txt file in the repository.
     $ pip3 install -r requirements.txt
+
+    Or
+
+    $ python3 -m pip install keras tensorflow torch doepy scikit-learn scikit-learn xlsxwriter matplotlib pandas pathlib pydot tqdm torchsummary jsoncomment commentjson
     ```
 
 ## Docker support
