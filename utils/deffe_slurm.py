@@ -24,6 +24,7 @@ class DeffeSlurm:
         self.exclude = self.config.exclude
         self.constraint = self.config.constraint
         self.partition = self.config.partition
+        self.source_scripts = self.config.source_scripts
 
     def CreateSlurmScript(self, cmd, slurm_filename):
         with open(slurm_filename, "w") as fh:
@@ -44,6 +45,8 @@ class DeffeSlurm:
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')
             fh.write('echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"\n')
+            for sc in self.source_scripts: 
+                fh.write("source "+sc+"\n")
             fh.write("cd " + os.path.dirname(os.path.abspath(slurm_filename)) + " ; \n")
             #fh.write('echo "' + cmd + '"\n')
             fh.write(cmd + "\n")

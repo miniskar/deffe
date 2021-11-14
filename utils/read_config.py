@@ -393,6 +393,9 @@ class DeffeConfigSlurm:
         self.partition = ""
         if data != None and "partition" in data:
             self.partition = data["partition"]
+        self.source_scripts = []
+        if data != None and "source_scripts" in data:
+            self.source_scripts = DeffeConfigValues(data["source_scripts"]).values
         self.pyscript = "deffe_slurm.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])
