@@ -44,7 +44,7 @@ class DeffeSlurm:
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')
             fh.write('echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"\n')
-            #fh.write("cd " + os.path.dirname(os.path.abspath(slurm_filename)) + " ; \n")
+            fh.write("cd " + os.path.dirname(os.path.abspath(slurm_filename)) + " ; \n")
             #fh.write('echo "' + cmd + '"\n')
             fh.write(cmd + "\n")
             fh.write("cd -\n")
