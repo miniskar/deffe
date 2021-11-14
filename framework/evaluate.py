@@ -154,7 +154,7 @@ class DeffeEvaluate:
             run_dir, 
             param_pattern, 
             evaluate_replacements_hash,
-            bash_evaluate_replacements_hash
+            bash_evaluate_replacements_hash, "evaluate_"
         )
         scripts.append((run_dir, 
                     os.path.basename(sample_evaluate_script)))

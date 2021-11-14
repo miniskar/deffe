@@ -335,13 +335,13 @@ class Parameters:
     def CreateRunScript(self, script, fixed_arguments, excludes, 
             run_dir, param_pattern, 
             param_val_with_escapechar_hash,
-            bash_param_val_with_escapechar_hash):
+            bash_param_val_with_escapechar_hash, tag=''):
         out_script = script
         is_python_script = False
         if pathlib.Path(script).suffix == '.py' and os.path.exists(script):
             is_python_script = True
         if is_python_script:
-            out_script = os.path.splitext(os.path.basename(script))[0]+".sh"
+            out_script = tag+os.path.splitext(os.path.basename(script))[0]+".sh"
             excludes_list = re.split('\s*,\s*', excludes)
             with open(   
                 os.path.join(run_dir, 

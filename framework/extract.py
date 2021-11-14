@@ -88,7 +88,7 @@ class DeffeExtract:
             run_dir, 
             param_pattern, 
             param_val_with_escapechar_hash,
-            bash_param_val_with_escapechar_hash
+            bash_param_val_with_escapechar_hash, "extract_"
         )
         cmd = (
             "cd "
