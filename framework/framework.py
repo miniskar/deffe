@@ -664,11 +664,11 @@ class DeffeFramework:
                     data_hash = self.extract_thread.GetAll()
                     DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
-                    DebugLogModule("Received "+str(len(samples_with_step)))
                     global_th_end = th_end
                     if global_th_end:
                         DebugLogModule("Received thread end")
                         break
+                    DebugLogModule("Received "+str(len(samples_with_step)))
                     # Check if model is already ready
                     if not (self.IsModelReady() or self.args.inference_only):
                         DebugLogModule("Started Evaluation "+str(len(samples_with_step)))
