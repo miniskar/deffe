@@ -77,7 +77,7 @@ class DeffeExtract:
             param_pattern, 
             param_val_with_escapechar_hash,
             bash_param_val_with_escapechar_hash):
-        (run_dir, evaluate_script) = output
+        (run_dir, counter, evaluate_script) = output
         extract_script = self.sample_extract_script
         if not os.path.isfile(extract_script):
             return None
@@ -103,7 +103,7 @@ class DeffeExtract:
         return cmd
 
     def GetResult(self, flag, param_val, eval_output):
-        (run_dir, evaluate_script) = eval_output
+        (run_dir, counter, evaluate_script) = eval_output
         file_path = os.path.join(run_dir, self.config.cost_output)
         if os.path.exists(file_path):
             if pathlib.Path(file_path).suffix == '.json':
@@ -163,11 +163,11 @@ class DeffeExtract:
                         param_pattern, 
                         param_val_with_escapechar_hash,
                         bash_param_val_with_escapechar_hash)
-                (run_dir, eval_script_filename) = output
+                (run_dir, counter, eval_script_filename) = output
                 if cmd != None:
                     if self.slurm_flag:
                         slurm_script_filename = os.path.join(run_dir, 
-                                "_slurm_extract.sh")
+                                f"_slurm_extract_{counter}.sh")
                         self.slurm.CreateSlurmScript(cmd, 
                                 slurm_script_filename)
                         cmd = self.slurm.GetSlurmJobCommand(

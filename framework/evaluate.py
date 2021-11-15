@@ -94,7 +94,7 @@ class DeffeEvaluate:
                 param_val, self.param_list
             )
         run_dir = self.fr_config.run_directory
-        dir_name = os.path.join(run_dir, "evaluate_" + str(self.counter))
+        dir_name = os.path.join(run_dir, "explore_" + str(self.counter))
         run_dir = dir_name
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
@@ -162,16 +162,16 @@ class DeffeEvaluate:
         with open(os.path.join(run_dir, "_sample_evaluate.sh"), "w") as fh:
             fh.write(cmd)
             fh.close()
-        self.counter = self.counter + 1
-        out = ((run_dir, self.sample_evaluate_script), cmd)
+        out = ((run_dir, self.counter, self.sample_evaluate_script), cmd)
         if self.slurm_flag:
             slurm_script_filename = os.path.join(run_dir, 
-                    "_slurm_evaluate.sh")
+                    f"_slurm_evaluate_{self.counter}.sh")
             self.slurm.CreateSlurmScript(cmd, 
                     slurm_script_filename)
             slurm_script_cmd = self.slurm.GetSlurmJobCommand(
                 slurm_script_filename)
-            out = ((run_dir, slurm_script_filename), slurm_script_cmd)
+            out = ((run_dir, self.counter, slurm_script_filename), slurm_script_cmd)
+        self.counter = self.counter + 1
         return out
 
     # Run method will evaluate the set of parameters
