@@ -99,7 +99,6 @@ class DeffeRandomSampling:
             if self.IsValidParameters(seq[comb]): 
                 valid_samples.append(seq[comb])
             new_pos = comb
-        print(f"Sample count:{len(seq)} valid:{len(valid_samples)}")
         return np.array(valid_samples), new_pos+1
 
     def IsValidParameters(self, comb):
@@ -311,6 +310,7 @@ class DeffeRandomSampling:
         if self.validate_module != None:
             self._train_idx, train_pos = self.GetValidSamples(self._seq, 0, self._n_train)
             self._val_idx, val_pos  = self.GetValidSamples(self._seq, train_pos, self._n_val)
+            Log(f"Sample count:{len(self._seq)} valid:{self._train_idx.size+self._val_idx.size}")
             self._pos = val_pos
         else:
             self._train_idx = self._seq[0 : self._n_train]
@@ -408,6 +408,7 @@ class DeffeRandomSampling:
         if self.validate_module != None:
             previous_pos = len(self._train_idx)+len(self._val_idx)
             new_val, new_pos = self.GetValidSamples(self._seq, self._pos, new_pos-self._pos)
+            Log(f"Sample count:{len(self._seq)} valid:{new_val.size}")
         else:
             new_val = self._seq[self._pos : new_pos]
         tmp = len(self._val_idx) // 2
