@@ -152,10 +152,10 @@ class Parameters:
         # print("Initialize Options:"+str(self.GetMinMaxToJSonData()))
         print("******* All considered parameters *******")
         for (param, param_values, pindex, permutation_index) in self.selected_params:
-            print("{}: {} = {}".format(pindex, param.name, param_values))
+            print("{}: {} = {} Count:{}".format(pindex, param.name, param_values, len(param_values)))
         print("******* Variable parameters *******")
         for (param, param_values, pindex, permutation_index) in self.selected_pruned_params:
-            print("{}: {} = {}".format(pindex, param.name, param_values))
+            print("{}: {} = {} Count:{}".format(pindex, param.name, param_values, len(param_values)))
         #print(self.selected_pruned_params)
         print("Total permutations:"+str(total_permutations))
         return (self.selected_params, self.selected_pruned_params, total_permutations)

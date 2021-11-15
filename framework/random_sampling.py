@@ -144,7 +144,7 @@ class DeffeRandomSampling:
                 for index in params_list:
                     (param, param_values, pindex, permutation_index) = params[index]
                     count += len(param_values)
-                    print(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
+                    DebugLogModule(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
                     for vindex, val in enumerate(param_values):
                         if base_params[index] != vindex:
                             obase = comb_params.copy()
@@ -154,7 +154,7 @@ class DeffeRandomSampling:
             for index in params_list:
                 (param, param_values, pindex, permutation_index) = params[index]
                 count += len(param_values)
-                print(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
+                DebugLogModule(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
                 for vindex, val in enumerate(param_values):
                     if base_params[index] != vindex:
                         obase = base_params.copy()
@@ -162,7 +162,7 @@ class DeffeRandomSampling:
                         seq.append(obase)
         seq = np.array([ self.parameters.EncodePermutationFromArray(x) for x in seq])
         np.random.shuffle(seq)
-        print(f"Samples derived with onedim sampling: {len(seq)}")
+        Log(f"Samples derived with onedim sampling: {len(seq)}")
         return seq
             
     def GenerateSamples(self):
