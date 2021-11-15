@@ -113,7 +113,7 @@ class DeffeExtract:
                     result = []
                     for p in param_hash_key:
                         if p in data:
-                            result.append(data[p])
+                            result.append(str(data[p]))
                         else:
                             result.append("NULL")
                     result = np.array(result).astype("str")
