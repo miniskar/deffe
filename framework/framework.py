@@ -668,6 +668,8 @@ class DeffeFramework:
                     if global_th_end:
                         DebugLogModule("Received thread end")
                         break
+                    if samples_with_step == None:
+                        break
                     DebugLogModule("Received "+str(len(samples_with_step)))
                     # Check if model is already ready
                     if not (self.IsModelReady() or self.args.inference_only):
