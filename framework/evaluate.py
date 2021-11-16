@@ -159,9 +159,9 @@ class DeffeEvaluate:
                 + os.getcwd()
                 + " ; "
             )
-        with open(os.path.join(run_dir, "_sample_evaluate.sh"), "w") as fh:
-            fh.write(cmd)
-            fh.close()
+        #with open(os.path.join(run_dir, "_sample_evaluate.sh"), "w") as fh:
+        #    fh.write(cmd)
+        #    fh.close()
         out = ((run_dir, self.counter, self.sample_evaluate_script), cmd)
         if self.slurm_flag:
             slurm_script_filename = os.path.join(run_dir, 
