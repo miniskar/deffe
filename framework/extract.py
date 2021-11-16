@@ -107,7 +107,12 @@ class DeffeExtract:
         file_path = os.path.join(run_dir, self.config.cost_output)
         if os.path.exists(file_path):
             if pathlib.Path(file_path).suffix == '.json':
-                data = DeffeConfig(file_path).data
+                data = {}
+                try:
+                    results_json = DeffeConfig(file_path)
+                    data = results_json.data
+                except (ValueError, TypeError) as e:
+                    Log(f"Unable to read results json file due to Type/Value errors! file:{file_path} ", 'Error')
                 param_hash_key = self.framework.config.GetCosts()
                 if data != None:
                     result = []
