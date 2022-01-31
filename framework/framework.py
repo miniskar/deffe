@@ -85,6 +85,7 @@ class DeffeFramework:
         parser.add_argument("-extract-out-flow", dest="extract_out_flow", type=int, default=-1, help="Extract samples output flow (by default it is evaluate batch size")
         parser.add_argument("-inference-only", dest="inference_only", action="store_true", help="Use pretrained model for inference")
         parser.add_argument("-input", dest="input", default="")
+        parser.add_argument("-pre-evaluated-data", dest="pre_evaluated_data", default="")
         parser.add_argument("-output", dest="output", default="")
         parser.add_argument("-model-extract-dir", dest="model_extract_dir", default="")
         parser.add_argument(
@@ -205,6 +206,8 @@ class DeffeFramework:
         valid_costs = explore_groups.valid_costs
         if self.args.input != "":
             load_data_file = self.args.input
+        if self.args.pre_evaluated_data != "":
+            load_data_file = self.args.pre_evaluated_data
         # Initialize the preloaded data, evaluate, extract and ML models
         self.param_data.Initialize(
             param_list, pruned_param_list, 

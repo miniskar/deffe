@@ -94,12 +94,18 @@ class DeffeEvaluate:
                 param_val, self.param_list
             )
         run_dir = self.fr_config.run_directory
+        #print(f"param_val_hash: {param_val_hash}")
         dir_name = os.path.join(run_dir, "explore_" + str(self.counter))
         run_dir = dir_name
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
         scripts = []
         run_dir = os.path.abspath(run_dir)
+        param_json = DeffeConfig()
+        param_json_data = param_val_hash.copy()
+        param_json_data['dir'] = f'explore_{self.counter}'
+        param_json_data['index'] = f'{self.counter}'
+        param_json.WriteFile(os.path.join(run_dir, "param.json"), param_json_data)
         bash_evaluate_replacements_hash = GetHashCopy(
                 bash_param_val_with_escapechar_hash)
         evaluate_replacements_hash = GetHashCopy(
