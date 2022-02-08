@@ -21,6 +21,8 @@ class DeffeSlurm:
         self.nodes = self.config.nodes
         self.cpus_per_task = self.config.cpus_per_task
         self.mem = self.config.mem
+        self.mail_type = self.config.mail_type
+        self.mail_user = self.config.mail_user
         self.exclude = self.config.exclude
         self.constraint = self.config.constraint
         self.partition = self.config.partition
@@ -41,6 +43,10 @@ class DeffeSlurm:
                 fh.write('#SBATCH --partition="' + self.partition+ '"\n')
             if self.mem != '':
                 fh.write('#SBATCH --mem='+self.mem+"\n")
+            if self.mail_type != '':
+                fh.write('#SBATCH --mail-type='+self.mail_type+"\n")
+            if self.mail_user != '':
+                fh.write('#SBATCH --mail-user='+self.mail_user+"\n")
             fh.write("set -x;\n")
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')

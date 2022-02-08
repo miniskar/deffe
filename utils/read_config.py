@@ -387,6 +387,12 @@ class DeffeConfigSlurm:
         self.mem = ""
         if data != None and "mem" in data:
             self.mem= data["mem"]
+        self.mail_type = ""
+        if data != None and "mail_type" in data:
+            self.mail_type = str(data["mail_type"])
+        self.mail_user = ""
+        if data != None and "mail_user" in data:
+            self.mail_user = str(data["mail_user"])
         self.constraint = ""
         if data != None and "constraint" in data:
             self.constraint = data["constraint"]
