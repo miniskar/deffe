@@ -93,7 +93,7 @@ class DeffeExtract:
         cmd = (
             "cd "
             + run_dir
-            + " ; sh "
+            + " ; bash "
             + os.path.basename(extract_script)
             + " > "
             + self.config.output_log
