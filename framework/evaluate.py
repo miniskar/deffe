@@ -155,7 +155,7 @@ class DeffeEvaluate:
                 cmd
                 + "cd "
                 + rdir
-                + " ; sh "
+                + " ; bash "
                 + filename
                 + " "
                 + redirect_symbol
