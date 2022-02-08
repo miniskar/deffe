@@ -41,6 +41,10 @@ class DeffeSlurm:
                 fh.write('#SBATCH --partition="' + self.partition+ '"\n')
             if self.mem != '':
                 fh.write('#SBATCH --mem='+self.mem+"\n")
+            if self.mail_type != '':
+                fh.write('#SBATCH --mail-type='+self.mail_type+"\n")
+            if self.mail_user != '':
+                fh.write('#SBATCH --mail-user='+self.mail_user+"\n")
             fh.write("set -x;\n")
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')
