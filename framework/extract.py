@@ -93,9 +93,9 @@ class DeffeExtract:
         cmd = (
             "cd "
             + run_dir
-            + " ; bash "
+            + " ; (time -p bash "
             + os.path.basename(extract_script)
-            + " > "
+            + " ) > "
             + self.config.output_log
             + " 2>&1 3>&1 ; cd "
             + os.getcwd()
@@ -127,14 +127,14 @@ class DeffeExtract:
                         self.param_data.PushEvaluatedData(param_val, result)
                     return (
                         self.framework.valid_flag, flag,
-                        result,
+                        result, run_dir
                     )
             else:
                 with open(file_path, "r") as fh:
                     lines = fh.readlines()
                     if len(lines) == 0:
                         return (self.framework.not_valid_flag, 
-                                flag, np.array([0,]).astype("str"))
+                                flag, np.array([0,]).astype("str"), run_dir)
                     flines = [RemoveWhiteSpaces(lines[index]) 
                                 if index < len(lines) else 0 
                                 for index in range(len(self.cost_list)) ]
@@ -144,10 +144,10 @@ class DeffeExtract:
                         self.param_data.PushEvaluatedData(param_val, result)
                     return (
                         self.framework.valid_flag, flag,
-                        result,
+                        result, run_dir
                     )
         return (self.framework.not_valid_flag, 
-                flag, np.array([0,]).astype("str"))
+                flag, np.array([0,]).astype("str"), run_dir)
 
     # Run the extraction
     def Run(self, param_val, param_list, eval_output):

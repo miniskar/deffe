@@ -155,9 +155,9 @@ class DeffeEvaluate:
                 cmd
                 + "cd "
                 + rdir
-                + " ; bash "
+                + " ; (time -p bash "
                 + filename
-                + " "
+                + ") "
                 + redirect_symbol
                 + " "
                 + self.config.output_log

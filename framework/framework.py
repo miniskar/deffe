@@ -171,7 +171,8 @@ class DeffeFramework:
     # Log exploration output into file
     def WriteExplorationOutput(self, parameter_values, batch_output):
         from deffe_utils import Log, LogModule, DebugLogModule
-        for index, (valid_flag, eval_type, cost_metrics) in enumerate(batch_output):
+        from deffe_utils import GetScriptExecutionTime
+        for index, (valid_flag, eval_type, cost_metrics, run_dir) in enumerate(batch_output):
             #DebugLogModule(f"Writing output to parameters {index}")
             param_val = parameter_values[index]
             if type(param_val) != list:
@@ -181,12 +182,14 @@ class DeffeFramework:
             #print("Completed1 Writing output to parameters")
             cost_metrics = np.array(cost_metrics).astype(str).tolist()
             #print("Completed2 Writing output to parameters")
+            evaluate_time = GetScriptExecutionTime(os.path.join(run_dir, self.config.GetEvaluate().output_log))
+            extract_time = GetScriptExecutionTime(os.path.join(run_dir, self.config.GetExtract().output_log))
             if eval_type == self.evaluate_flag:
-                self.evaluation_table.WriteDataInCSV(param_val + cost_metrics)
-                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
+                self.evaluation_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
+                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
             elif eval_type == self.predicted_flag:
-                self.ml_predict_table.WriteDataInCSV(param_val + cost_metrics)
-                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics)
+                self.ml_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
+                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
 
     # Returns true if model is ready
     def IsModelReady(self):
@@ -243,16 +246,16 @@ class DeffeFramework:
         )
         self.evaluation_table.WriteHeaderInCSV(
             explore_groups.evaluation_table,
-            hdrs_write_list + self.config.GetCosts(),
+            hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime"],
         )
         if not self.no_train_flag or self.args.inference_only:
             self.ml_predict_table.WriteHeaderInCSV(
                 explore_groups.ml_predict_table,
-                hdrs_write_list + self.config.GetCosts(),
+                hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime"],
             )
         self.evaluation_predict_table.WriteHeaderInCSV(
             explore_groups.evaluation_predict_table,
-            hdrs_write_list + self.config.GetCosts(),
+            hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime"],
         )
         self.sampling.SetStepInit(0, self.args.step_start,
                 self.args.step_end, self.args.step_inc)
@@ -364,7 +367,7 @@ class DeffeFramework:
         cost = []
         for output in batch_output:
             cost.append(
-                (self.valid_flag, self.predicted_flag, output)
+                (self.valid_flag, self.predicted_flag, output, '')
             )
         return cost 
 

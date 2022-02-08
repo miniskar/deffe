@@ -118,3 +118,21 @@ if __name__ == "__main__":
             LogModule("Hello")
     a = A()
     a.Message()
+
+def GetScriptExecutionTime(fname):
+    numeric_const_pattern = r'\breal\b\s*([-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?)'
+    rx = re.compile(numeric_const_pattern, re.VERBOSE)
+    if os.path.isfile(fname):
+        with open(fname, 'r') as fh:
+            lines = fh.readlines()
+            data = "---".join(lines)
+            data = data.replace("\n", '')
+            fields = rx.search(data)
+            if fields:
+                return fields.group(1)
+    return '0.0'
+
+if __name__ == "__main__":
+    print("Current directory: " + os.getcwd())
+    data = GetScriptExecutionTime('evaluate.log')
+    print(data)
