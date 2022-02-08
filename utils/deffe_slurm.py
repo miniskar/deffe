@@ -21,6 +21,8 @@ class DeffeSlurm:
         self.nodes = self.config.nodes
         self.cpus_per_task = self.config.cpus_per_task
         self.mem = self.config.mem
+        self.mail_type = self.config.mail_type
+        self.mail_user = self.config.mail_user
         self.exclude = self.config.exclude
         self.constraint = self.config.constraint
         self.partition = self.config.partition
