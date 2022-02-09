@@ -3,6 +3,7 @@ import os
 import pdb
 import argparse
 import re
+import time
 
 error_re = re.compile(r'\berror\b|\bfault\b|\bfatal\b', re.IGNORECASE)
 def mean(t):
@@ -15,10 +16,10 @@ def RunCommand(cmd):
 def InitParser(parser):
     parser.add_argument('-cwd', dest='cwd', default=".")
     parser.add_argument('-app', dest='app', default="backprop")
-    parser.add_argument('-evaluate-index', dest='evaluate_index', default="1")
-    parser.add_argument('-param1', dest='param1', default="1")
-    parser.add_argument('-param2', dest='param2', default="1")
-    parser.add_argument('-options', dest='options', default="16")
+    parser.add_argument('-evaluate-index', '--evaluate-index', dest='evaluate_index', default="1")
+    parser.add_argument('-param1', '--param1', dest='param1', default="1")
+    parser.add_argument('-param2', '--param2', dest='param2', default="1")
+    parser.add_argument('-options', '--options', dest='options', default="16")
     parser.add_argument('-args', dest='args', nargs='*', default='')
     parser.add_argument('-iter', dest='iter', default="1")
 
@@ -38,6 +39,7 @@ def RunBench(args, out_dir):
     val = int(args.param1)*int(args.param2)*float(args.options)
     results_file = os.path.join(out_dir, "results.out")
     RunCommand('echo "'+str(val)+'" > '+results_file)
+    time.sleep(int(args.param1)*10)
     with open(results_file, 'r') as fh:
             t = fh.readline()
             t = RemoveWhiteSpaces(t)

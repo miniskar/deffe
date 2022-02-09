@@ -180,7 +180,7 @@ class DeffeConfigModel:
         self.batch_size = -1
         if data != None and "batch_size" in data:
             self.batch_size = int(data["batch_size"])
-        self.pyscript = "ml_model.py"
+        self.pyscript = "_ml_model.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
@@ -222,7 +222,7 @@ class DeffeConfigSingleExploration:
 class DeffeConfigExploration:
     def __init__(self, data):
         self.data = data
-        self.pyscript = "exploration.py"
+        self.pyscript = "_exploration.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
@@ -247,7 +247,7 @@ class DeffeConfigSampling:
         self.output_log = "sampling.log"
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])
-        self.pyscript = "random_sampling.py"
+        self.pyscript = "_sampling.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
@@ -261,7 +261,7 @@ class DeffeConfigSampling:
 class DeffeConfigEvaluate:
     def __init__(self, data, parent=None):
         self.data = data
-        self.pyscript = "evaluate.py"
+        self.pyscript = "_evaluate.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""
@@ -310,7 +310,7 @@ class DeffeConfigEvaluate:
 class DeffeConfigExtract:
     def __init__(self, data, parent=None):
         self.data = data
-        self.pyscript = "extract.py"
+        self.pyscript = "_extract.py"
         if data != None and "pyscript" in data:
             self.pyscript = os.path.expandvars(data["pyscript"])
         self.arguments = ""

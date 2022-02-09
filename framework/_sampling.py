@@ -18,9 +18,9 @@ import shlex
 import itertools
 from deffe_utils import *
 
-class DeffeRandomSampling:
+class DeffeSampling:
     """
-      SamplingSeqGenerator:  generate training and validation sequences
+      DeffeSampling:  generate training and validation sequences
              Init   :  raw sequence, initial # training, # validation per step, shuffle or not
            
              Initial Sample :  first 'n_train' as training seq
@@ -502,7 +502,7 @@ def run_test2():
 
 
 def GetObject(*args):
-    obj = DeffeRandomSampling(*args)
+    obj = DeffeSampling(*args)
     return obj
 
 

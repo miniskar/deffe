@@ -43,5 +43,8 @@
                 "evaluation_table" : "deffe_evaluation.csv"
             }
             ]
+    },
+    "evaluate" : {
+        "sample_evaluate_script" : "evaluate.py"
     }
 }
