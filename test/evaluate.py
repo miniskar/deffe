@@ -16,7 +16,8 @@ def RunCommand(cmd):
 def InitParser(parser):
     parser.add_argument('-cwd', dest='cwd', default=".")
     parser.add_argument('-app', dest='app', default="backprop")
-    parser.add_argument('-evaluate-index', '--evaluate-index', dest='evaluate_index', default="1")
+    parser.add_argument('-evaluate_index', '--evaluate_index', dest='evaluate_index', default="1")
+    parser.add_argument('-size', '--size', dest='size', default="1")
     parser.add_argument('-param1', '--param1', dest='param1', default="1")
     parser.add_argument('-param2', '--param2', dest='param2', default="1")
     parser.add_argument('-options', '--options', dest='options', default="16")
