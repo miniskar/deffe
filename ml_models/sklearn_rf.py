@@ -75,6 +75,7 @@ class SKlearnRF(BaseMLModel):
         self,
         step,
         headers,
+        config_cost_names,
         cost_names,
         valid_costs,
         exclude_costs,
@@ -86,6 +87,7 @@ class SKlearnRF(BaseMLModel):
     ):
         BaseMLModel.Initialize(
             self, headers, 
+            config_cost_names,
             cost_names,
             valid_costs,
             exclude_costs,
@@ -121,7 +123,7 @@ class SKlearnRF(BaseMLModel):
             method = SVR 
         elif self.args.method == 'LassoLars':
             method = LassoLars
-        for index, cost in enumerate(self.cost_names):
+        for index, cost in enumerate(self.config_cost_names):
             self.cost_models.append(None)
             if self.IsValidCost(cost):
                 self.cost_models[index] = method(
@@ -140,7 +142,7 @@ class SKlearnRF(BaseMLModel):
 
     def PreLoadData(self):
         BaseMLModel.PreLoadData(self, self.step, self.GetTrainTestSplit(), self.validation_split)
-        for index, cost in enumerate(self.cost_names):
+        for index, cost in enumerate(self.config_cost_names):
             if self.IsValidCost(cost):
                 self.PreLoadDataCore(index)
 
@@ -161,7 +163,7 @@ class SKlearnRF(BaseMLModel):
     def LoadCostCheckPoints(self):
         icp_list = self.icp
         re_tag = ".*-cost{}-.*.jbl.lzma"
-        for index, cost in enumerate(self.cost_names):
+        for index, cost in enumerate(self.config_cost_names):
             if not self.IsValidCost(cost):
                 continue
             icp = ""

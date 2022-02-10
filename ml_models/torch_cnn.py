@@ -143,6 +143,7 @@ class TorchCNN(BaseMLModel):
         self,
         step,
         headers,
+        config_cost_names,
         cost_names,
         valid_costs,
         exclude_costs,
@@ -153,6 +154,7 @@ class TorchCNN(BaseMLModel):
     ):
         BaseMLModel.Initialize(
             self, headers, 
+            config_cost_names,
             cost_names,
             valid_costs,
             exclude_costs,

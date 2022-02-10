@@ -99,6 +99,7 @@ class DeffeMLModel:
         self.ml_model_script.Initialize(
             step,
             headers,
+            self.cost_names,
             cost_names,
             self.valid_costs,
             self.exclude_costs,

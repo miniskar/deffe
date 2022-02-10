@@ -21,18 +21,24 @@ class BaseMLModel:
     def __init__(self):
         None
 
-    def Initialize(self, headers, cost_names, valid_costs, exclude_costs,
+    def Initialize(self, headers, config_cost_names, cost_names, valid_costs, exclude_costs,
             parameters, cost_data, samples, cost_scaling_factor):
         Log("Headers: " + str(headers))
         orig_cost_data = cost_data
         self.headers = headers
+        self.config_cost_names = config_cost_names
         self.cost_names = cost_names
         self.valid_costs = valid_costs
-        self.exclude_costs = exclude_costs
+        self.exclude_costs = exclude_costs.copy()
         self.parameters_data = parameters
         self.cost_data = cost_data
         self.orig_cost_data = orig_cost_data
-        for index, cost in enumerate(self.cost_names):
+        self.cost_name_index = {}
+        for index, cost in enumerate(self.config_cost_names):
+            self.cost_name_index[cost] = index
+            if cost not in self.cost_names:
+                self.exclude_costs.append(cost)
+        for index, cost in enumerate(self.config_cost_names):
             if self.IsValidCost(cost):
                 #print(f"Index:{index} Cost:{cost} to be excluded from ML values:{cost_data[:,index]}")
                 cost_data_col = cost_data[:,index]
@@ -65,7 +71,8 @@ class BaseMLModel:
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
         self.SaveTrainValTestData(self.step)
-        for index, cost in enumerate(self.cost_names):
+        for cost in self.config_cost_names:
+            index = self.cost_name_index[cost]
             output.append(None)
             if self.IsValidCost(cost):
                 valid_trains.append((index, cost))

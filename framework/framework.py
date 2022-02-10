@@ -364,13 +364,12 @@ class DeffeFramework:
         df.to_csv(outfile, index=False, sep=",", encoding="utf-8")
         return None
 
-    def GetPredictedCost(self, samples):
+    def GetPredictedCost(self, samples, cost_names):
         parameter_values, parameters_normalize = \
                     self.ExtractParameterValues(samples, 
                             self.param_data.param_list, 
                             self.param_data.pruned_param_list)
         # Check if model is already ready
-        cost_names = self.config.GetCosts()
         cost_data =self.Inference(samples, 
                 pruned_headers, cost_names, parameter_values,
                 parameters_normalize, step)

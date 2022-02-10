@@ -203,6 +203,7 @@ class KerasCNN(BaseMLModel):
         self,
         step,
         headers,
+        config_cost_names,
         cost_names,
         valid_costs,
         exclude_costs,
@@ -213,7 +214,7 @@ class KerasCNN(BaseMLModel):
         preload_cost_checkpoints = False
     ):
         BaseMLModel.Initialize(
-            self, headers, cost_names,
+            self, headers, config_cost_names, cost_names,
             valid_costs,
             exclude_costs,
             parameters_data, cost_data, samples, float(self.args.cost_scaling_factor)
@@ -239,7 +240,7 @@ class KerasCNN(BaseMLModel):
         if batch_size == -1:
             batch_size = self.parameters_data.shape[0]
         self.batch_size = min(self.parameters_data.shape[0], batch_size)
-        for index, cost in enumerate(self.cost_names):
+        for index, cost in enumerate(self.config_cost_names):
             if self.IsValidCost(cost):
                 model = self.CreateKerasModel()
                 self.cost_models.append(model)
@@ -277,7 +278,7 @@ class KerasCNN(BaseMLModel):
             self, self.step, self.train_test_split, 
             self.validation_split
         )
-        for index, cost in enumerate(self.cost_names):
+        for index, cost in enumerate(self.config_cost_names):
             if self.IsValidCost(cost):
                 self.PreLoadDataCore(index)
 
@@ -361,7 +362,7 @@ class KerasCNN(BaseMLModel):
     def LoadCostCheckPoints(self):
         icp_list = self.icp
         re_tag = "*-cost{}-*weights-improvement*.hdf5"
-        for index, cost in enumerate(self.cost_names):
+        for index, cost in enumerate(self.config_cost_names):
             if not self.IsValidCost(cost):
                 continue
             icp = ""
@@ -379,7 +380,7 @@ class KerasCNN(BaseMLModel):
         #cost_data = ReshapeCosts(cost_data)
         parameters_data = self.x_train
         all_predictions = []
-        for index, cost in enumerate(self.cost_names):
+        for index, cost in enumerate(self.config_cost_names):
             if not self.IsValidCost(cost):
                 all_predictions.append(np.zeros(len(parameters_data)).tolist())
                 continue
