@@ -176,7 +176,7 @@ class DeffeFramework:
         from deffe_utils import GetScriptExecutionTime
         pdb.set_trace()
         for index, (valid_flag, eval_type, cost_metrics, run_dir) in enumerate(batch_output):
-            DebugLogModule(f"Writing output to parameters {index}")
+            #DebugLogModule(f"Writing output to parameters {index}")
             param_val = parameter_values[index]
             if type(param_val) != list:
                 param_val = param_val.tolist()
