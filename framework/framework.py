@@ -174,7 +174,6 @@ class DeffeFramework:
     def WriteExplorationOutput(self, parameter_values, batch_output):
         from deffe_utils import Log, LogModule, DebugLogModule
         from deffe_utils import GetScriptExecutionTime
-        pdb.set_trace()
         for index, (valid_flag, eval_type, cost_metrics, run_dir) in enumerate(batch_output):
             #DebugLogModule(f"Writing output to parameters {index}")
             param_val = parameter_values[index]
