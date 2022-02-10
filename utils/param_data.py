@@ -15,10 +15,24 @@ class ParamData:
         self.param_extract_indexes = []
         self.unused_params_values = []
         self.cost_data = np.array([])
+        self.param_data_sample_indexes = np.array([])
+        self.cost_data_pd = pd.DataFrame()
 
-    def GetCostData(self, samples):
-        indexes = samples
-        return [(self.framework.valid_flag, self.framework.pre_evaluated_flag, x) for x in self.cost_data[indexes].tolist()]
+    def GetEncodedSamples(self):
+        return self.param_data_sample_indexes
+
+    def GetCostDataPandas(self, indexes=None):
+        if indexes == None:
+            return self.cost_data_pd
+        return self.cost_data_pd.loc[indexes]
+
+    def GetCostData(self, samples=None):
+        indexes = list(range(self.cost_data.shape[0]))
+        if samples != None:
+            indexes = np.where(np.isin(self.param_data_sample_indexes, samples))
+        sel_samples = self.param_data_sample_indexes[indexes]
+        cost_pd = self.cost_data_pd.loc[indexes]
+        return ([(self.framework.valid_flag, self.framework.pre_evaluated_flag, x, '') for x in self.cost_data[indexes].tolist()], cost_pd.columns, sel_samples)
 
     # Initialize method should be called for every new instance of new batch of samples.
     # Parameters to be passed: Parameters list, Pruned parameters list, Cost metrics names, and also
@@ -29,11 +43,13 @@ class ParamData:
         self.param_extract_indexes = []
         self.unused_params_values = []
         self.param_list = param_list
+        self.pruned_param_list = pruned_param_list
         self.cost_list = cost_list
         param_hdrs = []
         param_hash = {}
         cost_hash = {}
         for index, cost in enumerate(self.cost_list):
+            cost_hash[cost.lower()] = index
             cost_hash[cost] = index
         for pdata in self.param_list:
             (param, param_values, pindex, permutation_index) = pdata
@@ -60,6 +76,7 @@ class ParamData:
         self.np_param_hdrs = []
         self.np_cost_valid_indexes = []
         self.np_cost_hdrs = []
+        #pdb.set_trace()
         for index, hdr in enumerate(np_hdrs):
             if hdr in param_hash:
                 self.np_param_valid_indexes.append(index)
@@ -76,9 +93,11 @@ class ParamData:
                 self.np_cost_hdrs.append(hdr)
                 self.np_cost_valid_indexes.append(index)
         # self.GetValidPreloadedData(trans_data)
+        #pdb.set_trace()
         param_data = trans_data[self.np_param_valid_indexes,].transpose()
         cost_data = trans_data[self.np_cost_valid_indexes,].transpose()
         print("Loaded data items:" + str(param_data.shape[0]))
+        #pdb.set_trace()
         valid_indexes = []
         for index in range(len(param_data)):
             tp_data = tuple(param_data[index])
@@ -89,9 +108,24 @@ class ParamData:
         self.param_data = param_data[
             valid_indexes,
         ]
+        def GetRecHash(rec):
+            #print(rec)
+            sel_param_hash = { 
+                k:rec[index]
+                      for index, k in enumerate(self.param_hdrs) 
+                }
+            return sel_param_hash
+        self.param_data_sample_indexes = np.array([
+            self.framework.parameters.EncodePermutation( \
+                GetRecHash(rec) \
+            ) \
+            for rec in self.param_data
+            ]).astype("int")
         self.cost_data = cost_data[
             valid_indexes,
         ]
+        self.param_data_pd = pd.DataFrame(self.param_data, columns=self.param_hdrs)
+        self.cost_data_pd = pd.DataFrame(self.cost_data, columns=self.np_cost_hdrs)
         print("Valid data items:" + str(self.param_data.shape[0]))
         np_param_hdrs_hash = {}
         for index, hdr in enumerate(self.np_param_hdrs):
@@ -131,6 +165,7 @@ class ParamData:
                     self.param_extract_indexes[np_param_hdrs_hash[param.name]] = pindex
                 elif param.map in np_param_hdrs_hash:
                     self.param_extract_indexes[np_param_hdrs_hash[param.map]] = pindex
+        #pdb.set_trace()
         self.np_param_hdrs_hash = np_param_hdrs_hash
     
     # Get valid preloaded data.

@@ -9,27 +9,39 @@
 # **************************************************************************
 ###
 import numpy as np
-import re
 import pdb
+import re
+import os
 import pandas as pd
 from deffe_thread import *
-from deffe_utils import Log, ReshapeCosts
+from deffe_utils import Log, ReshapeCosts, IsNumber, IsStringNumber
 
 checkpoint_dir = "checkpoints"
 class BaseMLModel:
     def __init__(self):
         None
 
-    def Initialize(self, headers, cost_names, valid_costs,
+    def Initialize(self, headers, cost_names, valid_costs, exclude_costs,
             parameters, cost_data, samples, cost_scaling_factor):
         Log("Headers: " + str(headers))
         orig_cost_data = cost_data
         self.headers = headers
         self.cost_names = cost_names
         self.valid_costs = valid_costs
+        self.exclude_costs = exclude_costs
         self.parameters_data = parameters
-        self.cost_data = cost_data.astype('float') * cost_scaling_factor
-        self.orig_cost_data = orig_cost_data.astype('float') * cost_scaling_factor 
+        self.cost_data = cost_data
+        self.orig_cost_data = orig_cost_data
+        for index, cost in enumerate(self.cost_names):
+            if self.IsValidCost(cost):
+                #print(f"Index:{index} Cost:{cost} to be excluded from ML values:{cost_data[:,index]}")
+                cost_data_col = cost_data[:,index]
+                if cost_data_col.size > 0 and not (IsNumber(cost_data_col[0]) or IsStringNumber(cost_data_col[0])):
+                    self.exclude_costs.append(cost)
+                else:
+                    self.cost_data[:,index] = self.cost_data[:,index].astype('float') * cost_scaling_factor
+                    self.orig_cost_data[:,index] = orig_cost_data[:,index].astype('float') * cost_scaling_factor 
+                #print(f"Invalid cost:{cost} to be excluded from ML values:{cost_data[:,index]}")
         self.sample_actual_indexes = samples
         self.cost_models = []
 
@@ -37,6 +49,8 @@ class BaseMLModel:
         if len(self.valid_costs) > 0:
             if cost not in self.valid_costs:
                 return False
+        if cost in self.exclude_costs:
+            return False
         return True
 
     def GetModel(self, index):
@@ -47,12 +61,18 @@ class BaseMLModel:
     def Train(self, threading_model=False):
         output = []
         valid_trains = []
+        valid_costs = []
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
         self.SaveTrainValTestData(self.step)
         for index, cost in enumerate(self.cost_names):
             output.append(None)
             if self.IsValidCost(cost):
                 valid_trains.append((index, cost))
+                valid_costs.append(cost)
         train_threads_list = []
+        #pdb.set_trace()
+        print(f"Valid cost metrics for training: {valid_costs}")
         for (index, cost) in valid_trains:
             if threading_model:
                 def TrainThread(self, index, cost):

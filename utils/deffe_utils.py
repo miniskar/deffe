@@ -16,6 +16,26 @@ import pdb
 import inspect
 import numpy as np
 
+def IsNumber(x):
+    allowed_types = [
+        float,
+        int,
+        np.float64,
+        np.float32,
+        np.float16,
+        np.int64,
+        np.int32,
+        np.int16,
+        np.int8,
+        np.uint64,
+        np.uint32,
+        np.uint16,
+        np.uint8,
+    ]
+    if type(x) in allowed_types:
+        return True
+    return False
+
 debug_flag = False
 def EnableDebugFlag():
     global debug_flag
@@ -119,8 +139,17 @@ if __name__ == "__main__":
     a = A()
     a.Message()
 
+num_pattern= r'^\s*([-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?)\s*$'
+num_rx = re.compile(num_pattern, re.VERBOSE)
+def IsStringNumber(number):
+    global num_rx
+    if num_rx.search(number):
+        return True
+    return False
+
+numeric_const_pattern = r'\breal\b\s*([-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?)'
 def GetScriptExecutionTime(fname):
-    numeric_const_pattern = r'\breal\b\s*([-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?)'
+    global numeric_const_pattern
     rx = re.compile(numeric_const_pattern, re.VERBOSE)
     if os.path.isfile(fname):
         with open(fname, 'r') as fh:
@@ -135,4 +164,5 @@ def GetScriptExecutionTime(fname):
 if __name__ == "__main__":
     print("Current directory: " + os.getcwd())
     data = GetScriptExecutionTime('evaluate.log')
+    pdb.set_trace()
     print(data)

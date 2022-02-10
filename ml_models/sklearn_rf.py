@@ -77,6 +77,7 @@ class SKlearnRF(BaseMLModel):
         headers,
         cost_names,
         valid_costs,
+        exclude_costs,
         parameters_data,
         cost_data,
         samples,
@@ -87,6 +88,7 @@ class SKlearnRF(BaseMLModel):
             self, headers, 
             cost_names,
             valid_costs,
+            exclude_costs,
             parameters_data, cost_data, samples, 1.0
         )
         args = self.args
@@ -201,6 +203,7 @@ class SKlearnRF(BaseMLModel):
             obj_train = z_train
         obj_train = obj_train
         start = time.time()
+        #pdb.set_trace()
         rf.fit(x_train, obj_train)
         train_count = len(self.x_train)
         test_count = len(self.x_test)

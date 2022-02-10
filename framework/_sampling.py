@@ -84,7 +84,7 @@ class DeffeSampling:
             nargs="*",
             action="store",
             dest="custom_samples",
-            default="",
+            default=[],
         )
         parser.add_argument("-fixed-samples", type=int, dest="fixed_samples", default=-1)
         parser.add_argument("-method", dest="method", default='random')
@@ -164,19 +164,24 @@ class DeffeSampling:
         Log(f"Samples derived with onedim sampling: {len(seq)}")
         return seq
             
-    def GenerateSamples(self):
+    def GenerateSamples(self, seq_custom=[]):
         selected_pruned_params = self.parameters.selected_pruned_params
         param_dict =  { param.name : param_values 
             for (param, param_values, pindex, permutation_index) in 
                 selected_pruned_params }
         n_samples = self._n_samples
         max_samples = min(self.framework.args.max_samples, self._n_samples)
+        remaining_samples = max_samples
         sampling_method = self.args.method
-        if sampling_method == 'random':
+        if self.framework.args.sampling_method != '':
+            sampling_method = self.framework.args.sampling_method
+        if len(seq_custom) > 0:
+            self._seq = seq_custom
+        elif sampling_method == 'random':
             # _n_samples is the permutation count of all parameters, which can be very high
             # Hence, generate samples of maximum 1000000 for training.
             org_seq = np.random.choice(
-                n_samples, size=max_samples, replace=False)
+                n_samples, size=remaining_samples, replace=False)
             self._seq = org_seq
         elif sampling_method == 'onedim':
             # _n_samples is the permutation count of all parameters, which can be very high
@@ -186,14 +191,14 @@ class DeffeSampling:
         elif sampling_method == 'smart':
             # _n_samples is the permutation count of all parameters, which can be very high
             # Hence, generate samples of maximum 1000000 for training.
-            org_seq = self.SelectSmartSamples(max_samples, 
+            org_seq = self.SelectSmartSamples(remaining_samples, 
                     selected_pruned_params)
             self._seq = org_seq
         elif sampling_method == 'onedim_with_smart':
             # _n_samples is the permutation count of all parameters, which can be very high
             # Hence, generate samples of maximum 1000000 for training.
             seq1 = self.SelectOneDimSamples(selected_pruned_params)
-            seq2 = self.SelectSmartSamples(max_samples, 
+            seq2 = self.SelectSmartSamples(remaining_samples, 
                     selected_pruned_params)
             org_seq = np.concatenate((seq1, seq2))
             _, i = np.unique(org_seq, return_index=True)
@@ -232,14 +237,16 @@ class DeffeSampling:
                 sample_mat = build.uniform_random(param_dict, num_samples=n_samples)
             else:
                 print("[Error] Unknown method:{} of sampling!".
-                        format(sampling))               
+                        format(sampling_method))               
                 sys.exit(1)
             np_hdrs = np.char.lower(np.array(list(sample_mat.columns)).astype("str"))
             sample_mat_val = np.round(sample_mat.values)
-            sample_mat = np.zeros(sample_mat_val.shape, dtype=int)
+            sample_mat = []
             for i in range(sample_mat_val.shape[1]):
                 id_keys = np.digitize(sample_mat_val[:, i], param_dict_hold[np_hdrs[i]], right=True)
-                sample_mat[:, i] = np.array(param_dict_actual[np_hdrs[i]])[id_keys]
+                sample_mat.append(np.array(param_dict_actual[np_hdrs[i]])[id_keys].tolist())
+            sample_mat = np.array(sample_mat)
+            sample_mat = sample_mat.transpose()
             sample_mat = np.unique(sample_mat, axis=0)
             n_samples = sample_mat.shape[0]
             self._n_samples = n_samples
@@ -261,7 +268,7 @@ class DeffeSampling:
             np.random.shuffle(self._seq)
         return
 
-    def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True, train_val_split=0.30, full_exploration=False):
+    def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True, train_val_split=0.30, full_exploration=False, seq_custom=[]):
         self.custom_samples = []
         self.full_exploration = full_exploration
         self.parameters = parameters
@@ -269,7 +276,7 @@ class DeffeSampling:
         self.train_val_split = train_val_split
         #n_train = 0
         #n_val = 0
-        if self.args.custom_samples != "" and not self.full_exploration:
+        if len(self.args.custom_samples) > 0 and not self.full_exploration:
             self.custom_samples = [int(s) for s in self.args.custom_samples]
             n_all = self.custom_samples[0]
             self.custom_samples_index = 1
@@ -281,7 +288,7 @@ class DeffeSampling:
             n_val = n_all - n_train
         self._n_samples = n_samples
         self._shuffle = shuffle
-        self.GenerateSamples()
+        self.GenerateSamples(seq_custom)
         self._n_train = n_train
         self._n_val = n_val
         if (self.args.fixed_samples != -1 or self.framework.args.fixed_samples != -1) and not self.full_exploration:

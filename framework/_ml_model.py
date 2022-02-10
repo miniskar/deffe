@@ -19,6 +19,7 @@ class DeffeMLModel:
     def __init__(self, framework):
         self.framework = framework
         self.config = framework.config.GetModel()
+        self.exclude_costs = self.config.exclude_costs
         self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
         self.accuracy = (0.0, 0.0)
 
@@ -37,6 +38,7 @@ class DeffeMLModel:
         self.samples = np.array([])
         self.cost_names = cost_names
         self.valid_costs = valid_costs
+            
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):
@@ -63,15 +65,15 @@ class DeffeMLModel:
         return self.ml_model_script.GetTrainTestSplit()
 
     # Initialize model parameters and costs
-    def InitializeSamples(self, samples, headers, params, cost=None, step=0, expand_list=True, preload_cost_checkpoints=False):
+    def InitializeSamples(self, samples, headers, cost_names, params, cost_data=None, step=0, expand_list=True, preload_cost_checkpoints=False):
         params_valid_indexes = []
         cost_metrics = []
         indexes = samples
         if type(params) == list:
             params = np.array(params)
-        if cost != None:
+        if cost_data != None:
             cost_metrics = []
-            for index, (flag, eval_type, actual_cost) in enumerate(cost):
+            for index, (flag, eval_type, actual_cost, run_dir) in enumerate(cost_data):
                 if flag == self.framework.valid_flag:
                     params_valid_indexes.append(index)
                     cost_metrics.append(actual_cost)
@@ -97,12 +99,13 @@ class DeffeMLModel:
         self.ml_model_script.Initialize(
             step,
             headers,
-            self.cost_names,
+            cost_names,
             self.valid_costs,
+            self.exclude_costs,
             self.parameters,
             self.cost_output,
             self.samples,
-            preload_cost_checkpoints = False
+            preload_cost_checkpoints = preload_cost_checkpoints 
         )
         self.ml_model_script.PreLoadData()
 

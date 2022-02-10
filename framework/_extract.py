@@ -162,7 +162,7 @@ class DeffeExtract:
                     )
             if flag == self.framework.pre_evaluated_flag:
                 batch_output.append((self.framework.valid_flag, 
-                            flag, output))
+                            flag, output, ''))
             elif flag == self.framework.evaluate_flag:
                 cmd = self.GetExtractCommand(output, 
                         param_pattern, 
@@ -180,13 +180,13 @@ class DeffeExtract:
                     mt.Run([cmd])
                 batch_output.append(
                     (self.framework.not_valid_flag, 
-                     flag, np.array([0,]).astype("str"))
+                     flag, np.array([0,]).astype("str"), '')
                 )
             else:
                 print("[Error] Unknow flag received in DeffeExtract::Run")
                 batch_output.append(
                     (self.framework.not_valid_flag, 
-                     flag, np.array([0,]).astype("str"))
+                     flag, np.array([0,]).astype("str"), '')
                 )
         mt.Close()
         for index, (flag, output) in enumerate(eval_output):

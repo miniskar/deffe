@@ -205,6 +205,7 @@ class KerasCNN(BaseMLModel):
         headers,
         cost_names,
         valid_costs,
+        exclude_costs,
         parameters_data,
         cost_data,
         samples,
@@ -214,6 +215,7 @@ class KerasCNN(BaseMLModel):
         BaseMLModel.Initialize(
             self, headers, cost_names,
             valid_costs,
+            exclude_costs,
             parameters_data, cost_data, samples, float(self.args.cost_scaling_factor)
         )
         args = self.args

@@ -17,26 +17,6 @@ import pathlib
 from read_config import *
 from deffe_utils import *
 
-def IsNumber(x):
-    allowed_types = [
-        float,
-        int,
-        np.float64,
-        np.float32,
-        np.float16,
-        np.int64,
-        np.int32,
-        np.int16,
-        np.int8,
-        np.uint64,
-        np.uint32,
-        np.uint16,
-        np.uint8,
-    ]
-    if type(x) in allowed_types:
-        return True
-    return False
-
 
 def IsFloat(x):
     float_pattern = (

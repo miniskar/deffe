@@ -171,9 +171,19 @@ class DeffeConfigScenarios:
 class DeffeConfigModel:
     def __init__(self, data):
         self.data = data
-        self.ml_model_script = "keras_cnn.py"
+        self.ml_model_type = "keras_cnn"
+        if data != None and "ml_model_type" in data:
+            self.ml_model_type = os.path.expandvars(data["ml_model_type"])
+        self.ml_model_script = ""
         if data != None and "ml_model_script" in data:
             self.ml_model_script = os.path.expandvars(data["ml_model_script"])
+        if self.ml_model_script == '':
+            if self.ml_model_type == 'keras_cnn':
+                self.ml_model_script = os.path.expandvars("keras_cnn.py")
+            elif self.ml_model_type == 'torch_cnn':
+                self.ml_model_script = os.path.expandvars("torch_cnn.py")
+            elif self.ml_model_type == 'sklearn':
+                self.ml_model_script = os.path.expandvars("sklearn_rf.py")
         self.output_log = "ml_model.log"
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])
@@ -186,6 +196,9 @@ class DeffeConfigModel:
         self.arguments = ""
         if data != None and "arguments" in data:
             self.arguments = os.path.expandvars(data["arguments"])
+        self.exclude_costs = []
+        if data != None and "exclude_costs" in data:
+            self.exclude_costs = DeffeConfigValues(data["exclude_costs"]).values
         self.ml_arguments = ""
         if data != None and "ml_arguments" in data:
             self.ml_arguments = os.path.expandvars(data["ml_arguments"])
@@ -205,6 +218,9 @@ class DeffeConfigSingleExploration:
             self.pre_evaluated_data = os.path.expandvars(data["pre_evaluated_data"])
         if data != None and "groups" in data:
             self.groups = DeffeConfigValues(data["groups"]).values
+        self.all_table = "deffe_output.csv"
+        if data != None and "all_table" in data:
+            self.all_table = os.path.expandvars(data["all_table"])
         self.exploration_table = "deffe_exploration.csv"
         if data != None and "exploration_table" in data:
             self.exploration_table = os.path.expandvars(data["exploration_table"])

@@ -73,6 +73,7 @@ class DeffeFramework:
         parser.add_argument("-no-train", dest="no_train", action="store_true", help="No training on evaluated metrics")
         parser.add_argument("-validate-samples", dest="validate_samples", action="store_true")
         parser.add_argument("-bounds-no-check", dest="bounds_no_check", action="store_true")
+        parser.add_argument("-sampling-method", dest="sampling_method", default='')
         parser.add_argument("-step-increment", type=int, dest="step_inc", default=1)
         parser.add_argument("-step-start", type=int, dest="step_start", default=0)
         parser.add_argument("-step-end", type=int, dest="step_end", default=-1)
@@ -129,6 +130,7 @@ class DeffeFramework:
         self.valid_flag = 1
         self.not_valid_flag = 0
         self.fr_config = self.config.GetFramework()
+        self.all_table = Workload()
         self.exploration_table = Workload()
         self.evaluation_table = Workload()
         self.ml_predict_table = Workload()
@@ -172,8 +174,9 @@ class DeffeFramework:
     def WriteExplorationOutput(self, parameter_values, batch_output):
         from deffe_utils import Log, LogModule, DebugLogModule
         from deffe_utils import GetScriptExecutionTime
+        pdb.set_trace()
         for index, (valid_flag, eval_type, cost_metrics, run_dir) in enumerate(batch_output):
-            #DebugLogModule(f"Writing output to parameters {index}")
+            DebugLogModule(f"Writing output to parameters {index}")
             param_val = parameter_values[index]
             if type(param_val) != list:
                 param_val = param_val.tolist()
@@ -184,12 +187,13 @@ class DeffeFramework:
             #print("Completed2 Writing output to parameters")
             evaluate_time = GetScriptExecutionTime(os.path.join(run_dir, self.config.GetEvaluate().output_log))
             extract_time = GetScriptExecutionTime(os.path.join(run_dir, self.config.GetExtract().output_log))
+            self.all_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time, run_dir])
             if eval_type == self.evaluate_flag:
-                self.evaluation_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
-                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
+                self.evaluation_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time, run_dir])
+                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time, run_dir])
             elif eval_type == self.predicted_flag:
-                self.ml_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
-                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time])
+                self.ml_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time, run_dir])
+                self.evaluation_predict_table.WriteDataInCSV(param_val + cost_metrics + [evaluate_time, extract_time, run_dir])
 
     # Returns true if model is ready
     def IsModelReady(self):
@@ -227,6 +231,23 @@ class DeffeFramework:
         # Initialize the random sampling
         init_n_train = self.init_n_train
         init_n_val = self.init_n_val
+        #TODO
+        if load_data_file != '':
+            preload_samples = self.param_data.GetEncodedSamples()
+            (batch_output, cost_names, sel_samples) = self.param_data.GetCostData()
+            parameter_values = self.parameters.GetParameters(
+                preload_samples, param_list
+            )
+            parameters_normalize = self.parameters.GetParameters(
+                preload_samples,
+                pruned_param_list,
+                with_indexing=False,
+                with_normalize=True,
+            )
+            self.Train(preload_samples, 
+                pruned_headers, cost_names, parameters_normalize, 
+                batch_output, 0)
+            None
         # Preload the data if anything is configured
         if self.only_preloaded_data_exploration:
             n_samples = len(self.param_data.param_data_hash)
@@ -235,7 +256,8 @@ class DeffeFramework:
                 init_n_train = int(n_samples * (1.0-train_val_split))
                 init_n_val = n_samples - init_n_train
         self.sampling.Initialize(self.parameters, n_samples,
-                init_n_train, init_n_val, True, self.train_model.GetTrainValSplit(), self.full_exploration
+                init_n_train, init_n_val, True, 
+                self.train_model.GetTrainValSplit(), self.full_exploration
         )
 
         # Initialize writing of output log files
@@ -244,18 +266,22 @@ class DeffeFramework:
             explore_groups.name + "-minmax.json",
             self.parameters.GetMinMaxToJSonData(),
         )
+        self.all_table.WriteHeaderInCSV(
+            explore_groups.all_table,
+            hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime", "RunDir"],
+        )
         self.evaluation_table.WriteHeaderInCSV(
             explore_groups.evaluation_table,
-            hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime"],
+            hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime", "RunDir"],
         )
         if not self.no_train_flag or self.args.inference_only:
             self.ml_predict_table.WriteHeaderInCSV(
                 explore_groups.ml_predict_table,
-                hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime"],
+                hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime", "RunDir"],
             )
         self.evaluation_predict_table.WriteHeaderInCSV(
             explore_groups.evaluation_predict_table,
-            hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime"],
+            hdrs_write_list + self.config.GetCosts()+["EvaluateTime","ExtractTime", "RunDir"],
         )
         self.sampling.SetStepInit(0, self.args.step_start,
                 self.args.step_end, self.args.step_inc)
@@ -277,7 +303,7 @@ class DeffeFramework:
         return (step, samples)
 
     def ExtractCostValues(self, samples):
-        cost_data = self.param_data.GetCostData(samples)
+        (cost_data, cost_pd, sel_samples) = self.param_data.GetCostData(samples)
         return cost_data
 
     def ExtractParameterValues(self, samples, param_list, pruned_param_list):
@@ -339,19 +365,30 @@ class DeffeFramework:
         df.to_csv(outfile, index=False, sep=",", encoding="utf-8")
         return None
 
-    def Inference(self, samples, pruned_headers, 
+    def GetPredictedCost(self, samples):
+        parameter_values, parameters_normalize = \
+                    self.ExtractParameterValues(samples, 
+                            self.param_data.param_list, 
+                            self.param_data.pruned_param_list)
+        # Check if model is already ready
+        cost_names = self.config.GetCosts()
+        cost_data =self.Inference(samples, 
+                pruned_headers, cost_names, parameter_values,
+                parameters_normalize, step)
+        return cost_data
+
+    def Inference(self, samples, pruned_headers, cost_names,
             parameter_values, parameters_normalize, step,
             cost_data=None, eval_format=False,
             expand_list=False,
-            preload_cost_checkpoints=True):
+            preload_cost_checkpoints=True, outfile=None):
         self.inference_model.InitializeSamples(
-            samples, pruned_headers, 
+            samples, pruned_headers, cost_names,
             parameters_normalize, cost_data, step, 
             expand_list,
             preload_cost_checkpoints
         )
         batch_output = self.inference_model.Inference()
-        outfile = self.args.output
         if outfile != None:
             valid_indexes = self.inference_model.params_valid_indexes
             params = parameter_values
@@ -372,16 +409,18 @@ class DeffeFramework:
         return cost 
 
     def Train(self, samples, 
-            pruned_headers, parameters_normalize, 
+            pruned_headers, cost_names, parameters_normalize, 
             batch_output, step, threading_model=False):
         from deffe_utils import Log
         self.train_model.InitializeSamples(
             samples,
             pruned_headers,
+            cost_names,
             parameters_normalize,
             batch_output,
             step,
         )
+        #pdb.set_trace()
         stats_data = self.train_model.Train(threading_model)
         Log(
             "Stats: (Step, CostI, Epoch, TrainLoss, ValLoss, TrainCount, TestCount): "
@@ -414,11 +453,13 @@ class DeffeFramework:
                                     param_list, pruned_param_list)
                 # Check if model is already ready
                 if self.IsModelReady() or self.args.inference_only:
+                    # Rethink about this
                     cost_data = self.ExtractCostValues(samples)
                     batch_output =self.Inference(samples, 
-                            pruned_headers, parameter_values,
+                            pruned_headers, self.config.GetCosts(), 
+                            parameter_values,
                             parameters_normalize, step, 
-                            cost_data, eval_format=True)
+                            cost_data, eval_format=True, outfile=self.args.output)
                 else:
                     eval_output = self.evaluate.Run(parameter_values)
                     batch_output = self.extract.Run(
@@ -426,11 +467,12 @@ class DeffeFramework:
                     )
                     if not self.no_train_flag:
                         self.Train(samples, 
-                            pruned_headers, parameters_normalize, 
+                            pruned_headers, self.config.GetCosts(), 
+                            parameters_normalize, 
                             batch_output, step)
                     if self.train_model_evaluate_flag:
                         self.train_model.InitializeSamples(
-                            samples, pruned_headers, 
+                            samples, pruned_headers, self.config.GetCosts(),  
                             parameters_normalize, batch_output, step
                         )
                         all_files = glob.glob(
@@ -540,7 +582,8 @@ class DeffeFramework:
                         parameter_values = data_hash['parameter_values'].GetData()
                         parameters_normalize = data_hash['parameters_normalize'].GetData()
                         batch_output =self.Inference(samples, 
-                                pruned_headers, parameter_values, 
+                                pruned_headers, 
+                                self.config.GetCosts(), parameter_values, 
                                 parameters_normalize, step, 
                                 eval_format=True)
                         data_hash = {
