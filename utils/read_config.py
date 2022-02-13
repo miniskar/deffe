@@ -272,6 +272,12 @@ class DeffeConfigSampling:
         self.validate_module = ""
         if data != None and "validate_module" in data:
             self.validate_module = os.path.expandvars(data["validate_module"])
+        self.optimize_sample_sequence = ""
+        if data != None and "optimize_sample_sequence_module" in data:
+            self.optimize_sample_sequence = os.path.expandvars(data["optimize_sample_sequence_module"])
+        self.cost_objective = []
+        if data != None and "cost_objective" in data:
+            self.cost_objective = [x.lower() for x in DeffeConfigValues(data["cost_objective"]).values]
 
 
 class DeffeConfigEvaluate:
@@ -483,7 +489,7 @@ class DeffeConfig:
 
     def GetCosts(self):
         if self.data != None and "costs" in self.data:
-            return DeffeConfigValues(self.data["costs"]).values
+            return [x.lower() for x in DeffeConfigValues(self.data["costs"]).values]
         return []
 
     def GetModel(self):

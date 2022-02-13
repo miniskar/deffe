@@ -312,6 +312,10 @@ class Parameters:
         return [param.name 
             for (param, pvalues, pindex, permutation_index) in param_list]
 
+    def GetParamValues(self, param_list):
+        return [pvalues
+            for (param, pvalues, pindex, permutation_index) in param_list]
+
     def CreateRunScript(self, script, fixed_arguments, excludes, 
             run_dir, param_pattern, 
             param_val_with_escapechar_hash,

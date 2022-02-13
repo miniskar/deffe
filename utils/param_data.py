@@ -65,33 +65,46 @@ class ParamData:
             preload_file = os.path.join(self.framework.config_dir, preload_file)
         if not os.path.exists(preload_file):
             return
+        print(f"Loading preevaluated data: {preload_file}")
         pd_data = pd.read_csv(
             preload_file, dtype="str", delimiter=r"\s*,\s*", engine="python"
         )
+        tmp_lower_columns = pd_data.columns.str.lower()
+        for index, hdr in enumerate(cost_list):
+            if hdr.lower() not in tmp_lower_columns:
+                print(f"Couldn't find data for {hdr} in preloaded data file")
+                pd_data[hdr.lower()] = np.nan
+        print(f"Size of preevaluated data: {pd_data.shape}")
         np_data = pd_data.values.astype("str")
         np_hdrs = np.char.lower(np.array(list(pd_data.columns)).astype("str"))
         preload_data = np_data[0:]
         trans_data = preload_data.transpose()
+        np_hdr_index_hash = { hdr: index for index, hdr in enumerate(np_hdrs) }
         self.np_param_valid_indexes = []
         self.np_param_hdrs = []
         self.np_cost_valid_indexes = []
         self.np_cost_hdrs = []
         #pdb.set_trace()
-        for index, hdr in enumerate(np_hdrs):
+        for index, orig_hdr in enumerate(param_hdrs):
+            hdr = orig_hdr.lower()
+            pindex = np_hdr_index_hash[hdr]
             if hdr in param_hash:
-                self.np_param_valid_indexes.append(index)
+                self.np_param_valid_indexes.append(pindex)
                 self.np_param_hdrs.append(hdr)
                 param = self.param_hash[hdr][0]
-                param_values = list(tuple(trans_data[index]))
+                param_values = list(tuple(trans_data[pindex]))
                 is_numbers = self.framework.parameters.IsParameterNumber(param_values)
                 if is_numbers:
-                    minp = np.min(trans_data[index].astype("float"))
-                    maxp = np.max(trans_data[index].astype("float"))
+                    minp = np.min(trans_data[pindex].astype("float"))
+                    maxp = np.max(trans_data[pindex].astype("float"))
                     # print("MinP: "+str(minp)+" maxP:"+str(maxp)+" name:"+param.map)
                     self.framework.parameters.UpdateMinMaxRange(param, minp, maxp)
+        for index, orig_hdr in enumerate(cost_list):
+            hdr = orig_hdr.lower()
+            pindex = np_hdr_index_hash[hdr]
             if hdr in cost_hash:
                 self.np_cost_hdrs.append(hdr)
-                self.np_cost_valid_indexes.append(index)
+                self.np_cost_valid_indexes.append(pindex)
         # self.GetValidPreloadedData(trans_data)
         #pdb.set_trace()
         param_data = trans_data[self.np_param_valid_indexes,].transpose()
@@ -152,6 +165,7 @@ class ParamData:
         #        format(preload_file, len(self.np_param_hdrs), count))
         #    return
         self.rev_param_list = self.np_param_hdrs + unused_params_list
+        #pdb.set_trace()
         self.param_extract_indexes = [index for index in range(len(self.np_param_hdrs))]
         self.rev_param_extract_indexes = [
             index for index in range(len(self.param_list))
@@ -200,7 +214,7 @@ class ParamData:
 
     def GetParamterCost(self, param_val):
         param_hash_key = self.GetParamValKey(param_val)
-        if param_hash_key in self.param_data_hash:
+        if len(param_hash_key) > 0 and param_hash_key in self.param_data_hash:
             return self.param_data_hash[param_hash_key]
         return None
 

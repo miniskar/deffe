@@ -17,6 +17,7 @@ import argparse
 import shlex
 import itertools
 from deffe_utils import *
+import pandas as pd
 
 class DeffeSampling:
     """
@@ -59,10 +60,16 @@ class DeffeSampling:
         self._exhausted = False
         self._n_samples = 0
         self._shuffle = True
+        self._onedim_length = 0
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
         self.validate_module = None
-        if self.framework.args.validate_samples and self.config.validate_module != '':
+        self.optimize_sample_sequence = None
+        self.step = 0
+        if self.config.optimize_sample_sequence != '':
+            optimize_sample_sequence_name = self.config.optimize_sample_sequence
+            self.optimize_sample_sequence = LoadPyModule(optimize_sample_sequence_name)
+        if self.framework.args.validate_module and self.config.validate_module != '':
             validate_module_name = self.config.validate_module
             if not os.path.exists(validate_module_name):
                 validate_module_name = os.path.join(
@@ -114,7 +121,6 @@ class DeffeSampling:
         s = np.array(s).transpose()
         seq = [ self.parameters.EncodePermutationFromArray(x) for x in s]
         seq = np.unique(np.array(seq)) 
-        np.random.shuffle(seq)
         return seq
 
     def SelectOneDimSamples(self, params):
@@ -160,7 +166,6 @@ class DeffeSampling:
                         obase[index] = vindex
                         seq.append(obase)
         seq = np.array([ self.parameters.EncodePermutationFromArray(x) for x in seq])
-        np.random.shuffle(seq)
         Log(f"Samples derived with onedim sampling: {len(seq)}")
         return seq
             
@@ -183,23 +188,33 @@ class DeffeSampling:
             org_seq = np.random.choice(
                 n_samples, size=remaining_samples, replace=False)
             self._seq = org_seq
+            if self._shuffle:
+                np.random.shuffle(self._seq)
         elif sampling_method == 'onedim':
             # _n_samples is the permutation count of all parameters, which can be very high
             # Hence, generate samples of maximum 1000000 for training.
             org_seq = self.SelectOneDimSamples(selected_pruned_params)
             self._seq = org_seq
+            self._onedim_length = len(self._seq)
+            if self._shuffle:
+                np.random.shuffle(self._seq)
         elif sampling_method == 'smart':
             # _n_samples is the permutation count of all parameters, which can be very high
             # Hence, generate samples of maximum 1000000 for training.
             org_seq = self.SelectSmartSamples(remaining_samples, 
                     selected_pruned_params)
             self._seq = org_seq
+            if self._shuffle:
+                np.random.shuffle(self._seq)
         elif sampling_method == 'onedim_with_smart':
             # _n_samples is the permutation count of all parameters, which can be very high
             # Hence, generate samples of maximum 1000000 for training.
             seq1 = self.SelectOneDimSamples(selected_pruned_params)
+            self._onedim_length = len(seq1)
+            np.random.shuffle(seq1)
             seq2 = self.SelectSmartSamples(remaining_samples, 
                     selected_pruned_params)
+            np.random.shuffle(seq2)
             org_seq = np.concatenate((seq1, seq2))
             _, i = np.unique(org_seq, return_index=True)
             org_seq = org_seq[np.sort(i)]
@@ -263,9 +278,9 @@ class DeffeSampling:
                     ) \
                     for rec in np_records 
                     ]).astype("int")
+            if self._shuffle:
+                np.random.shuffle(self._seq)
         Log(f"Total samples in sampling: {len(self._seq)}")
-        if self._shuffle:
-            np.random.shuffle(self._seq)
         return
 
     def Initialize(self, parameters, n_samples, n_train, n_val, shuffle=True, train_val_split=0.30, full_exploration=False, seq_custom=[]):
@@ -323,6 +338,7 @@ class DeffeSampling:
             self._train_idx = self._seq[0 : self._n_train]
             self._val_idx = self._seq[self._n_train : self._n_train + self._n_val]
             self._pos = self._n_train + self._n_val
+        self.OptimizeSequence(val_pos, 0)
         # print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
 
     def GetCurrentStep(self):
@@ -357,6 +373,36 @@ class DeffeSampling:
         # Calculate next step
         self.IncrementStep()
         return self._exhausted
+
+    # Find next set of samples based on the prediction
+    def OptimizeSequence(self, new_pos, previous_pos):
+        if self.optimize_sample_sequence!=None:
+            if new_pos <= self._onedim_length:
+                return
+            if previous_pos < self._onedim_length:
+                previous_pos = self._onedim_length
+            (pruned_headers, cost_hdrs, 
+             parameter_values, cost_data) = self.framework.GetPredictedCost(
+                 self._seq[previous_pos:], self.step, self.config.cost_objective)
+            cost_data_hash = {}
+            #pdb.set_trace()
+            for index, cost in enumerate(cost_hdrs):
+                if cost_data[index] != None:
+                    cost_data_hash[cost] = cost_data[index]
+            cost_data_pd = pd.DataFrame(cost_data_hash)
+            cost_data_pd['Sample'] = self._seq[previous_pos:]
+            parameters_data_pd = pd.DataFrame(parameter_values, columns=pruned_headers)
+            parameters_data_pd['Sample'] = self._seq[previous_pos:]
+            best_seq = self.optimize_sample_sequence.Run(parameters_data_pd, 
+                    cost_data_pd, new_pos-previous_pos)
+            if best_seq.size > 0:
+                seq = self._seq.tolist()
+                rest_seq = seq[previous_pos:]
+                opt_seq = best_seq.tolist()
+                non_selected_seq = np.setdiff1d(self._seq[previous_pos:], 
+                        opt_seq).tolist()
+                restructured_seq = seq[:previous_pos] + opt_seq + non_selected_seq
+                self._seq = np.array(restructured_seq)
 
     """
        Take step with increment, generate the sequence of training and validation sets
@@ -412,6 +458,7 @@ class DeffeSampling:
         if new_pos >= self._len:
             new_pos = self._len
         previous_pos = self._pos
+        self.OptimizeSequence(new_pos, previous_pos)
         if self.validate_module != None:
             previous_pos = len(self._train_idx)+len(self._val_idx)
             new_val, new_pos = self.GetValidSamples(self._seq, self._pos, new_pos-self._pos)

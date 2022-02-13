@@ -392,13 +392,14 @@ class KerasCNN(BaseMLModel):
             print(f"Loss:{loss} MSE:{mse}")
             all_predictions.append(predictions.tolist())
         all_predictions = np.array(all_predictions).transpose()
-        return all_predictions
+        return all_predictions.tolist()
 
     # Load the model from the hdf5
     def load_model(self, model_name, cost_index):
-        Log("Loading checkpoint file: " + model_name)
-        keras.losses.custom_loss = self.loss_function
-        self.cost_models[cost_index].load_weights(model_name)
+        if os.path.exists(model_name):
+            Log("Loading checkpoint file: " + model_name)
+            keras.losses.custom_loss = self.loss_function
+            self.cost_models[cost_index].load_weights(model_name)
 
     def TrainCost(self, cost_index):
         from tensorflow.keras.callbacks import Callback
@@ -414,6 +415,7 @@ class KerasCNN(BaseMLModel):
                 fh.write(str(epoch) + ", " + str(loss) + ", " + str(acc))
                 # print('\nTesting loss: {}, acc: {}\n'.format(loss, acc))
 
+        BaseMLModel.SaveTrainValTestData(self, cost_index, self.step)
         x_train = self.x_train
         y_train = self.y_train[cost_index]
         z_train = self.z_train[cost_index]

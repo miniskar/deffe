@@ -30,9 +30,13 @@ class SKlearnRF(BaseMLModel):
         self.config = self.framework.config.GetModel()
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
+        self.prev_step = -1
         self.step = -1
         self.step_start = framework.args.step_start
         self.step_end = framework.args.step_end
+        self.icp = self.args.icp
+        if len(self.framework.args.icp) > 0:
+            self.icp = self.framework.args.icp
         self.validation_split = float(self.args.validation_split)
         if self.framework.args.validation_split != "":
             self.validation_split = float(self.framework.args.validation_split)
@@ -59,6 +63,7 @@ class SKlearnRF(BaseMLModel):
         parser.add_argument("-rf_max_depth", default=None, type=int)
         parser.add_argument("-rf_n_jobs", default=None, type=int)
         parser.add_argument("-method", default='RandomForestRegressor')
+        parser.add_argument("-icp", dest="icp", nargs='*', default=[])
         parser.add_argument(
             "-real-objective", dest="real_objective", action="store_true"
         )
@@ -94,6 +99,7 @@ class SKlearnRF(BaseMLModel):
             parameters_data, cost_data, samples, 1.0
         )
         args = self.args
+        self.prev_step = self.step
         self.step = step
         self.headers = headers
         print("Headers: " + str(headers))
@@ -137,8 +143,14 @@ class SKlearnRF(BaseMLModel):
 
     # Load the model from the joblib
     def load_model(self, model_name, cost_index):
-        model = joblib.load(model_name)
-        self.cost_models[cost_index] = model
+        #pdb.set_trace()
+        #Log("Trying to Load checkpoint file: " + model_name)
+        if os.path.exists(model_name):
+            Log("Loading checkpoint file: " + model_name)
+            model = joblib.load(model_name)
+            self.cost_models[cost_index] = model
+            return True
+        return False
 
     def PreLoadData(self):
         BaseMLModel.PreLoadData(self, self.step, self.GetTrainTestSplit(), self.validation_split)
@@ -154,40 +166,49 @@ class SKlearnRF(BaseMLModel):
         all_files = glob.glob(
             os.path.join(checkpoint_dir, pattern)
         )
+        #pdb.set_trace()
         last_cp = BaseMLModel.get_last_cp_model(self, all_files)
+        #print(f"Last best cp for cost:{cost_index} cp:{last_cp}")
         if last_cp != "":
-            self.load_model(last_cp, cost_index)
-            self.disable_icp = True
+            #pdb.set_trace()
+            return self.load_model(last_cp, cost_index)
+        return False
 
     # Load checkpoint for all costs
     def LoadCostCheckPoints(self):
         icp_list = self.icp
         re_tag = ".*-cost{}-.*.jbl.lzma"
+        #pdb.set_trace()
         for index, cost in enumerate(self.config_cost_names):
             if not self.IsValidCost(cost):
                 continue
             icp = ""
-            if index < len(icp_list):
+            if index < len(icp_list) and icp_list[index] != '' and os.path.exists(icp_list[index]):
                 icp = icp_list[index]
             else:
                 files = glob.glob(
                     os.path.join(checkpoint_dir, 
-                        re_tag.format(cost_index)))
+                        re_tag.format(index)))
                 icp = BaseMLModel.get_last_cp_model(self, files)
-            self.load_model(icp, cost_index)
+            self.load_model(icp, index)
         
     # Inference on samples, which is type of model specific
     def Inference(self):
-        self.cost_models[cost_index].load_weights(self.icp)
-        predictions = self.cost_models[cost_index].predict(self.x_train)
-        if outfile != None:
-            BaseMLModel.WritePredictionsToFile(
-                self, self.x_train, self.y_train[cost_index], predictions, outfile
-            )
-        return predictions.reshape((predictions.shape[0],))
+        icp_list = self.icp
+        all_predictions = []
+        for index, cost in enumerate(self.config_cost_names):
+            if not self.IsValidCost(cost):
+                all_predictions.append(None)
+                continue
+            if self.PreLoadDataCore(index, best=True):
+                predictions = self.cost_models[index].predict(self.x_train)
+                all_predictions.append(predictions.reshape((predictions.shape[0],)).tolist())
+            else:
+                all_predictions.append(None)
+        return all_predictions
 
     def TrainCost(self, cost_index=0):
-        BaseMLModel.SaveTrainValTestData(self, self.step)
+        BaseMLModel.SaveTrainValTestData(self, cost_index, self.step)
         x_train, y_train, z_train = self.x_train, self.y_train[cost_index].astype(float).reshape((-1)), self.z_train[cost_index].astype(float).reshape((-1))
         x_test, y_test, z_test = self.x_test, self.y_test[cost_index].astype(float).reshape((-1)), self.z_test[cost_index].astype(float).reshape((-1))
 
@@ -209,8 +230,15 @@ class SKlearnRF(BaseMLModel):
         rf.fit(x_train, obj_train)
         train_count = len(self.x_train)
         test_count = len(self.x_test)
-        chk_pnt_name = f"step{self.step}-cost{cost_index}-train{train_count}-val{test_count}-weights-improvement-0.jbl.lzma"
-        joblib.dump(rf, os.path.join(checkpoint_dir,chk_pnt_name))
+        chk_pnt_name = f"step{self.step}-cost{cost_index}-train{train_count}-val{test_count}-weights-improvement-0-sk.jbl.lzma"
+        model_file = os.path.join(checkpoint_dir,chk_pnt_name)
+        joblib.dump(rf, model_file)
+        print(f"Saving the model to file:{model_file}")
+        #pdb.set_trace()
+        if len(self.icp) <= cost_index:
+            for i in range(len(self.icp),cost_index+1, 1):
+                self.icp.append('')
+        self.icp[cost_index] = chk_pnt_name
         lapsed_time = "{:.3f} seconds".format(time.time() - start)
         print("Total runtime of script: " + lapsed_time)
 

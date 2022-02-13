@@ -21,7 +21,8 @@ class BaseMLModel:
     def __init__(self):
         None
 
-    def Initialize(self, headers, config_cost_names, cost_names, valid_costs, exclude_costs,
+    def Initialize(self, headers, config_cost_names, cost_names, 
+            valid_costs, exclude_costs,
             parameters, cost_data, samples, cost_scaling_factor):
         Log("Headers: " + str(headers))
         orig_cost_data = cost_data
@@ -30,6 +31,7 @@ class BaseMLModel:
         self.cost_names = cost_names
         self.valid_costs = valid_costs
         self.exclude_costs = exclude_costs.copy()
+        #pdb.set_trace()
         self.parameters_data = parameters
         self.cost_data = cost_data
         self.orig_cost_data = orig_cost_data
@@ -38,16 +40,19 @@ class BaseMLModel:
             self.cost_name_index[cost] = index
             if cost not in self.cost_names:
                 self.exclude_costs.append(cost)
-        for index, cost in enumerate(self.config_cost_names):
-            if self.IsValidCost(cost):
-                #print(f"Index:{index} Cost:{cost} to be excluded from ML values:{cost_data[:,index]}")
-                cost_data_col = cost_data[:,index]
-                if cost_data_col.size > 0 and not (IsNumber(cost_data_col[0]) or IsStringNumber(cost_data_col[0])):
-                    self.exclude_costs.append(cost)
-                else:
-                    self.cost_data[:,index] = self.cost_data[:,index].astype('float') * cost_scaling_factor
-                    self.orig_cost_data[:,index] = orig_cost_data[:,index].astype('float') * cost_scaling_factor 
-                #print(f"Invalid cost:{cost} to be excluded from ML values:{cost_data[:,index]}")
+        if cost_data.size > 0:
+            for index, cost in enumerate(self.config_cost_names):
+                #print(f"Index:{index} Cost:{cost} to be excluded from ML")
+                if self.IsValidCost(cost):
+                    #print(f"Valid Index:{index} Cost:{cost} to be excluded from ML")
+                    #pdb.set_trace()
+                    cost_data_col = cost_data[:,index]
+                    if cost_data_col.size > 0 and not (IsNumber(cost_data_col[0]) or IsStringNumber(cost_data_col[0])):
+                        self.exclude_costs.append(cost)
+                    else:
+                        self.cost_data[:,index] = self.cost_data[:,index].astype('float') * cost_scaling_factor
+                        self.orig_cost_data[:,index] = orig_cost_data[:,index].astype('float') * cost_scaling_factor 
+                    #print(f"Invalid cost:{cost} to be excluded from ML values:{cost_data[:,index]}")
         self.sample_actual_indexes = samples
         self.cost_models = []
 
@@ -70,7 +75,8 @@ class BaseMLModel:
         valid_costs = []
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
-        self.SaveTrainValTestData(self.step)
+        #pdb.set_trace()
+        #self.SaveTrainValTestData(self.step)
         for cost in self.config_cost_names:
             index = self.cost_name_index[cost]
             output.append(None)
@@ -136,15 +142,15 @@ class BaseMLModel:
         self.x_train, self.y_train, self.z_train = x_train, y_train, z_train
         self.x_test, self.y_test, self.z_test = x_test, y_test, z_test
 
-    def SaveTrainValTestData(self, step=-1):
+    def SaveTrainValTestData(self, cost_index=0, step=-1):
         if step == -1:
             print("Saving ML model indices: ml-indices.npy")
-            np.save("ml-indices.npy", 
+            np.save(f"ml-cost{cost_index}-indices.npy", 
                     self.sample_actual_indexes)
         else:
             print("Saving ML indices: "
-                    "step{}-ml-indices.npy".format(step))
-            np.save("step{}-ml-indices.npy".format(step), 
+                    "step{}-cost{}-ml-indices.npy".format(step, cost_index))
+            np.save("step{}-cost{}-ml-indices.npy".format(step, cost_index), 
                     self.sample_actual_indexes)
 
     def LoadTrainValTestData(self, step=-1):
@@ -189,7 +195,7 @@ class BaseMLModel:
 
     def get_last_cp_model(self, all_files):
         epoch_re = re.compile(r"step([0-9]+).*weights-improvement-([0-9]+)-")
-        max_epoch = 0
+        max_epoch = -1
         last_icp = ""
         for index, icp_file in enumerate(all_files):
             epoch_flag = epoch_re.search(icp_file)

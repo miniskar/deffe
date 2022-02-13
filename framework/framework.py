@@ -27,6 +27,7 @@ def InitializeDeffe():
     print("Deffe framework is found in path: "+os.getenv("DEFFE_DIR"))
     sys.path.insert(0, os.getenv("DEFFE_DIR"))
     sys.path.insert(0, os.path.join(framework_path, "utils"))
+    sys.path.insert(0, os.path.join(framework_path, "cost_optimizers"))
     sys.path.insert(0, os.path.join(framework_path, "ml_models"))
     sys.path.insert(0, os.path.join(framework_path, "framework"))
     None
@@ -71,7 +72,7 @@ class DeffeFramework:
         )
         parser.add_argument("-no-run", dest="no_run", action="store_true", help="Dryrun: Do not run!")
         parser.add_argument("-no-train", dest="no_train", action="store_true", help="No training on evaluated metrics")
-        parser.add_argument("-validate-samples", dest="validate_samples", action="store_true")
+        parser.add_argument("-validate-module", "-validate-samples", dest="validate_module", action="store_true")
         parser.add_argument("-bounds-no-check", dest="bounds_no_check", action="store_true")
         parser.add_argument("-sampling-method", dest="sampling_method", default='')
         parser.add_argument("-step-increment", type=int, dest="step_inc", default=1)
@@ -308,6 +309,7 @@ class DeffeFramework:
     def ExtractParameterValues(self, samples, param_list, pruned_param_list):
         from deffe_utils import Log, LogModule, DebugLogModule
         parameter_values = None
+        pruned_parameter_values = None
         parameters_normalize = None
         # Check if the data point already exist in pre-computed data
         if self.only_preloaded_data_exploration:
@@ -325,16 +327,22 @@ class DeffeFramework:
             )
             DebugLogModule("Completed")
         else:
+            DebugLogModule("Get sample parameter values")
             parameter_values = self.parameters.GetParameters(
                 samples, param_list
             )
+            DebugLogModule("Get pruned selected values")
+            pruned_parameter_values = self.parameters.GetPrunedSelectedValues(
+                parameter_values, pruned_param_list
+            )
+            DebugLogModule("Get normalized parameters")
             parameters_normalize = self.parameters.GetParameters(
                 samples,
                 pruned_param_list,
                 with_indexing=False,
                 with_normalize=True,
             )
-        return parameter_values, parameters_normalize
+        return parameter_values, pruned_parameter_values, parameters_normalize
 
     def WritePredictionsToFile(self, model, headers, cost_names, params, cost_data, predictions, outfile):
         from deffe_utils import Log
@@ -364,16 +372,27 @@ class DeffeFramework:
         df.to_csv(outfile, index=False, sep=",", encoding="utf-8")
         return None
 
-    def GetPredictedCost(self, samples, cost_names):
-        parameter_values, parameters_normalize = \
+    def GetPredictedCost(self, samples, step=0, cost_names=[]):
+        pruned_param_list = self.parameters.selected_pruned_params
+        parameter_values, pruned_parameter_values, parameters_normalize = \
                     self.ExtractParameterValues(samples, 
                             self.param_data.param_list, 
                             self.param_data.pruned_param_list)
+        pruned_headers = self.parameters.GetHeaders(pruned_param_list)
         # Check if model is already ready
+        if len(cost_names) == 0:
+            cost_names = self.config.GetCosts()
         cost_data =self.Inference(samples, 
                 pruned_headers, cost_names, parameter_values,
                 parameters_normalize, step)
-        return cost_data
+        cost_hdr_hash = {cost:index for index, cost in enumerate(self.config.GetCosts())}
+        out_cost_array = []
+        for cost in cost_names:
+            if cost in cost_hdr_hash:
+                out_cost_array.append(cost_data[cost_hdr_hash[cost]])
+            else:
+                out_cost_array.append(None)
+        return (pruned_headers, cost_names, pruned_parameter_values, out_cost_array)
 
     def Inference(self, samples, pruned_headers, cost_names,
             parameter_values, parameters_normalize, step,
@@ -446,7 +465,7 @@ class DeffeFramework:
             # Iterate the exploration until it is completed
             while not self.sampling.IsCompleted():
                 (step, samples) = self.GetBatchSamples(exp_index)
-                parameter_values, parameters_normalize = \
+                parameter_values, pruned_parameter_values, parameters_normalize = \
                             self.ExtractParameterValues(samples, 
                                     param_list, pruned_param_list)
                 # Check if model is already ready
@@ -539,7 +558,7 @@ class DeffeFramework:
                     DebugLogModule("Got Data")
                     (step, samples) = samples_with_step
                     DebugLogModule("Extracting parameter values data")
-                    parameter_values, parameters_normalize = \
+                    parameter_values, pruned_parameter_values, parameters_normalize = \
                                 self.ExtractParameterValues(samples, 
                                         param_list, pruned_param_list)
                     DebugLogModule("Extracted parameter values data")

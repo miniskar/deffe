@@ -113,7 +113,7 @@ class DeffeMLModel:
     # Run the prediction/inference
     def Inference(self):
         all_output = self.ml_model_script.Inference()
-        return all_output.tolist()
+        return all_output
 
     # Train the model
     def Train(self, threading_model=False):

@@ -299,7 +299,7 @@ class TorchCNN(BaseMLModel):
             BaseMLModel.WritePredictionsToFile(
                 self, self.x_train, self.y_train, predictions, outfile
             )
-        return predictions.reshape((predictions.shape[0],))
+        return predictions.reshape((predictions.shape[0],)).tolist()
 
     # Load the model from the hdf5
     def load_model(self, model_name):
