@@ -9,57 +9,51 @@ class Deffe2DSampler:
     def __init__(self):
         self.deviation = 0.0
 
-    def GetParetoData(self, xydata, anndata, deviation=0.0):
-        xdata = np.array(xydata[0]).astype("float")
-        ydata = np.array(xydata[1]).astype("float")
-        best_point = [xdata[0], ydata[0], 0]
-        prev_best_point = best_point.copy()
-        pareto_point = [[], [], []]
-        non_pareto_point = [[], [], []]
-        for index in range(xdata.size):
-            if xdata[index] == best_point[0]:
-                if ydata[index] < best_point[1]:
-                    best_point = [xdata[index], ydata[index], index]
+    def GetParetoDataCore(self, xydata):
+        best_point = 0
+        prev_best_point = 0 
+        first_point = True
+        pareto_points = []
+        for index in range(xydata.shape[0]):
+            if xydata[index][0] == xydata[best_point][0]:
+                if xydata[index][1] < xydata[best_point][1]:
+                    best_point = index
             else:
                 is_best = False
-                is_second_best = False
-                if len(pareto_point[1]) == 0 or best_point[1] < prev_best_point[1]:
+                if first_point or xydata[best_point][1] < xydata[prev_best_point][1]:
                     is_best = True
-                if len(pareto_point[1]) == 0 or best_point[1] < (
-                    prev_best_point[1] + prev_best_point[1] * deviation
-                ):
-                    is_second_best = True
-                if is_best or is_second_best:
-                    pareto_point[0].append(best_point[0])
-                    pareto_point[1].append(best_point[1])
-                    pareto_point[2].append(best_point[2])
-                else:
-                    non_pareto_point[0].append(best_point[0])
-                    non_pareto_point[1].append(best_point[1])
-                    non_pareto_point[2].append(best_point[2])
                 if is_best:
-                    prev_best_point = best_point.copy()
-                best_point = [xdata[index], ydata[index], index]
+                    pareto_points.append(best_point)
+                    first_point = False
+                    prev_best_point = best_point
+                best_point = index
         is_best = False
-        is_second_best = False
-        if len(pareto_point[1]) == 0 or best_point[1] < prev_best_point[1]:
+        if first_point or xydata[best_point][1] < xydata[prev_best_point][1]:
             is_best = True
-        if len(pareto_point[1]) == 0 or best_point[1] < (
-            prev_best_point[1] + prev_best_point[1] * deviation
-        ):
-            is_second_best = True
-        if is_best or is_second_best:
-            pareto_point[0].append(best_point[0])
-            pareto_point[1].append(best_point[1])
-            pareto_point[2].append(best_point[2])
-        else:
-            non_pareto_point[0].append(best_point[0])
-            non_pareto_point[1].append(best_point[1])
-            non_pareto_point[2].append(best_point[2])
-        annout = pareto_point[2]
+        if is_best:
+            pareto_points.append(best_point)
+        return pareto_points
+
+    def GetParetoData(self, xydata, anndata, count, levels=sys.maxsize):
+        oxydata = xydata.copy()
+        all_pareto_points = np.array([]).astype('int')
+        if count > xydata.shape[0]:
+            count = xydata.shape[0]
+        xyindexes = np.arange(xydata.shape[0]).astype('int')
+        while len(all_pareto_points) < count and levels>0:
+            #print("-------")
+            pareto_points = self.GetParetoDataCore(xydata)
+            all_pareto_points = np.append(all_pareto_points, xyindexes[pareto_points], 0)
+            #print(xydata)
+            #print(pareto_points)
+            #print(all_pareto_points)
+            xydata = np.delete(xydata, pareto_points, axis=0)
+            xyindexes = np.delete(xyindexes, pareto_points)
+            levels = levels - 1
+        annout = all_pareto_points
         if len(anndata)>0:
-            annout = np.array(anndata)[pareto_point[2]].tolist()
-        return [pareto_point[0], pareto_point[1]], annout, [non_pareto_point[0], non_pareto_point[1]], non_pareto_point[2]
+            annout = anndata[all_pareto_points.tolist()]
+        return oxydata[all_pareto_points], annout
 
     # Mandatory function to find next optimal set of samples for evaluation
     # Return pareto points 
@@ -69,13 +63,15 @@ class Deffe2DSampler:
         columns = cost.columns.tolist()
         total_rows = cost.shape[0]
         columns.remove('Sample')
-        cost = cost.sort_values(columns[0])
-        xydata = cost[columns[0:2]].values.transpose().tolist()
-        anndata = cost['Sample'].values.tolist() # list(range(total_rows)) 
-        pareto_xydata, pareto_anndata, non_pareto_xydata, non_pareto_anndata = self.GetParetoData(xydata, anndata, float(self.deviation))
+        cost = cost.sort_values(columns, ascending=[True, True])
+        #print(cost)
+        #xydata = cost[columns[0:2]].values.transpose().tolist()
+        xydata = cost[columns[0:2]].values
+        anndata = cost['Sample'].values # list(range(total_rows)) 
+        xydata = xydata.astype("float")
+        pareto_xydata, pareto_anndata = self.GetParetoData(xydata, anndata, count)
         #print(pareto_xydata)
-        #pdb.set_trace()
-        return np.array(pareto_anndata)
+        return pareto_anndata
 
 # Mandatory function to return class object
 def GetObject(*args):
@@ -89,7 +85,7 @@ def main():
     data = pd.DataFrame(s, columns=['Quantity', 'Price'])
     data = data[['Quantity', 'Price']]
     data['Sample'] = list(range(data.shape[0]))
-    print(data)
+    #print(data)
     data = data.sort_values('Price')
     out = ds.Run(None, data, 100)
     print(out)
