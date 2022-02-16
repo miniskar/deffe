@@ -12,7 +12,7 @@ class Deffe1DSampler:
         if len(self.min_max) == 0:
             self.min_max.append(True)
         self.cost_names = [re.sub(r'::.*', '', x) for x in cost_objective]
-        pdb.set_trace()
+        #pdb.set_trace()
         self.deviation = 0.0
 
     # Mandatory function to find next optimal set of samples for evaluation
