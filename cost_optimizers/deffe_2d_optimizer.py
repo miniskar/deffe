@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 
 class Deffe2DSampler:
-    def __init__(self):
+    def __init__(self, cost_objective=[]):
+        min_max = [re.sub(r'.*::', '', x) if re.search(r'::', x) else 'min' for x in cost_objective]
+        self.min_max = [True if x == 'min' else False for x in min_max]
+        for x in range(len(self.min_max), 2, 1):
+            self.min_max.append(True)
+        self.cost_names = [re.sub(r'::.*', '', x) for x in cost_objective]
         self.deviation = 0.0
 
     def GetParetoDataCore(self, xydata):
@@ -63,7 +68,7 @@ class Deffe2DSampler:
         columns = cost.columns.tolist()
         total_rows = cost.shape[0]
         columns.remove('Sample')
-        cost = cost.sort_values(columns, ascending=[True, True])
+        cost = cost.sort_values(columns, ascending=self.min_max)
         #print(cost)
         #xydata = cost[columns[0:2]].values.transpose().tolist()
         xydata = cost[columns[0:2]].values

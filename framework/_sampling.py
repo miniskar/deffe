@@ -65,10 +65,12 @@ class DeffeSampling:
         self.args = self.ReadArguments()
         self.validate_module = None
         self.optimize_sample_sequence = None
+        self.cost_objective = []
         self.step = 0
         if self.config.optimize_sample_sequence != '':
             optimize_sample_sequence_name = self.config.optimize_sample_sequence
-            self.optimize_sample_sequence = LoadPyModule(optimize_sample_sequence_name)
+            self.cost_objective = [re.sub(r'::.*', '', x) for x in self.config.cost_objective]
+            self.optimize_sample_sequence = LoadPyModule(optimize_sample_sequence_name, self.config.cost_objective)
         if self.framework.args.validate_module and self.config.validate_module != '':
             validate_module_name = self.config.validate_module
             if not os.path.exists(validate_module_name):
@@ -383,7 +385,8 @@ class DeffeSampling:
                 previous_pos = self._onedim_length
             (pruned_headers, cost_hdrs, 
              parameter_values, cost_data) = self.framework.GetPredictedCost(
-                 self._seq[previous_pos:], self.step, self.config.cost_objective)
+                 self._seq[previous_pos:], self.step, self.cost_objective)
+            #pdb.set_trace()
             cost_data_hash = {}
             #pdb.set_trace()
             for index, cost in enumerate(cost_hdrs):
