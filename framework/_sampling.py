@@ -340,7 +340,7 @@ class DeffeSampling:
             self._train_idx = self._seq[0 : self._n_train]
             self._val_idx = self._seq[self._n_train : self._n_train + self._n_val]
             self._pos = self._n_train + self._n_val
-        self.OptimizeSequence(val_pos, 0)
+        self.OptimizeSequence(self._pos, 0)
         # print("Training: "+str(len(self._train_idx))+" Val: "+str(len(self._val_idx)))
 
     def GetCurrentStep(self):
