@@ -68,7 +68,11 @@ class Deffe2DSampler:
         columns = cost.columns.tolist()
         total_rows = cost.shape[0]
         columns.remove('Sample')
-        cost = cost.sort_values(columns, ascending=self.min_max)
+        if not self.min_max[0]:
+            cost[columns[0]] = cost[columns[0]].max() - cost[columns[0]]
+        if not self.min_max[1]:
+            cost[columns[1]] = cost[columns[1]].max() - cost[columns[1]]
+        cost = cost.sort_values(columns, ascending=[True, True])
         #print(cost)
         #xydata = cost[columns[0:2]].values.transpose().tolist()
         xydata = cost[columns[0:2]].values
