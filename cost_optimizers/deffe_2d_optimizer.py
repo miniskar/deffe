@@ -80,7 +80,8 @@ class Deffe2DSampler:
         xydata = xydata.astype("float")
         pareto_xydata, pareto_anndata = self.GetParetoData(xydata, anndata, count)
         #print(pareto_xydata)
-        return pareto_anndata
+        #pdb.set_trace()
+        return pareto_anndata[:count]
 
 # Mandatory function to return class object
 def GetObject(*args):
