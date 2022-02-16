@@ -179,6 +179,7 @@ class DeffeSampling:
         n_samples = self._n_samples
         max_samples = min(self.framework.args.max_samples, self._n_samples)
         remaining_samples = max_samples
+        #pdb.set_trace()
         sampling_method = self.args.method
         if self.framework.args.sampling_method != '':
             sampling_method = self.framework.args.sampling_method
@@ -205,6 +206,13 @@ class DeffeSampling:
             # Hence, generate samples of maximum 1000000 for training.
             org_seq = self.SelectSmartSamples(remaining_samples, 
                     selected_pruned_params)
+            self._seq = org_seq
+            if self._shuffle:
+                np.random.shuffle(self._seq)
+        elif sampling_method == 'factorial':
+            # _n_samples is the permutation count of all parameters, which can be very high
+            # Hence, generate samples of maximum 1000000 for training.
+            org_seq = np.arange(remaining_samples)
             self._seq = org_seq
             if self._shuffle:
                 np.random.shuffle(self._seq)
