@@ -4,7 +4,6 @@ brotlipy==0.7.0
 cachetools==5.0.0
 certifi==2021.5.30
 commentjson==0.9.0
-conda==4.10.3
 cycler==0.11.0
 dill==0.3.4
 diversipy==0.8
