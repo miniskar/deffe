@@ -30,7 +30,6 @@ libclang==13.0.0
 Markdown==3.3.6
 matplotlib==3.5.1
 numexpr==2.8.1
-numpy==1.22.2
 oauthlib==3.2.0
 openpyxl==3.0.9
 opt-einsum==3.3.0
