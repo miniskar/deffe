@@ -3,7 +3,6 @@ tensorflow
 torch
 doepy
 scikit-learn 
-scikit-learn 
 xlsxwriter
 matplotlib
 pandas
