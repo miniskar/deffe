@@ -111,6 +111,9 @@ class DeffeExtract:
                 try:
                     results_json = DeffeConfig(file_path)
                     data = results_json.data
+                    data1 = data.copy()
+                    for p, v in data1.items():
+                        data[p.lower()] = v
                 except (ValueError, TypeError) as e:
                     Log(f"Unable to read results json file due to Type/Value errors! file:{file_path} ", 'Error')
                 param_hash_key = self.framework.config.GetCosts()
