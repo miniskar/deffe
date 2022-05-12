@@ -494,7 +494,7 @@ class DeffeSampling:
             + " Val: "
             + str(len(self._val_idx))
         )
-        if self._pos >= len(self._seq):
+        if self._pos > len(self._seq):
             return False
         samples = self._train_idx.tolist() + self._val_idx.tolist()
         if len(samples[self._previous_pos:]) == 0:
