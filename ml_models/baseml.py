@@ -107,9 +107,9 @@ class BaseMLModel:
         orig_cost_data = self.orig_cost_data
         train_count = int(parameters.shape[0] * train_test_split)
         test_count = parameters.shape[0] - train_count
-        print("Init Total count:" + str(parameters.shape[0]))
-        print("Init Train count:" + str(train_count))
-        print("Init Test count:" + str(test_count))
+        #print("Init Total count:" + str(parameters.shape[0]))
+        #print("Init Train count:" + str(train_count))
+        #print("Init Test count:" + str(test_count))
         self.train_count = train_count
         self.val_count = int(train_count * validation_split)
         self.test_count = test_count
