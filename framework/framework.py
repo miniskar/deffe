@@ -231,9 +231,11 @@ class DeffeFramework:
         # Initialize the random sampling
         init_n_train = self.init_n_train
         init_n_val = self.init_n_val
-        #TODO
+        #TODO: Get to know how to handle custom samples
+        custom_samples = []
         if load_data_file != '':
             preload_samples = self.param_data.GetEncodedSamples()
+            custom_samples = preload_samples
             (batch_output, cost_names, sel_samples) = self.param_data.GetCostData()
             parameter_values = self.parameters.GetParameters(
                 preload_samples, param_list
@@ -257,7 +259,7 @@ class DeffeFramework:
                 init_n_val = n_samples - init_n_train
         self.sampling.Initialize(self.parameters, n_samples,
                 init_n_train, init_n_val, True, 
-                self.train_model.GetTrainValSplit(), self.full_exploration
+                self.train_model.GetTrainValSplit(), self.full_exploration, custom_samples
         )
 
         # Initialize writing of output log files
@@ -314,12 +316,13 @@ class DeffeFramework:
         # Check if the data point already exist in pre-computed data
         if self.only_preloaded_data_exploration:
             DebugLogModule("Loading pre evaluated parameters")
-            parameter_values = self.param_data.GetPreEvaluatedParameters(
+            (indexes, parameter_values) = self.param_data.GetPreEvaluatedParameters(
                 samples, param_list
             )
+            samples = samples[indexes]
             DebugLogModule("Get pruned selected values")
             pruned_parameter_values = self.parameters.GetPrunedSelectedValues(
-                parameter_values, pruned_param_list
+                parameter_values[indexes], pruned_param_list
             )
             DebugLogModule("Get normalized parameters")
             parameters_normalize = self.parameters.GetNormalizedParameters(
@@ -623,7 +626,7 @@ class DeffeFramework:
                 eval_output_list = []
                 eval_stats = [0, 0, False, False] # Submitted, Completed, Th-End, End-packet-Flag
                 def pushDataToQueue(self, eval_output_list, in_data_hash):
-                    np_list = np.array(eval_output_list).transpose().tolist()
+                    np_list = np.array(eval_output_list, dtype=object).transpose().tolist()
                     samples_with_step = in_data_hash['samples']
                     samples_step = samples_with_step[0]
                     samples = np.array(samples_with_step[1])[np_list[0]].tolist()

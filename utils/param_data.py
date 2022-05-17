@@ -44,6 +44,9 @@ class ParamData:
         self.unused_params_values = []
         self.param_list = param_list
         self.pruned_param_list = pruned_param_list
+        self.pruned_list_indexes = []
+        for (param, param_values, pindex, permutation_index) in self.pruned_param_list:
+            self.pruned_list_indexes.append(pindex)
         self.cost_list = cost_list
         param_hdrs = []
         param_hash = {}
@@ -134,6 +137,7 @@ class ParamData:
             ) \
             for rec in self.param_data
             ]).astype("int")
+        #print(self.param_data_sample_indexes)
         self.cost_data = cost_data[
             valid_indexes,
         ]
@@ -185,15 +189,13 @@ class ParamData:
     # Get valid preloaded data.
     def GetValidPreloadedData(self):
         trans_data_flag = np.full(shape=trans_data.shape, fill_value=False)
-        pruned_list_indexes = []
         for (param, param_values, pindex, permutation_index) in self.pruned_param_list:
-            pruned_list_indexes.append(pindex)
             for pvalue in param_values:
                 trans_data_flag[pindex] = trans_data_flag[pindex] | (
                     trans_data[pindex] == pvalue
                 )
         for (param, param_values, pindex, permutation_index) in self.pruned_param_list:
-            if pindex not in pruned_list_indexes:
+            if pindex not in self.pruned_list_indexes:
                 trans_data_flag[pindex] = np.full(
                     shape=trans_data_flag[pindex].shape, fill_value=True
                 )
@@ -227,15 +229,16 @@ class ParamData:
 
     # Get pre-evaluated parameters
     def GetPreEvaluatedParameters(self, samples, param_list):
-        indexes = samples
         out_params = []
-        selected = self.param_data[indexes]
+        param_data_sample_indexes = self.param_data_sample_indexes
+        (common_samples, indexes, sel_indexes) = np.intersect1d(samples, param_data_sample_indexes, return_indices=True)
+        selected = self.param_data[sel_indexes]
         rows = selected.shape[0]
         unused_cols = len(self.unused_params_values)
         rev_param = np.repeat(self.unused_params_values, rows, axis=0).reshape(unused_cols, rows).transpose()
         all_params = np.concatenate((selected, rev_param), axis=1)
         out_params = all_params.transpose()[self.rev_param_extract_indexes].transpose()
-        return out_params
+        return (indexes, out_params)
 
 
 # Get object of evaluate
