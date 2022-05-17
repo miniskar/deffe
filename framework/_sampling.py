@@ -152,6 +152,7 @@ class DeffeSampling:
                     (param, param_values, pindex, permutation_index) = params[index]
                     count += len(param_values)
                     DebugLogModule(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
+                    #print("Param values1: "+str(param_values))
                     for vindex, val in enumerate(param_values):
                         if base_params[index] != vindex:
                             obase = comb_params.copy()
@@ -162,6 +163,7 @@ class DeffeSampling:
                 (param, param_values, pindex, permutation_index) = params[index]
                 count += len(param_values)
                 DebugLogModule(f"Index:{index} PVs:{param_values} Count:{len(param_values)}")
+                #print("Param values2: "+str(param_values))
                 for vindex, val in enumerate(param_values):
                     if base_params[index] != vindex:
                         obase = base_params.copy()
@@ -176,6 +178,7 @@ class DeffeSampling:
         param_dict =  { param.name : param_values 
             for (param, param_values, pindex, permutation_index) in 
                 selected_pruned_params }
+        self.param_dict = param_dict
         n_samples = self._n_samples
         max_samples = min(self.framework.args.max_samples, self._n_samples)
         remaining_samples = max_samples
@@ -229,12 +232,13 @@ class DeffeSampling:
             _, i = np.unique(org_seq, return_index=True)
             org_seq = org_seq[np.sort(i)]
             self._seq = org_seq
+            #print(self._seq)
         else:
             sample_mat = None
             param_dict_actual = param_dict
             #param_dict = { k:np.array(v).astype('float').tolist() for k,v in param_dict_actual.items() }
             #param_dict_hold = { k:np.array(v).astype('float').tolist() for k,v in param_dict_actual.items() }
-            param_dict = { k:[index for index in range(len(v))] for k,v in param_dict_actual.items() }
+            param_dict =      { k:[index for index in range(len(v))] for k,v in param_dict_actual.items() }
             param_dict_hold = { k:[index for index in range(len(v))] for k,v in param_dict_actual.items() }
             if sampling_method == 'frac_fact_res':
                 sample_mat = build.frac_fact_res(param_dict)
@@ -391,20 +395,32 @@ class DeffeSampling:
                 return
             if previous_pos < self._onedim_length:
                 previous_pos = self._onedim_length
-            (pruned_headers, cost_hdrs, 
-             parameter_values, cost_data) = self.framework.GetPredictedCost(
-                 self._seq[previous_pos:], self.step, self.cost_objective)
-            #pdb.set_trace()
-            cost_data_hash = {}
-            #pdb.set_trace()
-            for index, cost in enumerate(cost_hdrs):
-                if cost_data[index] != None:
-                    cost_data_hash[cost] = cost_data[index]
-            cost_data_pd = pd.DataFrame(cost_data_hash)
-            cost_data_pd['Sample'] = self._seq[previous_pos:]
-            parameters_data_pd = pd.DataFrame(parameter_values, columns=pruned_headers)
-            parameters_data_pd['Sample'] = self._seq[previous_pos:]
-            best_seq = self.optimize_sample_sequence.Run(parameters_data_pd, 
+            is_history_based_optimizer = False
+            if "IsHistoryBasedOptimizer" in dir(self.optimize_sample_sequence):
+                is_history_based_optimizer = \
+                    self.optimize_sample_sequence.IsHistoryBasedOptimizer()
+            parameters_data_pd = pd.DataFrame()
+            cost_data_pd = pd.DataFrame()
+            if is_history_based_optimizer:
+                #cost_data_pd = self.framework.GetEvaluatedCostDataFrame()
+                #parameters_data_pd = self.framework.GetEvaluatedParamDataFrame()
+                pdb.set_trace()
+            else:
+                (pruned_headers, cost_hdrs, 
+                 parameter_values, cost_data) = self.framework.GetPredictedCost(
+                     self._seq[previous_pos:], self.step, self.cost_objective)
+                #pdb.set_trace()
+                cost_data_hash = {}
+                #pdb.set_trace()
+                for index, cost in enumerate(cost_hdrs):
+                    if cost_data[index] != None:
+                        cost_data_hash[cost] = cost_data[index]
+                cost_data_pd = pd.DataFrame(cost_data_hash)
+                cost_data_pd['Sample'] = self._seq[previous_pos:]
+                parameters_data_pd = pd.DataFrame(parameter_values, columns=pruned_headers)
+                parameters_data_pd['Sample'] = self._seq[previous_pos:]
+            best_seq = self.optimize_sample_sequence.Run(self.param_dict, 
+                    parameters_data_pd, 
                     cost_data_pd, new_pos-previous_pos)
             if best_seq.size > 0:
                 seq = self._seq.tolist()
@@ -522,12 +538,12 @@ class DeffeSampling:
     def GetBatch(self):
         DebugLogModule(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
         samples = self.training_seq.tolist()+self.val_seq.tolist()
-        return samples
+        return np.array(samples)
 
     def GetNewBatch(self):
         DebugLogModule(f"Train samples:{len(self.training_seq)} Val samples:{len(self.val_seq)}")
         samples = self.training_seq.tolist()+self.val_seq.tolist()
-        return samples[self._previous_pos:]
+        return np.array(samples[self._previous_pos:])
 
 def run_test1():
     print("Test 1, n_train=2, n_val=4")
