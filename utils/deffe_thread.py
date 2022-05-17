@@ -13,6 +13,7 @@ import time
 from queue import *
 import sys
 import pdb
+import re
 
 def RaiseException():
     exc_type, exc_value = sys.exc_info()[:2]
@@ -72,12 +73,18 @@ class DeffeThread:
         if type(dest_list) != list:
             dest_list = [dest_list]
         for name in name_list:
+            source_out_name = name
+            dest_out_name = name
+            if re.search(r'::', name):
+                name_split = name.split(r'::')
+                source_out_name = name_split[0]
+                dest_out_name = name_split[1]
             for dest in dest_list:
                 queue = Queue(maxsize=2)
-                if name not in source.out_ports:
-                    source.out_ports[name] = []
-                source.out_ports[name].append(queue)
-                dest.in_ports[name] = queue
+                if source_out_name not in source.out_ports:
+                    source.out_ports[source_out_name] = []
+                source.out_ports[source_out_name].append(queue)
+                dest.in_ports[dest_out_name] = queue
 
     def PutAll(self, data_hash):
         for k, v in data_hash.items():
