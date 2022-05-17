@@ -45,6 +45,8 @@ class DeffeFramework:
     def __init__(self, parser=None):
         self.parser = None
         self.args = None
+        self.evaluated_cost_data_frame = pd.DataFrame()
+        self.evaluated_param_data_frame = pd.DataFrame()
         InitializeDeffe()
 
     # Read arguments provided in JSON configuration file
@@ -345,7 +347,7 @@ class DeffeFramework:
                 with_indexing=False,
                 with_normalize=True,
             )
-        return parameter_values, pruned_parameter_values, parameters_normalize
+        return samples, parameter_values, pruned_parameter_values, parameters_normalize
 
     def WritePredictionsToFile(self, model, headers, cost_names, params, cost_data, predictions, outfile):
         from deffe_utils import Log
@@ -377,7 +379,7 @@ class DeffeFramework:
 
     def GetPredictedCost(self, samples, step=0, cost_names=[]):
         pruned_param_list = self.parameters.selected_pruned_params
-        parameter_values, pruned_parameter_values, parameters_normalize = \
+        samples, parameter_values, pruned_parameter_values, parameters_normalize = \
                     self.ExtractParameterValues(samples, 
                             self.param_data.param_list, 
                             self.param_data.pruned_param_list)
@@ -396,6 +398,41 @@ class DeffeFramework:
             else:
                 out_cost_array.append(None)
         return (pruned_headers, cost_names, pruned_parameter_values, out_cost_array)
+
+    def InsertEvaluatedCostDataToFrame(self, samples_with_step, cost_data):
+        if samples_with_step == None:
+            return
+        (step, samples) = samples_with_step
+        cost_records = None
+        if cost_data != None:
+            cost_records = []
+            for index, (flag, eval_type, actual_cost, run_dir) in enumerate(cost_data):
+                if flag == self.valid_flag:
+                    cost_records.append([step, samples[index]]+actual_cost.tolist())
+        new_data_pd = self.InitEvaluatedCostDataFrame(cost_records)
+        self.evaluated_cost_data_frame = pd.concat([self.evaluated_cost_data_frame, 
+                new_data_pd]).reset_index(drop=True)
+
+    def InsertEvaluatedParamDataToFrame(self, samples_with_step, pruned_param_list, parameter_values):
+        if samples_with_step == None:
+            return
+        (step, samples) = samples_with_step
+        param_records = None
+        if parameter_values != None:
+            param_records = []
+            pruned_list_indexes = self.param_data.pruned_list_indexes
+            for index, param_list in enumerate(parameter_values):
+                param_records.append([step, samples[index]]+np.array(param_list)[pruned_list_indexes].tolist())
+        new_data_pd = self.InitEvaluatedParamDataFrame(pruned_param_list, param_records)
+        self.evaluated_param_data_frame = pd.concat([
+                self.evaluated_param_data_frame, 
+                new_data_pd]).reset_index(drop=True)
+
+    def GetEvaluatedCostDataFrame(self):
+        return self.evaluated_cost_data_frame
+
+    def GetEvaluatedParamDataFrame(self):
+        return self.evaluated_param_data_frame
 
     def Inference(self, samples, pruned_headers, cost_names,
             parameter_values, parameters_normalize, step,
@@ -466,9 +503,14 @@ class DeffeFramework:
                 self.InitializeModulesForExploration(exp_index,
                     explore_groups)
             # Iterate the exploration until it is completed
+            self.pruned_headers = pruned_headers
+            self.param_list = param_list
+            self.pruned_param_list = pruned_param_list
+            self.evaluated_cost_data_frame = self.InitEvaluatedCostDataFrame()
+            self.evaluated_param_data_frame = self.InitEvaluatedParamDataFrame(pruned_param_list)
             while not self.sampling.IsCompleted():
                 (step, samples) = self.GetBatchSamples(exp_index)
-                parameter_values, pruned_parameter_values, parameters_normalize = \
+                samples, parameter_values, pruned_parameter_values, parameters_normalize = \
                             self.ExtractParameterValues(samples, 
                                     param_list, pruned_param_list)
                 # Check if model is already ready
@@ -485,6 +527,8 @@ class DeffeFramework:
                     batch_output = self.extract.Run(
                         parameter_values, param_list, eval_output
                     )
+                    self.InsertEvaluatedCostDataToFrame((step, samples), batch_output)
+                    self.InsertEvaluatedParamDataToFrame((step, samples), pruned_param_list, pruned_parameter_values)
                     if not self.no_train_flag:
                         self.Train(samples, 
                             pruned_headers, self.config.GetCosts(), 
@@ -501,6 +545,23 @@ class DeffeFramework:
                         self.train_model.EvaluateModel(all_files, self.args.model_stats_output)
                 self.WriteExplorationOutput(parameter_values, batch_output)
 
+    def InitEvaluatedCostDataFrame(self, data=None):
+        cost_names = self.config.GetCosts()
+        if data == None or len(data) == 0:
+            evaluated_cost_data_frame = pd.DataFrame(columns=['Step', 'Sample']+cost_names)
+        else:
+            evaluated_cost_data_frame = pd.DataFrame(data, columns=['Step', 'Sample']+cost_names)
+        return evaluated_cost_data_frame
+
+    def InitEvaluatedParamDataFrame(self, pruned_param_list, data=None):
+        param_names = [ param.name for (param, param_values, pindex, permutation_index) 
+                                    in pruned_param_list]
+        if data == None or len(data) == 0:
+            evaluated_param_data_frame = pd.DataFrame(columns=['Step', 'Sample']+param_names)
+        else:
+            evaluated_param_data_frame = pd.DataFrame(data, columns=['Step', 'Sample']+param_names)
+        return evaluated_param_data_frame
+
     # Run the framework
     def RunParallel(self):
         from deffe_thread import DeffeThread, DeffeThreadData
@@ -515,6 +576,11 @@ class DeffeFramework:
             pruned_headers, param_list, pruned_param_list = \
                 self.InitializeModulesForExploration(exp_index,
                     explore_groups)
+            self.pruned_headers = pruned_headers
+            self.param_list = param_list
+            self.pruned_param_list = pruned_param_list
+            self.evaluated_cost_data_frame = self.InitEvaluatedCostDataFrame()
+            self.evaluated_param_data_frame = self.InitEvaluatedParamDataFrame(pruned_param_list)
             def GetSamplesThread(self, exp_index, threading_model=True):
                 # OUT Ports: samples
                 if threading_model:
@@ -561,7 +627,8 @@ class DeffeFramework:
                     DebugLogModule("Got Data")
                     (step, samples) = samples_with_step
                     DebugLogModule("Extracting parameter values data")
-                    parameter_values, pruned_parameter_values, parameters_normalize = \
+                    samples, parameter_values, \
+                        pruned_parameter_values, parameters_normalize = \
                                 self.ExtractParameterValues(samples, 
                                         param_list, pruned_param_list)
                     DebugLogModule("Extracted parameter values data")
@@ -749,6 +816,9 @@ class DeffeFramework:
                         batch_output = self.extract.Run(
                             parameter_values, param_list, eval_output
                         )
+                        self.InsertEvaluatedCostDataToFrame(samples_with_step, batch_output)
+                        self.InsertEvaluatedParamDataToFrame(samples_with_step, 
+                                self.pruned_param_list, parameter_values)
                         out_data_hash = {
                             'samples' : DeffeThreadData(samples_with_step),
                             'parameter_values' : 
@@ -857,7 +927,8 @@ class DeffeFramework:
                     ['samples', 'parameter_values', 'parameters_normalize'])
             DeffeThread.Connect(self.evaluate_thread, 
                     [self.extract_thread],
-                    ['samples', 'parameter_values', 'parameters_normalize', 'eval_output'])
+                    ['samples', 'parameter_values', 
+                     'parameters_normalize', 'eval_output'])
             DeffeThread.Connect(self.extract_thread, 
                     self.ml_train_thread,
                     ['samples', 'parameter_values', 
@@ -886,6 +957,7 @@ class DeffeFramework:
                 self.write_thread.JoinThread()
             else:
                 while True:
+                    # No threading model, but sequential execution 
                     sampling_status = GetSamplesThread(self, exp_index, threading_model)
                     if sampling_status:
                         break
