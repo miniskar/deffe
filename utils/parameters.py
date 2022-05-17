@@ -164,7 +164,7 @@ class Parameters:
         if selected_params == None:
             selected_params = self.selected_params
         perm_index = 0
-        for (param, param_values, pindex, permutation_index) in reversed(selected_params):
+        for (param, param_values, pindex, permutation_index) in selected_params:
             val_index = 0 
             if param.name in sel_param_hash:
                 val = sel_param_hash[param.name]
