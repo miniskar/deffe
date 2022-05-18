@@ -232,6 +232,8 @@ class ParamData:
         out_params = []
         param_data_sample_indexes = self.param_data_sample_indexes
         (common_samples, indexes, sel_indexes) = np.intersect1d(samples, param_data_sample_indexes, return_indices=True)
+        if len(sel_indexes) == 0:
+            return ([], np.array([]))
         selected = self.param_data[sel_indexes]
         rows = selected.shape[0]
         unused_cols = len(self.unused_params_values)

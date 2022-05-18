@@ -248,9 +248,11 @@ class DeffeFramework:
                 with_indexing=False,
                 with_normalize=True,
             )
-            self.Train(preload_samples, 
-                pruned_headers, cost_names, parameters_normalize, 
-                batch_output, 0)
+            if len(preload_samples) != 0:
+                self.Train(preload_samples, 
+                    pruned_headers, cost_names, 
+                    parameters_normalize, 
+                    batch_output, 0)
             None
         # Preload the data if anything is configured
         if self.only_preloaded_data_exploration:
@@ -418,7 +420,7 @@ class DeffeFramework:
             return
         (step, samples) = samples_with_step
         param_records = None
-        if parameter_values != None:
+        if len(parameter_values) > 0:
             param_records = []
             pruned_list_indexes = self.param_data.pruned_list_indexes
             for index, param_list in enumerate(parameter_values):
@@ -513,6 +515,8 @@ class DeffeFramework:
                 samples, parameter_values, pruned_parameter_values, parameters_normalize = \
                             self.ExtractParameterValues(samples, 
                                     param_list, pruned_param_list)
+                if len(samples) == 0:
+                    continue
                 # Check if model is already ready
                 if self.IsModelReady() or self.args.inference_only:
                     # Rethink about this

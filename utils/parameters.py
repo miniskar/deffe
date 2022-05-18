@@ -148,6 +148,8 @@ class Parameters:
 
     def GetPrunedSelectedValues(self, parameters, pruned_param_list):
         indexes = [pindex for (param, param_values, pindex, permutation_index) in pruned_param_list]
+        if len(parameters) == 0:
+            return []
         arr = parameters.transpose()[indexes].transpose()
         return arr.tolist()
 
@@ -221,6 +223,8 @@ class Parameters:
 
     # Make sure that all values in the numpy 2d array are values
     def GetNormalizedParameters(self, nparams, selected_params=None):
+        if len(nparams) == 0:
+            return np.array([])
         if selected_params == None:
             selected_params = self.selected_params
         min_list = []
