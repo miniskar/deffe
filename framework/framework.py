@@ -248,11 +248,15 @@ class DeffeFramework:
                 with_indexing=False,
                 with_normalize=True,
             )
-            if len(preload_samples) != 0:
+            if len(preload_samples) != 0 and not self.no_train_flag:
                 self.Train(preload_samples, 
                     pruned_headers, cost_names, 
                     parameters_normalize, 
                     batch_output, 0)
+            if len(preload_samples) != 0:
+                self.InsertEvaluatedParamDataToFrame((0, np.array(preload_samples)), 
+                        pruned_param_list, parameter_values)
+                self.InsertEvaluatedCostDataToFrame((0, np.array(preload_samples)), np.array(batch_output))
             None
         # Preload the data if anything is configured
         if self.only_preloaded_data_exploration:
@@ -406,7 +410,7 @@ class DeffeFramework:
             return
         (step, samples) = samples_with_step
         cost_records = None
-        if cost_data != None:
+        if len(cost_data)>0:
             cost_records = []
             for index, (flag, eval_type, actual_cost, run_dir) in enumerate(cost_data):
                 if flag == self.valid_flag:

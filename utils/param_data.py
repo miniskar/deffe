@@ -32,7 +32,7 @@ class ParamData:
             indexes = np.where(np.isin(self.param_data_sample_indexes, samples))
         sel_samples = self.param_data_sample_indexes[indexes]
         cost_pd = self.cost_data_pd.loc[indexes]
-        return ([(self.framework.valid_flag, self.framework.pre_evaluated_flag, x, '') for x in self.cost_data[indexes].tolist()], cost_pd.columns, sel_samples)
+        return ([(self.framework.valid_flag, self.framework.pre_evaluated_flag, np.array(x), '') for x in self.cost_data[indexes].tolist()], cost_pd.columns, sel_samples)
 
     # Initialize method should be called for every new instance of new batch of samples.
     # Parameters to be passed: Parameters list, Pruned parameters list, Cost metrics names, and also
