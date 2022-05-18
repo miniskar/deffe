@@ -402,9 +402,8 @@ class DeffeSampling:
             parameters_data_pd = pd.DataFrame()
             cost_data_pd = pd.DataFrame()
             if is_history_based_optimizer:
-                #cost_data_pd = self.framework.GetEvaluatedCostDataFrame()
-                #parameters_data_pd = self.framework.GetEvaluatedParamDataFrame()
-                pdb.set_trace()
+                cost_data_pd = self.framework.GetEvaluatedCostDataFrame()
+                parameters_data_pd = self.framework.GetEvaluatedParamDataFrame()
             else:
                 (pruned_headers, cost_hdrs, 
                  parameter_values, cost_data) = self.framework.GetPredictedCost(

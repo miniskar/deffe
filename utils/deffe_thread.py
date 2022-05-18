@@ -35,6 +35,10 @@ class DeffeThreadData:
     def GetData(self):
         return self._data
 
+all_queues = []
+def GetQueues():
+    return all_queues
+
 class DeffeThread:
     """ 
     The RunThread() method will run in the background forever until the StopThread() method is called
@@ -79,12 +83,15 @@ class DeffeThread:
                 name_split = name.split(r'::')
                 source_out_name = name_split[0]
                 dest_out_name = name_split[1]
+            source_th_name = source.method.__name__
             for dest in dest_list:
                 queue = Queue(maxsize=2)
                 if source_out_name not in source.out_ports:
                     source.out_ports[source_out_name] = []
                 source.out_ports[source_out_name].append(queue)
                 dest.in_ports[dest_out_name] = queue
+                dest_th_name = dest.method.__name__
+                all_queues.append([queue, source_th_name, dest_th_name])
 
     def PutAll(self, data_hash):
         for k, v in data_hash.items():

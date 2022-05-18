@@ -528,7 +528,8 @@ class DeffeFramework:
                         parameter_values, param_list, eval_output
                     )
                     self.InsertEvaluatedCostDataToFrame((step, samples), batch_output)
-                    self.InsertEvaluatedParamDataToFrame((step, samples), pruned_param_list, pruned_parameter_values)
+                    self.InsertEvaluatedParamDataToFrame((step, samples), 
+                            pruned_param_list, parameter_values)
                     if not self.no_train_flag:
                         self.Train(samples, 
                             pruned_headers, self.config.GetCosts(), 
@@ -592,6 +593,7 @@ class DeffeFramework:
                         DebugLogModule("Sent samples:"+str(len(samples_with_step[1])))
                     DebugLogModule("Samples: Sending last sample end")
                     self.samples_thread.SendEnd()
+                    DebugLogModule("Exited !")
                     return True
                 else:
                     if not self.sampling.IsCompleted():
@@ -646,6 +648,7 @@ class DeffeFramework:
                 if global_th_end:
                     DebugLogModule("ExtractParams: Sending last sample end")
                     self.param_thread.SendEnd()
+                DebugLogModule("Exited !")
 
             def MLInferenceThread(self, threading_model=True):
                 global_th_end = False
@@ -686,6 +689,7 @@ class DeffeFramework:
                 if global_th_end:
                     DebugLogModule("Inference: Sending last sample end")
                     self.inference_thread.SendEnd()
+                DebugLogModule("Exited !")
 
             def EvaluateThread(self, threading_model=True):
                 from threading import Lock
@@ -786,6 +790,7 @@ class DeffeFramework:
                         #self.evaluate_thread.PutAll(data_hash)
                     if not threading_model:
                         break
+                DebugLogModule("Exited !")
                 #if global_th_end:
                     #self.evaluate_thread.SendEnd()
 
@@ -839,6 +844,7 @@ class DeffeFramework:
                 if global_th_end:
                     DebugLogModule("Extract: Inference last sample end")
                     self.extract_thread.SendEnd()
+                DebugLogModule("Exited !")
 
             def MLTrainThread(self, threading_model=True):
                 # IN Ports: samples
@@ -866,6 +872,7 @@ class DeffeFramework:
                                 batch_output, step, threading_model)
                     if not threading_model:
                         break
+                DebugLogModule("Exited !")
 
             def WriteThread(self, threading_model=True):
                 def Process(self, data):
@@ -973,6 +980,10 @@ class DeffeFramework:
                     os.path.join(self.args.model_extract_dir, "*.hdf5")
                 )
                 self.train_model.EvaluateModel(all_files, self.args.model_stats_output)
-
+            DebugLogModule("Exited !")
+            from deffe_thread import GetQueues
+            queues = GetQueues()
+            for q in queues:
+                DebugLogModule("S:"+q[1]+"->"+q[2]+" Size:"+str(q[0].qsize()))
 
 

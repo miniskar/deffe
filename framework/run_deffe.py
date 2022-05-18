@@ -28,6 +28,9 @@ if __name__ == "__main__":
     print("Current directory: " + os.getcwd())
     print("Machine: " + socket.gethostname())
     start = time.time()
-    main()
+    try:
+        main()
+    except:
+        RaiseException()
     lapsed_time = "{:.3f} seconds".format(time.time() - start)
     print("Total runtime of script: " + lapsed_time)
