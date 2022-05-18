@@ -984,6 +984,6 @@ class DeffeFramework:
             from deffe_thread import GetQueues
             queues = GetQueues()
             for q in queues:
-                DebugLogModule("S:"+q[1]+"->"+q[2]+" Size:"+str(q[0].qsize()))
+                DebugLogModule(f"Port: {q[1]}({q[3]}) -> {q[2]}({q[4]}) Size:{str(q[0].qsize())}")
 
 

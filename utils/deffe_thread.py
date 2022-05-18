@@ -91,7 +91,7 @@ class DeffeThread:
                 source.out_ports[source_out_name].append(queue)
                 dest.in_ports[dest_out_name] = queue
                 dest_th_name = dest.method.__name__
-                all_queues.append([queue, source_th_name, dest_th_name])
+                all_queues.append([queue, source_th_name, dest_th_name, source_out_name, dest_out_name])
 
     def PutAll(self, data_hash):
         for k, v in data_hash.items():
