@@ -256,7 +256,7 @@ class DeffeFramework:
             if len(preload_samples) != 0:
                 self.InsertEvaluatedParamDataToFrame((0, np.array(preload_samples)), 
                         pruned_param_list, parameter_values)
-                self.InsertEvaluatedCostDataToFrame((0, np.array(preload_samples)), np.array(batch_output))
+                self.InsertEvaluatedCostDataToFrame((0, np.array(preload_samples)), np.array(batch_output, dtype=object))
             None
         # Preload the data if anything is configured
         if self.only_preloaded_data_exploration:
