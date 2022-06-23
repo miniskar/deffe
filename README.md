@@ -52,6 +52,7 @@ The above figures shows the main blocks and their corresponding python files in 
     - pathlib
     - pydot 
     - tqdm 
+    - multiprocess
     - torchsummary
     - commentjson
     - jsoncomment
@@ -61,7 +62,7 @@ The above figures shows the main blocks and their corresponding python files in 
 
     Or
 
-    $ python3 -m pip install keras tensorflow torch doepy scikit-learn xlsxwriter matplotlib pandas pathlib pydot tqdm torchsummary jsoncomment commentjson
+    $ python3 -m pip install keras tensorflow torch doepy scikit-learn xlsxwriter matplotlib pandas pathlib pydot tqdm torchsummary jsoncomment commentjson multiprocess
     ```
 
 ## Docker support
