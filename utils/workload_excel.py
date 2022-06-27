@@ -15,8 +15,7 @@ import pdb
 import sys
 import time
 import argparse
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.mplot3d import Axes3D
 import random
 
 # from multicore_run import *
@@ -831,6 +830,7 @@ def MultiDataPlot(args, workload):
 
 def PlotGraph(args, group_data, x_axis_index, 
         y_axis_index, min_max_std_indexes, z_axis_index, annotation_cols):
+    import matplotlib.pyplot as plt
     l_xmin = ""
     l_ymin = ""
     l_xmax = ""
@@ -969,6 +969,7 @@ def PlotGraph(args, group_data, x_axis_index,
             ymax = max(ymax, max(xydata[1]))
             ymin = min(ymin, min(xydata[1]))
     ax = None
+    import matplotlib.pyplot as plt
     if args.plot3d or args.plot3dscatter:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection="3d")
