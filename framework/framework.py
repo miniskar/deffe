@@ -265,6 +265,8 @@ class DeffeFramework:
                 train_val_split = self.train_model.GetTrainValSplit()
                 init_n_train = int(n_samples * (1.0-train_val_split))
                 init_n_val = n_samples - init_n_train
+        else:
+            custom_samples = np.array([])
         self.sampling.Initialize(self.parameters, n_samples,
                 init_n_train, init_n_val, True, 
                 self.train_model.GetTrainValSplit(), self.full_exploration, custom_samples
