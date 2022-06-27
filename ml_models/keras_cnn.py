@@ -15,11 +15,8 @@ import pdb
 import re
 import shlex
 import argparse
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 import glob
 import os
 import tensorflow as tf
@@ -501,6 +498,7 @@ class KerasCNN(BaseMLModel):
             # Plot training & validation loss values
             plot_loss = self.args.plot_loss
             if plot_loss:
+                import matplotlib.pyplot as plt
                 plt.plot(history.history["loss"])
                 plt.plot(history.history["val_loss"])
                 plt.title("Model loss")
