@@ -415,6 +415,9 @@ class DeffeConfigSlurm:
         self.mail_user = ""
         if data != None and "mail_user" in data:
             self.mail_user = str(data["mail_user"])
+        self.account = ""
+        if data != None and "account" in data:
+            self.account = str(data["account"])
         self.constraint = ""
         if data != None and "constraint" in data:
             self.constraint = data["constraint"]
