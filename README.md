@@ -1,21 +1,21 @@
-# Deffe: Data-Efficient Framework for Exploration
-This repository has the sources for Deffe framework, which is intended
+# DEFFE: Data-Efficient Framework for Exploration
+This repository has the sources for DEFFE framework, which is intended
 for design space exploration with exploration and machine learning
-based prediction capabilities. The technical details of Deffe is explained in the [reference, see below][1]. The state of the art design space
+based prediction capabilities. The technical details of DEFFE is explained in the [reference, see below][1]. The state of the art design space
 exploration tools evaluate the design points (samples) and identify
 the optimal design points based on the cost metrics. However, the
 evaluation of design points are time consuming and may require heavy
-computation for some problems. Deffe will help for such problems.
+computation for some problems. DEFFE will help for such problems.
 
-Deffe's machine learning model tries to learn from the evaluated
-design points. Once after learning for some time, Deffe's machine
+DEFFE's machine learning model tries to learn from the evaluated
+design points. Once after learning for some time, DEFFE's machine
 learning model inference can predict the cost metrics with ~98%
 accuracy, which can be used for fast design space exploration. It
 needs less than 5% of the samples to get the near-accurate machine
 learning prediction model and can save huge time in the design space
 exploration.
 
-Deffe framework is implemented fully in python and it is configured
+DEFFE framework is implemented fully in python and it is configured
 through json file. The json file has configuration of problem with
 parameters, cost metrics, evaluate procedure, prediction method,
 sampling technique and exploration algorithm. It provides great
@@ -25,11 +25,11 @@ tasks.
 ## Reference
 [1]: Frank Liu, Narasinga Rao Miniskar, Dwaipayan Chakraborty and Jeffrey S. Vetter, "Deffe: a data-efficient framework for performance characterization in domain-specific computing", ACM International Conference on Computing Frontiers (CF 2020), May 2020, Catania, Italy, https://doi.org/10.1145/3387902.3392633
 
-## Deffe framework component diagram
+## DEFFE framework component diagram
 <img src="docs/deffe-block-diagram.svg" alt="Diagram"
 	title="Block Diagram" width="500" />
 
-The above figures shows the main blocks and their corresponding python files in the Deffe framework.
+The above figures shows the main blocks and their corresponding python files in the DEFFE framework.
 
 ## Hardware Dependencies 
 1. GPU to train the machine learning model
@@ -66,14 +66,14 @@ The above figures shows the main blocks and their corresponding python files in 
     ```
 
 ## Docker support
-Docker support is provided for Deffe. Set proxy settings in Docker file and also in apt.conf file appropriately.
+Docker support is provided for DEFFE. Set proxy settings in Docker file and also in apt.conf file appropriately.
 ```bash
 $ make -f Makefile.docker build ; 
 $ make -f Makefile.docker run ;
 ```
 
-## How to run Deffe?
-An example Deffe configuration for RISCV design space exploration along with their associated files are placed in <b>example</b> directory. 
+## How to run DEFFE?
+An example DEFFE configuration for RISCV design space exploration along with their associated files are placed in <b>example</b> directory. 
 ```bash
 $ source setup.source
 $ cd example ; 
@@ -88,7 +88,7 @@ $ sh run_deffe.sh
 $ cd .. ;
 ```
 
-An example Deffe configuration for RISCV design space exploration (without slurm) along with their associated files are placed in <b>example</b> directory. 
+An example DEFFE configuration for RISCV design space exploration (without slurm) along with their associated files are placed in <b>example</b> directory. 
 ```bash
 $ source setup.source
 $ cd example ; 
@@ -122,7 +122,7 @@ $ cd .. ;
 ```
 
 ## How to run experiments?
-### Run Deffe with K-means with pre-evaluated complete dataset given to model train
+### Run DEFFE with K-means with pre-evaluated complete dataset given to model train
 ```bash
 * Dataset: examples/output_kmeans_deffe.csv
 * Config file: examples/config_kmeans.json
@@ -168,7 +168,7 @@ $ cd .. ;
     ** Output test-output-full.csv
 ```
 
-### Run Deffe with K-means with pre-evaluated data set but passed as set of samples and enabled transfer learning across samples
+### Run DEFFE with K-means with pre-evaluated data set but passed as set of samples and enabled transfer learning across samples
 ```bash
 * Dataset: examples/output_kmeans_deffe.csv
 * Config file: examples/config_kmeans_tl_samples.json
@@ -224,7 +224,7 @@ $ cd .. ;
     ** Output test-output-full.csv
 ```
 
-### Run Deffe with Matmul with pre-evaluated data set but passed as set of samples and enabled transfer learning across samples and also enabled transfer learning from kmeans. 
+### Run DEFFE with Matmul with pre-evaluated data set but passed as set of samples and enabled transfer learning across samples and also enabled transfer learning from kmeans. 
 ```bash
 * Dataset: examples/output_matmul_deffe.csv
 * Frozen layers: 2 convolution layers
@@ -290,8 +290,8 @@ example/experiments/full_explore/exp/kmeans/run.sh
 example/experiments/full_explore/log/kmeans/run.sh
 ```
 
-## How to extend Deffe?
-All classes in Deffe have the below bare minimal methods.
+## How to extend DEFFE?
+All classes in DEFFE have the below bare minimal methods.
 ```python
 import os
 import argparse
@@ -314,7 +314,7 @@ def GetObject(framework):
     return obj
 ```
 
-The "GetObject" method returns the object of the class. It should take the Deffe framework object as an input to configure the class. The class will have "Initialize" and "Run" method. 
+The "GetObject" method returns the object of the class. It should take the DEFFE framework object as an input to configure the class. The class will have "Initialize" and "Run" method. 
 
 
 ## How to configure JSON configuration?
