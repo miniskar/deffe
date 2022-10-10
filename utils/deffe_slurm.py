@@ -24,6 +24,7 @@ class DeffeSlurm:
         self.mail_type = self.config.mail_type
         self.mail_user = self.config.mail_user
         self.account = self.config.account
+        self.time = self.config.time
         self.exclude = self.config.exclude
         self.constraint = self.config.constraint
         self.partition = self.config.partition
@@ -50,6 +51,8 @@ class DeffeSlurm:
                 fh.write('#SBATCH --mail-user='+self.mail_user+"\n")
             if self.account != '':
                 fh.write('#SBATCH --account='+self.account+"\n")
+            if self.time != '':
+                fh.write('#SBATCH --time='+self.time+"\n")
             fh.write("set -x;\n")
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')

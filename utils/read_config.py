@@ -418,6 +418,9 @@ class DeffeConfigSlurm:
         self.account = ""
         if data != None and "account" in data:
             self.account = str(data["account"])
+        self.time = ""
+        if data != None and "time" in data:
+            self.time = str(data["time"])
         self.constraint = ""
         if data != None and "constraint" in data:
             self.constraint = data["constraint"]
