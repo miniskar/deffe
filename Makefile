@@ -11,7 +11,7 @@ pre:
         pathlib \
         pydot \
         tqdm \
-        commentjson \
+        jsoncomment \
         torchsummary  --user
 
 test-deffe: 

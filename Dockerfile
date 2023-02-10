@@ -43,7 +43,7 @@ RUN pip3 install keras \
         pydot \
         tqdm \
         json \
-        commentjson \
+        jsoncomment \
         torchsummary
 
 # Environment variables for gem5-aladdin

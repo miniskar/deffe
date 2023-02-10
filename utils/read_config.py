@@ -19,7 +19,6 @@ import tempfile
 import argparse
 import time
 import json
-import commentjson
 import jsoncomment 
 
 # Values: Scalar / List
@@ -452,7 +451,6 @@ class DeffeConfig:
             print("[Error] Json file:{} not available!".format(self.file_name))
             return None
         with open(self.file_name) as infile:
-            #data = commentjson.load(infile)
             data = jsoncomment.JsonComment().load(infile)
             if data != None and 'include' in data:
                 includes = data['include']

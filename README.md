@@ -54,7 +54,6 @@ The above figures shows the main blocks and their corresponding python files in 
     - tqdm 
     - multiprocess
     - torchsummary
-    - commentjson
     - jsoncomment
     ```bash
     Install all required packages from requirements.txt file in the repository.
@@ -62,7 +61,7 @@ The above figures shows the main blocks and their corresponding python files in 
 
     Or
 
-    $ python3 -m pip install keras tensorflow torch doepy scikit-learn xlsxwriter matplotlib pandas pathlib pydot tqdm torchsummary jsoncomment commentjson multiprocess
+    $ python3 -m pip install keras tensorflow torch doepy scikit-learn xlsxwriter matplotlib pandas pathlib pydot tqdm torchsummary jsoncomment multiprocess
     ```
 
 ## Docker support
