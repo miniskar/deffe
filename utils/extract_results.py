@@ -6,6 +6,7 @@ import natsort
 import pandas as pd
 import argparse
 import sys
+import pdb
 
 def get_explore_dirs(args):
     explore_dirs = natsort.natsorted([f for f in os.listdir(args.dirname) if os.path.isdir(os.path.join(args.dirname, f))])
@@ -21,8 +22,8 @@ def init_parser(argv):
 
 def process_explore_dirs(args, explore_dirs):
     data = []
-    df = pd.DataFrame()
     idx_re = re.compile(r"explore_(\d*)")
+    new_df_data = []
     for explore in explore_dirs:
         try:
             match = idx_re.match(explore)
@@ -34,21 +35,23 @@ def process_explore_dirs(args, explore_dirs):
                 continue
             
             #print(explore)
-            d = json.load(open(f'sd_exploration/{explore}/results.json', 'r'))
-            p = json.load(open(f'sd_exploration/{explore}/param.json', 'r'))
-            d.update(p)
-            d['explore'] = i
-            data.append(d)
-            if len(d) > 0:
-                df = df.append(d, ignore_index=True)
-            
+            results_json = f'sd_exploration/{explore}/results.json'
+            params_json = f'sd_exploration/{explore}/param.json'
+            if os.path.exists(results_json) and os.path.exists(params_json):
+                d = json.load(open(results_json, 'r'))
+                p = json.load(open(params_json, 'r'))
+                d.update(p)
+                d['explore'] = i
+                data.append(d)
+                if len(d) > 0:
+                    new_df_data.append(d)
         except Exception as e:
             print(e)
             print(f"*** Missing Data for {explore} ***")
 
-
+    new_df = pd.DataFrame(new_df_data)
     print(f"[Info] Generating output in {args.output}")
-    df.to_csv(args.output, index=False, sep=",", na_rep='null', encoding="utf-8")
+    new_df.to_csv(args.output, index=False, sep=",", na_rep='null', encoding="utf-8")
 
 def main(argv):
     args = init_parser(argv)

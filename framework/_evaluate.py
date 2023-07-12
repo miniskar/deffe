@@ -39,6 +39,11 @@ class DeffeEvaluate:
             self.sample_evaluate_script = os.path.join(
                 self.framework.config_dir, self.sample_evaluate_script
             )
+        self.source_scripts = []
+        for index, script in enumerate(self.config.source_scripts):
+            if not os.path.exists(script):
+                script = os.path.join(self.framework.config_dir, script)
+            self.source_scripts.append(script)
         self.batch_size = self.config.batch_size
         self.counter = 0
         self.fr_config = self.framework.fr_config
@@ -142,7 +147,8 @@ class DeffeEvaluate:
             run_dir, 
             param_pattern, 
             evaluate_replacements_hash,
-            bash_evaluate_replacements_hash, "evaluate_"
+            bash_evaluate_replacements_hash, "evaluate_",
+            self.source_scripts
         )
         scripts.append((run_dir, 
                     os.path.basename(sample_evaluate_script)))

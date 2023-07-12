@@ -323,7 +323,7 @@ class Parameters:
     def CreateRunScript(self, script, fixed_arguments, excludes, 
             run_dir, param_pattern, 
             param_val_with_escapechar_hash,
-            bash_param_val_with_escapechar_hash, tag=''):
+            bash_param_val_with_escapechar_hash, tag='', source_scripts=[]):
         out_script = script
         is_python_script = False
         if pathlib.Path(script).suffix == '.py' and os.path.exists(script):
@@ -335,6 +335,8 @@ class Parameters:
                 os.path.join(run_dir, 
                     os.path.basename(out_script)), "w"
                 ) as wfh:
+                for s_script in source_scripts:
+                    wfh.write("source "+s_script+" ; \n")
                 arg_list = ["python3", os.path.abspath(script)]
                 arg_list.append(fixed_arguments)
                 for k,v in param_val_with_escapechar_hash.items():

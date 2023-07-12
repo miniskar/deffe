@@ -297,6 +297,9 @@ class DeffeConfigEvaluate:
         self.output_log = "evaluate.log"
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])
+        self.source_scripts = []
+        if data != None and "source_scripts" in data:
+            self.source_scripts = DeffeConfigValues(data["source_scripts"]).values
         self.slurm = False
         self.slurm_config = {}
         if data != None and "slurm" in data:
