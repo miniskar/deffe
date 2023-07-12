@@ -97,9 +97,9 @@ class Parameters:
                         if ks_name == grp:
                             # Give priority to this
                             del param_unique_hash[param.name]
-                            param_unique_hash[param.name] = (param, param_values)
+                            param_unique_hash[param.name] = (param, list(set(param_values)))
                     else:
-                        param_unique_hash[param.name] = (param, param_values)
+                        param_unique_hash[param.name] = (param, list(set(param_values)))
         total_permutations = 1
         output_params = []
         for param_name, (param, param_values) in \
