@@ -20,7 +20,9 @@ class DeffeMLModel:
         self.framework = framework
         self.config = framework.config.GetModel()
         self.exclude_costs = self.config.exclude_costs
-        self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
+        self.ml_model_script = None
+        if not self.framework.no_ml_model:
+            self.ml_model_script = LoadModule(self.framework, self.config.ml_model_script)
         self.accuracy = (0.0, 0.0)
 
     def IsValidCost(self, cost):
@@ -58,14 +60,22 @@ class DeffeMLModel:
 
     # Get Train-Validation split
     def GetTrainValSplit(self):
-        return self.ml_model_script.GetTrainValSplit()
+        if self.ml_model_script != None:
+            return self.ml_model_script.GetTrainValSplit()
+        else:
+            return 0.20
 
     # Get Train-Validation split
     def GetTrainTestSplit(self):
-        return self.ml_model_script.GetTrainTestSplit()
+        if self.ml_model_script != None:
+            return self.ml_model_script.GetTrainTestSplit()
+        else:
+            return 1.0
 
     # Initialize model parameters and costs
     def InitializeSamples(self, samples, headers, cost_names, params, cost_data=None, step=0, expand_list=True, preload_cost_checkpoints=False):
+        if self.ml_model_script == None:
+            return
         params_valid_indexes = []
         cost_metrics = []
         indexes = samples
@@ -112,20 +122,28 @@ class DeffeMLModel:
 
     # Run the prediction/inference
     def Inference(self):
+        if self.ml_model_script == None:
+            return []
         all_output = self.ml_model_script.Inference()
         return all_output
 
     # Train the model
     def Train(self, threading_model=False):
+        if self.ml_model_script == None:
+            return None
         self.accuracy = self.ml_model_script.Train(True)
         return self.accuracy
 
     # Evaluate model results
     def EvaluateModel(self, all_files, outfile="evaluate-model-output.csv"):
+        if self.ml_model_script == None:
+            return 
         self.ml_model_script.EvaluateModel(all_files, outfile)
 
     # Preload the pretrained model
     def PreLoadData(self):
+        if self.ml_model_script == None:
+            return 
         self.ml_model_script.PreLoadData()
 
 

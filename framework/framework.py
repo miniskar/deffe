@@ -47,6 +47,7 @@ class DeffeFramework:
         self.args = None
         self.evaluated_cost_data_frame = pd.DataFrame()
         self.evaluated_param_data_frame = pd.DataFrame()
+        self.no_ml_model = False
         InitializeDeffe()
 
     # Read arguments provided in JSON configuration file
@@ -60,6 +61,8 @@ class DeffeFramework:
         from deffe_utils import Log, EnableDebugFlag
         if self.args.debug:
             EnableDebugFlag()
+        if self.args.no_train and self.args.no_inference:
+            self.no_ml_model = True
         Log("python3 {} {}".format(__file__, " ".join(sys.argv)))
 
     # Add command line arguments to parser
@@ -74,6 +77,7 @@ class DeffeFramework:
         )
         parser.add_argument("-no-run", dest="no_run", action="store_true", help="Dryrun: Do not run!")
         parser.add_argument("-no-train", dest="no_train", action="store_true", help="No training on evaluated metrics")
+        parser.add_argument("-no-inference", dest="no_inference", action="store_true", help="No inference ")
         parser.add_argument("-validate-module", "-validate-samples", dest="validate_module", action="store_true")
         parser.add_argument("-bounds-no-check", dest="bounds_no_check", action="store_true")
         parser.add_argument("-sampling-method", dest="sampling_method", default='')
