@@ -15,7 +15,7 @@ class Deffe1DSampler:
         #pdb.set_trace()
 
     # Mandatory function to find next optimal set of samples for evaluation
-    def Run(self, parameters, cost, count):
+    def Run(self, param_dict, parameters, cost, count):
         if cost.size == 0:
             return np.array([])
         #pdb.set_trace()
@@ -37,7 +37,7 @@ def main():
     data['Sample'] = list(range(data.shape[0]))
     #print(data)
     data = data.sort_values('Price')
-    out = ds.Run(None, data, 100)
+    out = ds.Run(None, None, data, 100)
     print(out)
 
 if __name__ == "__main__":
