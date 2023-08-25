@@ -78,7 +78,6 @@ class Deffe2DSampler:
         xydata = cost[columns[0:2]].values
         anndata = cost['Sample'].values # list(range(total_rows)) 
         xydata = xydata.astype("float")
-        pdb.set_trace()
         pareto_xydata, pareto_anndata = self.GetParetoData(xydata, anndata, count)
         #print(pareto_xydata)
         #pdb.set_trace()
