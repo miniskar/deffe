@@ -43,6 +43,7 @@ class DeffeConfigValues:
             self.values.extend(self.ExtractValues(values, delim))
 
     def GetRangeOfValues(self, value, values_extract, prefix='', postfix=''):
+        import numpy as np
         if re.search(r"^([0-9]+)\s*-\s*([0-9]+)", value):
             fields = re.split("\s*-\s*", value)
             start = int(fields[0])
@@ -51,6 +52,15 @@ class DeffeConfigValues:
             if len(fields) > 2:
                 inc = int(fields[2])
             sub_values = [prefix+str(i)+postfix for i in range(start, end, inc)]
+            values_extract.extend(sub_values)
+        elif re.search(r"^([0-9][0-9\.]*)\s*-\s*([0-9][0-9\.]*)", value):
+            fields = re.split("\s*-\s*", value)
+            start = float(fields[0])
+            end = float(fields[1])
+            inc = 1.0
+            if len(fields) > 2:
+                inc = float(fields[2])
+            sub_values = [prefix+str(i)+postfix for i in np.arange(start, end, inc)]
             values_extract.extend(sub_values)
         else:
             #if type(value) == str and value.lower() == 'true':
