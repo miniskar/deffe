@@ -131,7 +131,9 @@ class DeffeMLModel:
     def Train(self, threading_model=False):
         if self.ml_model_script == None:
             return None
-        self.accuracy = self.ml_model_script.Train(True)
+        # It is better to create multiple threads for each cost metric irrespective of 
+        # outer threading_model
+        self.accuracy = self.ml_model_script.Train(threading_model=True)
         return self.accuracy
 
     # Evaluate model results

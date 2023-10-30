@@ -46,6 +46,14 @@ def LoadModule(parent, py_file):
     py_mod = importlib.import_module(py_mod_name)
     return py_mod.GetObject(parent)
 
+# Replace infinite with maximum
+def ReplaceInfiniteWithMax(arr):
+    # Find the maximum finite value in the array
+    max_val = np.max(arr[np.isfinite(arr)])
+    # Replace infinite values with the maximum finite value
+    arr[~np.isfinite(arr)] = max_val
+    return arr
+
 # Generic loading of python module
 def LoadPyModule(*args):
     py_file = args[0]

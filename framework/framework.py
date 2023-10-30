@@ -58,6 +58,12 @@ class DeffeFramework:
             self.args = self.parser.parse_args(shlex.split(args_string))
         else:
             self.args = self.parser.parse_args()
+        if self.args.disable_threading:
+            self.args.evaluate_out_flow = self.args.batch_size
+            self.args.extract_out_flow = self.args.batch_size
+            self.args.evaluate_batch_size = self.args.batch_size
+            self.args.extract_batch_size = self.args.batch_size
+            self.args.mlmodel_batch_size = self.args.batch_size
         from deffe_utils import Log, EnableDebugFlag
         if self.args.debug:
             EnableDebugFlag()
@@ -75,6 +81,7 @@ class DeffeFramework:
             dest="only_preloaded_data_exploration",
             action="store_true",
         )
+        parser.add_argument("-disable-threading", dest="disable_threading", action="store_true", help="Disable threading in pipeline!")
         parser.add_argument("-no-run", dest="no_run", action="store_true", help="Dryrun: Do not run!")
         parser.add_argument("-no-train", dest="no_train", action="store_true", help="No training on evaluated metrics")
         parser.add_argument("-no-inference", dest="no_inference", action="store_true", help="No inference ")
@@ -93,6 +100,7 @@ class DeffeFramework:
         parser.add_argument("-extract-out-flow", dest="extract_out_flow", type=int, default=-1, help="Extract samples output flow (by default it is evaluate batch size")
         parser.add_argument("-inference-only", dest="inference_only", action="store_true", help="Use pretrained model for inference")
         parser.add_argument("-input", dest="input", default="")
+        parser.add_argument("-emulate-preload-feed", dest="emulate_preload_feed", action="store_true", help="Emulate preload data as pipeline feed")
         parser.add_argument("-pre-evaluated-data", dest="pre_evaluated_data", default="")
         parser.add_argument("-output", dest="output", default="")
         parser.add_argument("-model-extract-dir", dest="model_extract_dir", default="")
@@ -252,7 +260,7 @@ class DeffeFramework:
                 with_indexing=False,
                 with_normalize=True,
             )
-            if len(preload_samples) != 0 and not self.no_train_flag:
+            if len(preload_samples) != 0 and not self.no_train_flag and not self.args.emulate_preload_feed:
                 self.Train(preload_samples, 
                     pruned_headers, cost_names, 
                     parameters_normalize, 
@@ -581,7 +589,7 @@ class DeffeFramework:
     def RunParallel(self):
         from deffe_thread import DeffeThread, DeffeThreadData
         from deffe_utils import Log, DebugLogModule
-        threading_model = False
+        threading_model = not self.args.disable_threading
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
         # Iterate through multiple explorations list as per the configuration
@@ -607,14 +615,14 @@ class DeffeFramework:
                             print('---- batch_output feedback exists')
                             batch_output_feedback = self.samples_thread.Get('batch_output_feedback').Get()
                             print('---- parameter_values feedback exists')
-                            parameter_values_feedback = self.samples_thread.Get('parameter_values_feedback')
+                            parameter_values_feedback = self.samples_thread.Get('parameter_values_feedback').Get()
                         else:
                             feedback_exists = False
-                        if feedback_exists:
+                        if feedback_exists and len(batch_output_feedback)>0 and len(parameter_values_feedback) > 0:
                             print('---------------- accumulating data ---------')
-                            self.InsertEvaluatedCostDataToFrame(samples_feedback, batch_output_feedback)
-                            self.InsertEvaluatedParamDataToFrame(samples_feedback, 
-                                    self.pruned_param_list, parameter_values_feedback)
+                            self.InsertEvaluatedCostDataToFrame(samples_feedback[0], batch_output_feedback[0])
+                            self.InsertEvaluatedParamDataToFrame(samples_feedback[0], 
+                                    self.pruned_param_list, parameter_values_feedback[0])
                         samples_with_step = self.GetBatchSamples(exp_index)
                         DebugLogModule("Generating samples")
                         self.samples_thread.Put('samples', 
@@ -633,14 +641,14 @@ class DeffeFramework:
                             print('---- batch_output feedback exists')
                             batch_output_feedback = self.samples_thread.Get('batch_output_feedback').Get()
                             print('---- parameter_values feedback exists')
-                            parameter_values_feedback = self.samples_thread.Get('parameter_values_feedback')
+                            parameter_values_feedback = self.samples_thread.Get('parameter_values_feedback').Get()
                         else:
                             feedback_exists = False
-                        if feedback_exists:
+                        if feedback_exists and len(batch_output_feedback) > 0 and len(parameter_values_feedback) > 0:
                             print('---------------- accumulating data ---------')
-                            self.InsertEvaluatedCostDataToFrame(samples_feedback, batch_output_feedback)
-                            self.InsertEvaluatedParamDataToFrame(samples_feedback, 
-                                    self.pruned_param_list, parameter_values_feedback)
+                            self.InsertEvaluatedCostDataToFrame(samples_feedback[0], batch_output_feedback[0])
+                            self.InsertEvaluatedParamDataToFrame(samples_feedback[0], 
+                                    self.pruned_param_list, parameter_values_feedback[0])
                         samples_with_step = self.GetBatchSamples(exp_index)
                         #DebugLogModule("Generating samples")
                         DebugLogModule("Sending data:"+str(len(samples_with_step[1])))
@@ -662,7 +670,7 @@ class DeffeFramework:
                     DebugLogModule("Inside Param Threads")
                     DebugLogModule("Trying to fetch Param Threads")
                     (samples_with_step, th_end) = \
-                                     self.param_thread.Get('samples').Get()
+                                     self.extract_param_thread.Get('samples').Get()
                     # Check if valid sample, otherwise exit
                     global_th_end = th_end
                     if global_th_end:
@@ -685,13 +693,13 @@ class DeffeFramework:
                             DeffeThreadData(parameters_normalize),
                     }
                     DebugLogModule("Sending data:"+str(len(parameter_values)))
-                    self.param_thread.PutAll(send_data)
+                    self.extract_param_thread.PutAll(send_data)
                     DebugLogModule("Data sent")
                     if not threading_model:
                         break
                 if global_th_end:
                     DebugLogModule("ExtractParams: Sending last sample end")
-                    self.param_thread.SendEnd()
+                    self.extract_param_thread.SendEnd()
                 DebugLogModule("Exited !")
 
             def MLInferenceThread(self, threading_model=True):
@@ -764,13 +772,12 @@ class DeffeFramework:
                     #print("Completed putall data to send to extract")
                     eval_output_list.clear()
                     
-                def callbackEvaluate(self, update_mutex, eval_output_list, eval_stats, in_data_hash, index, eval_output):
+                def callbackEvaluate(self, update_mutex, eval_output_list, eval_stats, in_data_hash, eval_out_flow, index, eval_output):
                     update_mutex.acquire(1)
                     #print("Acquiring the lock")
                     eval_output_list.append([index, eval_output])
                     eval_stats[1] += 1
                     th_end = eval_stats[2]
-                    eval_out_flow = self.evaluate.GetOutputFlow()
                     is_it_last_sample = th_end and eval_stats[0] == eval_stats[1]
                     #print("Is last sample:"+str(is_it_last_sample)+" th.end:"+str(th_end))
                     #print(f"Evaluate index:{index} completed size:"+str(len(eval_output_list))+" Eval stats:"+str(eval_stats))
@@ -817,10 +824,14 @@ class DeffeFramework:
                             'parameter_values' : parameter_values,
                             'parameters_normalize' : parameters_normalize
                         }
+                        eval_out_flow = self.evaluate.GetOutputFlow()
+                        if not threading_model:
+                            eval_out_flow = len(parameter_values) 
                         eval_stats[0] += len(parameter_values)
                         eval_output = self.evaluate.Run(parameter_values, 
                                 (self, callbackEvaluate, update_mutex, 
-                                     eval_output_list, eval_stats, in_data_hash), 
+                                     eval_output_list,  
+                                     eval_stats, in_data_hash, eval_out_flow), 
                                 use_global_thread_queue=True)
                         #data_hash = {
                         #    'samples' : DeffeThreadData(samples_with_step),
@@ -847,7 +858,7 @@ class DeffeFramework:
                 #            batch_output, batch_output_evaluate, batch_output_inference
                 while True:
                     DebugLogModule("Inside")
-                    data_hash = self.extract_thread.GetAll()
+                    data_hash = self.extract_results_thread.GetAll()
                     DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
                     global_th_end = th_end
@@ -879,13 +890,13 @@ class DeffeFramework:
                                             batch_output)),
                         }
                         DebugLogModule("Sending data")
-                        self.extract_thread.PutAll(out_data_hash)
+                        self.extract_results_thread.PutAll(out_data_hash)
                         DebugLogModule("Sent data")
                     if not threading_model:
                         break
                 if global_th_end:
                     DebugLogModule("Extract: Inference last sample end")
-                    self.extract_thread.SendEnd()
+                    self.extract_results_thread.SendEnd()
                 DebugLogModule("Exited !")
 
             def MLTrainThread(self, threading_model=True):
@@ -894,7 +905,6 @@ class DeffeFramework:
                 # OUT Ports: NONE
                 while True:
                     DebugLogModule("Inside")
-                    pdb.set_trace()
                     data_hash = self.ml_train_thread.GetAll()
                     DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
@@ -911,7 +921,8 @@ class DeffeFramework:
                         if not self.no_train_flag:
                             DebugLogModule("Started training")
                             self.Train(samples, 
-                                pruned_headers, parameters_normalize, 
+                                pruned_headers, self.config.GetCosts(), 
+                                parameters_normalize, 
                                 batch_output, step, threading_model)
                     if not threading_model:
                         break
@@ -955,7 +966,7 @@ class DeffeFramework:
             print("********************************************")
             self.samples_thread = DeffeThread(GetSamplesThread, 
                     (self, exp_index, threading_model), True, tag="Sampling")
-            self.param_thread = DeffeThread(
+            self.extract_param_thread = DeffeThread(
                     ExtractParamValuesThread,
                     (self, exp_index, threading_model), True, tag="ExtractParam"
                     )
@@ -963,32 +974,32 @@ class DeffeFramework:
                     MLInferenceThread, (self, threading_model), True, tag='MLInference')
             self.evaluate_thread = DeffeThread(
                     EvaluateThread, (self, threading_model), True, tag='Evaluate')
-            self.extract_thread = DeffeThread(
+            self.extract_results_thread = DeffeThread(
                     ExtractResultsThread, (self, threading_model), True, tag='ExtractResults')
             self.ml_train_thread = DeffeThread(
                     MLTrainThread, (self, threading_model), True, tag='MLTrain')
             self.write_thread = DeffeThread(
                     WriteThread, (self, threading_model), True, tag='Write')
 
-            DeffeThread.Connect(self.samples_thread, self.param_thread, 
+            DeffeThread.Connect(self.samples_thread, self.extract_param_thread, 
                     'samples')
-            DeffeThread.Connect(self.param_thread, 
+            DeffeThread.Connect(self.extract_param_thread, 
                     [self.inference_thread, self.evaluate_thread],
                     ['samples', 'parameter_values', 'parameters_normalize'])
             DeffeThread.Connect(self.evaluate_thread, 
-                    [self.extract_thread],
+                    [self.extract_results_thread],
                     ['samples', 'parameter_values', 
                      'parameters_normalize', 'eval_output'])
-            DeffeThread.Connect(self.extract_thread, 
+            DeffeThread.Connect(self.extract_results_thread, 
                     self.ml_train_thread,
                     ['samples', 'parameter_values', 
                     'parameters_normalize', 'batch_output'])
-            DeffeThread.Connect(self.extract_thread, 
+            DeffeThread.Connect(self.extract_results_thread, 
                     self.samples_thread,
                     ['samples::samples_feedback', 
                      'parameter_values::parameter_values_feedback', 
                      'batch_output::batch_output_feedback'])
-            DeffeThread.Connect(self.extract_thread, 
+            DeffeThread.Connect(self.extract_results_thread, 
                     self.write_thread,
                     ['batch_output_evaluate'])
             DeffeThread.Connect(self.inference_thread, 
@@ -996,17 +1007,17 @@ class DeffeFramework:
                     ['batch_output_inference'])
             if threading_model:
                 self.samples_thread.StartThread()
-                self.param_thread.StartThread()
+                self.extract_param_thread.StartThread()
                 self.evaluate_thread.StartThread()
-                self.extract_thread.StartThread()
+                self.extract_results_thread.StartThread()
                 self.inference_thread.StartThread()
                 self.ml_train_thread.StartThread()
                 self.write_thread.StartThread()
 
                 self.samples_thread.JoinThread()
-                self.param_thread.JoinThread()
+                self.extract_param_thread.JoinThread()
                 self.evaluate_thread.JoinThread()
-                self.extract_thread.JoinThread()
+                self.extract_results_thread.JoinThread()
                 self.inference_thread.JoinThread()
                 self.ml_train_thread.JoinThread()
                 self.write_thread.JoinThread()

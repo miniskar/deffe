@@ -15,6 +15,7 @@ from sklearn import metrics
 from sklearn.linear_model import LassoLars
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
+from deffe_utils import ReplaceInfiniteWithMax
 import os, sys, logging
 import time
 from baseml import *
@@ -22,6 +23,9 @@ import shlex
 import pdb
 import joblib
 import glob
+import warnings 
+# suppress warnings 
+warnings.filterwarnings('ignore') 
 
 checkpoint_dir = "checkpoints"
 class SKlearnRF(BaseMLModel):
@@ -226,7 +230,8 @@ class SKlearnRF(BaseMLModel):
             obj_train = z_train
         obj_train = obj_train
         start = time.time()
-        #pdb.set_trace()
+    
+        obj_train = ReplaceInfiniteWithMax(obj_train) 
         rf.fit(x_train, obj_train)
         train_count = len(self.x_train)
         test_count = len(self.x_test)
@@ -282,17 +287,19 @@ class SKlearnRF(BaseMLModel):
             x_test.shape[0],
         )
 
-    def compute_error(self, cost_index, test, pred):
-        all_errors = np.abs(test-pred)
-        all_errors = np.divide(all_errors, test, out=np.zeros_like(all_errors), where=test!=0)
+    def compute_error(self, cost_index, test, pred, is_exp=False, is_log=False):
+        error_diff = ReplaceInfiniteWithMax(np.abs(test-pred))
+        all_errors = np.divide(error_diff, test, out=np.zeros_like(error_diff), where=test!=0)
+        all_errors = all_errors[~np.isnan(all_errors)]
         mean_error = np.mean(all_errors)
         max_error = np.max(all_errors)
         min_error = np.min(all_errors)
         median_error = np.median(all_errors)
         std_error = np.std(all_errors)
         print(
-            "Cost:{} Mean:{} Max:{} Min:{} Median:{} Std:{}".format(
-                cost_index, mean_error, max_error, min_error, median_error, std_error
+            "Cost:{} Mean:{} Max:{} Min:{} Median:{} Std:{} Size:{}".format(
+                cost_index, mean_error, max_error, 
+                min_error, median_error, std_error, len(test)
             )
         )
         return [mean_error, max_error, min_error, median_error, std_error]

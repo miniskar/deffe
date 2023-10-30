@@ -118,15 +118,16 @@ class DeffeThread:
     def Put(self, port_name, data, block_flag=True):
         caller_name = sys._getframe().f_back.f_code.co_name
         for port in self.out_ports[port_name]:
-            print(caller_name+f":{self.tag}: ********* Placing data:{port_name}")
+            print(caller_name+f":{self.tag}: ********* Placing data:{port_name} Size:{port.qsize()}/{port.maxsize}; Full:{port.full()} Empty:{port.empty()}")
             port.put(data, block_flag)
-            print(caller_name+f":{self.tag}: ********* Placed data successfully:{port_name}")
+            print(caller_name+f":{self.tag}: ********* Placed data successfully:{port_name} Size:{port.qsize()}/{port.maxsize}; Full:{port.full()} Empty:{port.empty()}")
 
-    def Get(self, port, block_flag=True):
+    def Get(self, port_name, block_flag=True):
         caller_name = sys._getframe().f_back.f_code.co_name
-        print(caller_name+f":{self.tag}: ********** Getting data:"+port)
-        data = self.in_ports[port].get(block_flag)
-        print(caller_name+f":{self.tag} ********** Got data successfully:"+port)
+        port = self.in_ports[port_name]
+        print(caller_name+f":{self.tag}: ********** Getting data:{port_name} Size:{port.qsize()}/{port.maxsize}; Full:{port.full()} Empty:{port.empty()}")
+        data = port.get(block_flag)
+        print(caller_name+f":{self.tag} ********** Got data successfully:{port_name} Size:{port.qsize()}/{port.maxsize}; Full:{port.full()} Empty:{port.empty()}")
         return data
 
     def StartThread(self):
