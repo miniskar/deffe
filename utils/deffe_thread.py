@@ -44,12 +44,12 @@ class DeffeThread:
     The RunThread() method will run in the background forever until the StopThread() method is called
     """
 
-    def __init__(self, method=None, arguments=None, single_run_flag=True, start_flag=False):
+    def __init__(self, method=None, arguments=None, single_run_flag=True, start_flag=False, tag=''):
         #print("DeffeThread init")
         if method != None:
-            self.InitThread(method, arguments, single_run_flag, start_flag)
+            self.InitThread(method, arguments, single_run_flag, start_flag, tag)
 
-    def InitThread(self, method, arguments, single_run_flag=True, start_flag=False):
+    def InitThread(self, method, arguments, single_run_flag=True, start_flag=False, tag=''):
         """ Constructor
         :type interval: int
         :param interval: Check interval, in seconds
@@ -57,6 +57,7 @@ class DeffeThread:
         self.INIT=0
         self.RUN=1
         self.END=2
+        self.tag = tag
         self.in_ports = {}
         self.out_ports = {}
         self.stop_thread = False
@@ -117,15 +118,15 @@ class DeffeThread:
     def Put(self, port_name, data, block_flag=True):
         caller_name = sys._getframe().f_back.f_code.co_name
         for port in self.out_ports[port_name]:
-            #print(caller_name+": ********* Placing data:"+port_name)
+            print(caller_name+f":{self.tag}: ********* Placing data:{port_name}")
             port.put(data, block_flag)
-            #print(caller_name+": ********* Placed data successfully:"+port_name)
+            print(caller_name+f":{self.tag}: ********* Placed data successfully:{port_name}")
 
     def Get(self, port, block_flag=True):
         caller_name = sys._getframe().f_back.f_code.co_name
-        #print(caller_name+": ********** Getting data:"+port)
+        print(caller_name+f":{self.tag}: ********** Getting data:"+port)
         data = self.in_ports[port].get(block_flag)
-        #print(caller_name+": ********** Got data successfully:"+port)
+        print(caller_name+f":{self.tag} ********** Got data successfully:"+port)
         return data
 
     def StartThread(self):

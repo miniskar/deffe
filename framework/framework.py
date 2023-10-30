@@ -257,10 +257,10 @@ class DeffeFramework:
                     pruned_headers, cost_names, 
                     parameters_normalize, 
                     batch_output, 0)
-            if len(preload_samples) != 0:
-                self.InsertEvaluatedParamDataToFrame((0, np.array(preload_samples)), 
-                        pruned_param_list, parameter_values)
-                self.InsertEvaluatedCostDataToFrame((0, np.array(preload_samples)), np.array(batch_output, dtype=object))
+            #if len(preload_samples) != 0:
+            #    self.InsertEvaluatedParamDataToFrame((0, np.array(preload_samples)), 
+            #            pruned_param_list, parameter_values)
+            #    self.InsertEvaluatedCostDataToFrame((0, np.array(preload_samples)), np.array(batch_output, dtype=object))
             None
         # Preload the data if anything is configured
         if self.only_preloaded_data_exploration:
@@ -581,7 +581,7 @@ class DeffeFramework:
     def RunParallel(self):
         from deffe_thread import DeffeThread, DeffeThreadData
         from deffe_utils import Log, DebugLogModule
-        threading_model = True
+        threading_model = False
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)
         # Iterate through multiple explorations list as per the configuration
@@ -600,6 +600,21 @@ class DeffeFramework:
                 # OUT Ports: samples
                 if threading_model:
                     while not self.sampling.IsCompleted():
+                        feedback_exists = True
+                        if not self.samples_thread.IsEmpty('samples_feedback'):
+                            print('---- samples feedback exists')
+                            samples_feedback = self.samples_thread.Get('samples_feedback').Get()
+                            print('---- batch_output feedback exists')
+                            batch_output_feedback = self.samples_thread.Get('batch_output_feedback').Get()
+                            print('---- parameter_values feedback exists')
+                            parameter_values_feedback = self.samples_thread.Get('parameter_values_feedback')
+                        else:
+                            feedback_exists = False
+                        if feedback_exists:
+                            print('---------------- accumulating data ---------')
+                            self.InsertEvaluatedCostDataToFrame(samples_feedback, batch_output_feedback)
+                            self.InsertEvaluatedParamDataToFrame(samples_feedback, 
+                                    self.pruned_param_list, parameter_values_feedback)
                         samples_with_step = self.GetBatchSamples(exp_index)
                         DebugLogModule("Generating samples")
                         self.samples_thread.Put('samples', 
@@ -611,6 +626,21 @@ class DeffeFramework:
                     return True
                 else:
                     if not self.sampling.IsCompleted():
+                        feedback_exists = True
+                        if not self.samples_thread.IsEmpty('samples_feedback'):
+                            print('---- samples feedback exists')
+                            samples_feedback = self.samples_thread.Get('samples_feedback').Get()
+                            print('---- batch_output feedback exists')
+                            batch_output_feedback = self.samples_thread.Get('batch_output_feedback').Get()
+                            print('---- parameter_values feedback exists')
+                            parameter_values_feedback = self.samples_thread.Get('parameter_values_feedback')
+                        else:
+                            feedback_exists = False
+                        if feedback_exists:
+                            print('---------------- accumulating data ---------')
+                            self.InsertEvaluatedCostDataToFrame(samples_feedback, batch_output_feedback)
+                            self.InsertEvaluatedParamDataToFrame(samples_feedback, 
+                                    self.pruned_param_list, parameter_values_feedback)
                         samples_with_step = self.GetBatchSamples(exp_index)
                         #DebugLogModule("Generating samples")
                         DebugLogModule("Sending data:"+str(len(samples_with_step[1])))
@@ -728,9 +758,9 @@ class DeffeFramework:
                             DeffeThreadData(np_list[1]),
                     }
                     #print("Prepared data to send to extract")
-                    DebugLogModule("Sending data:"+str(len(parameter_values)))
+                    DebugLogModule("Sending data:"+str(len(parameter_values)), "DeffeFramework.EvaluateThread.pushDataToQueue")
                     self.evaluate_thread.PutAll(out_data_hash)
-                    DebugLogModule("Sent data:"+str(len(parameter_values)))
+                    DebugLogModule("Sent data:"+str(len(parameter_values)), "DeffeFramework.EvaluateThread.pushDataToQueue")
                     #print("Completed putall data to send to extract")
                     eval_output_list.clear()
                     
@@ -750,7 +780,7 @@ class DeffeFramework:
                         #print("Successfully Sent of batch:"+str(len(eval_output_list)))
                         if is_it_last_sample and not eval_stats[3]:
                             #print("Ealuate Sending last sample end")
-                            DebugLogModule("Sending End data")
+                            DebugLogModule("Sending End data", "DeffeFramework.EvaluateThread.callbackEvaluate")
                             self.evaluate_thread.SendEnd()
                             eval_stats[3] = True
                         #print("Completed Send of batch:"+str(len(eval_output_list)))
@@ -762,7 +792,7 @@ class DeffeFramework:
                 #send_mutex = Lock()
                 update_mutex = Lock()
                 while True:
-                    DebugLogModule("Inside")
+                    DebugLogModule("********** Inside *********")
                     data_hash = self.evaluate_thread.GetAll()
                     DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
@@ -802,6 +832,7 @@ class DeffeFramework:
                         #        DeffeThreadData(eval_output),
                         #}
                         #self.evaluate_thread.PutAll(data_hash)
+                    print(f"------------ threading_model: {threading_model} ------")
                     if not threading_model:
                         break
                 DebugLogModule("Exited !")
@@ -835,9 +866,6 @@ class DeffeFramework:
                         batch_output = self.extract.Run(
                             parameter_values, param_list, eval_output
                         )
-                        self.InsertEvaluatedCostDataToFrame(samples_with_step, batch_output)
-                        self.InsertEvaluatedParamDataToFrame(samples_with_step, 
-                                self.pruned_param_list, parameter_values)
                         out_data_hash = {
                             'samples' : DeffeThreadData(samples_with_step),
                             'parameter_values' : 
@@ -866,6 +894,7 @@ class DeffeFramework:
                 # OUT Ports: NONE
                 while True:
                     DebugLogModule("Inside")
+                    pdb.set_trace()
                     data_hash = self.ml_train_thread.GetAll()
                     DebugLogModule("Got Data")
                     (samples_with_step, th_end) = data_hash['samples'].Get()
@@ -925,21 +954,21 @@ class DeffeFramework:
 
             print("********************************************")
             self.samples_thread = DeffeThread(GetSamplesThread, 
-                    (self, exp_index, threading_model), True)
+                    (self, exp_index, threading_model), True, tag="Sampling")
             self.param_thread = DeffeThread(
                     ExtractParamValuesThread,
-                    (self, exp_index, threading_model), True
+                    (self, exp_index, threading_model), True, tag="ExtractParam"
                     )
             self.inference_thread = DeffeThread(
-                    MLInferenceThread, (self, threading_model), True)
+                    MLInferenceThread, (self, threading_model), True, tag='MLInference')
             self.evaluate_thread = DeffeThread(
-                    EvaluateThread, (self, threading_model), True)
+                    EvaluateThread, (self, threading_model), True, tag='Evaluate')
             self.extract_thread = DeffeThread(
-                    ExtractResultsThread, (self, threading_model), True)
+                    ExtractResultsThread, (self, threading_model), True, tag='ExtractResults')
             self.ml_train_thread = DeffeThread(
-                    MLTrainThread, (self, threading_model), True)
+                    MLTrainThread, (self, threading_model), True, tag='MLTrain')
             self.write_thread = DeffeThread(
-                    WriteThread, (self, threading_model), True)
+                    WriteThread, (self, threading_model), True, tag='Write')
 
             DeffeThread.Connect(self.samples_thread, self.param_thread, 
                     'samples')
@@ -954,6 +983,11 @@ class DeffeFramework:
                     self.ml_train_thread,
                     ['samples', 'parameter_values', 
                     'parameters_normalize', 'batch_output'])
+            DeffeThread.Connect(self.extract_thread, 
+                    self.samples_thread,
+                    ['samples::samples_feedback', 
+                     'parameter_values::parameter_values_feedback', 
+                     'batch_output::batch_output_feedback'])
             DeffeThread.Connect(self.extract_thread, 
                     self.write_thread,
                     ['batch_output_evaluate'])
@@ -979,6 +1013,7 @@ class DeffeFramework:
             else:
                 while True:
                     # No threading model, but sequential execution 
+                    DebugLogModule("********** Next Iteration *************")
                     sampling_status = GetSamplesThread(self, exp_index, threading_model)
                     if sampling_status:
                         break
