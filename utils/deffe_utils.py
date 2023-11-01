@@ -108,6 +108,18 @@ def ReshapeCosts(cost_data):
         out_cost_data.append(one_train)
     return np.array(out_cost_data)
 
+def ErrorLogModule(message, caller_name=None):
+    #called_name = sys._getframe().f_code.co_name
+    caller_class = ''
+    if caller_name == None:
+        stack = inspect.stack()
+        caller_class = stack[1][0].f_locals["self"].__class__.__name__+"."
+        caller_name = sys._getframe().f_back.f_code.co_name
+        caller_lineno = sys._getframe().f_back.f_lineno
+    message = GetFmtMsg(message)
+    print(f"[Error] ({caller_class}{caller_name}:{caller_lineno} {message}")
+    sys.stdout.flush()
+    
 def DebugLogModule(message, caller_name=None):
     #called_name = sys._getframe().f_code.co_name
     if not debug_flag:
@@ -117,8 +129,9 @@ def DebugLogModule(message, caller_name=None):
         stack = inspect.stack()
         caller_class = stack[1][0].f_locals["self"].__class__.__name__+"."
         caller_name = sys._getframe().f_back.f_code.co_name
+        caller_lineno = sys._getframe().f_back.f_lineno
     message = GetFmtMsg(message)
-    print("[Debug] ("+caller_class+caller_name+"): "+message)
+    print(f"[Debug] ({caller_class}{caller_name}:{caller_lineno} {message}")
     sys.stdout.flush()
     
 def AddBashKeyValue(hash_obj, key, val, escape=False):

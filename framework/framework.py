@@ -344,14 +344,19 @@ class DeffeFramework:
         parameters_normalize = None
         # Check if the data point already exist in pre-computed data
         if self.only_preloaded_data_exploration:
-            DebugLogModule("Loading pre evaluated parameters")
-            (indexes, parameter_values) = self.param_data.GetPreEvaluatedParameters(
+            DebugLogModule(f"Loading pre evaluated parameters N:{len(samples)} P:{len(param_list)}")
+            (new_samples, parameter_values) = self.param_data.GetPreEvaluatedParameters(
                 samples, param_list
             )
-            samples = samples[indexes]
-            DebugLogModule("Get pruned selected values")
+            DebugLogModule(f"Get selected samples N:{len(samples)} Indexes:{len(new_samples)} P:{len(parameter_values)}")
+            if len(new_samples) != len(parameter_values):
+                ErrorLogModule(f" Unmatching lengths new_samples:{len(new_samples)} parameter_values:{len(parameter_values)}")
+            samples = new_samples
+            #pdb.set_trace()
+            #samples = samples[indexes]
+            DebugLogModule(f"Get pruned selected values N:{len(samples)}")
             pruned_parameter_values = self.parameters.GetPrunedSelectedValues(
-                parameter_values[indexes], pruned_param_list
+                parameter_values, pruned_param_list
             )
             DebugLogModule("Get normalized parameters")
             parameters_normalize = self.parameters.GetNormalizedParameters(

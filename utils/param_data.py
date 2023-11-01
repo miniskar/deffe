@@ -229,18 +229,24 @@ class ParamData:
 
     # Get pre-evaluated parameters
     def GetPreEvaluatedParameters(self, samples, param_list):
+        from deffe_utils import Log, LogModule, DebugLogModule
         out_params = []
+        DebugLogModule(f"Input samples N:{len(samples)} P:{len(param_list)}")
         param_data_sample_indexes = self.param_data_sample_indexes
-        (common_samples, indexes, sel_indexes) = np.intersect1d(samples, param_data_sample_indexes, return_indices=True)
-        if len(sel_indexes) == 0:
+        (common_samples, samples_indexes, param_indexes) = np.intersect1d(samples, param_data_sample_indexes, return_indices=True)
+        DebugLogModule(f"Intersect samples Common samples:{len(common_samples)} samples_indexes:{len(samples_indexes)} param_indexes:{len(param_indexes)}")
+        if len(param_indexes) == 0:
             return ([], np.array([]))
-        selected = self.param_data[sel_indexes]
-        rows = selected.shape[0]
+        selected_params = self.param_data[param_indexes]
+        DebugLogModule(f"Selected samples N:{len(selected_params)}")
+        rows = selected_params.shape[0]
         unused_cols = len(self.unused_params_values)
         rev_param = np.repeat(self.unused_params_values, rows, axis=0).reshape(unused_cols, rows).transpose()
-        all_params = np.concatenate((selected, rev_param), axis=1)
+        all_params = np.concatenate((selected_params, rev_param), axis=1)
+        DebugLogModule(f"all_params N:{len(all_params)}")
         out_params = all_params.transpose()[self.rev_param_extract_indexes].transpose()
-        return (indexes, out_params)
+        DebugLogModule(f"Selected indexes: {len(samples_indexes)} out_params N:{len(out_params)}")
+        return (samples[samples_indexes], out_params)
 
 
 # Get object of evaluate
