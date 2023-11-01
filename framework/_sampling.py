@@ -186,6 +186,9 @@ class DeffeSampling:
         sampling_method = self.args.method
         if self.framework.args.sampling_method != '':
             sampling_method = self.framework.args.sampling_method
+        if len(seq_custom) > 0 and self.framework.args.emulate_preload_feed:
+            self._seq = seq_custom
+            seq_custom = []
         if len(seq_custom) > 0:
             self._seq = seq_custom
         elif sampling_method == 'random':

@@ -41,11 +41,11 @@ class DeffeExtract:
             self.batch_size = self.framework.args.batch_size
         if self.framework.args.extract_batch_size!= -1:
             self.batch_size = self.framework.args.extract_batch_size
-        self.output_flow = self.batch_size
-        if self.config.output_flow != -1:
-            self.output_flow = self.config.output_flow
-        if self.framework.args.extract_out_flow != -1:
-            self.output_flow = self.framework.args.extract_out_flow
+        #self.output_flow = self.batch_size
+        #if self.config.output_flow != -1:
+        #    self.output_flow = self.config.output_flow
+        #if self.framework.args.extract_out_flow != -1:
+        #    self.output_flow = self.framework.args.extract_out_flow
         self.parameters = self.framework.parameters
         self.parser = self.AddArgumentsToParser()
         self.args = self.ReadArguments()
@@ -53,8 +53,8 @@ class DeffeExtract:
     def GetBatchSize(self):
         return self.batch_size
 
-    def GetOutputFlow(self):
-        return self.output_flow
+    #def GetOutputFlow(self):
+    #    return self.output_flow
 
     # Read arguments provided in JSON configuration file
     def ReadArguments(self):

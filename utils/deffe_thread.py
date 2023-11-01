@@ -39,6 +39,14 @@ all_queues = []
 def GetQueues():
     return all_queues
 
+def PrintQueueState():
+    queues = GetQueues()
+    from deffe_utils import Log, DebugLogModule
+    for q in queues:
+        Log(f"Port: {q[1]}({q[3]}) -> {q[2]}({q[4]}) Size:{str(q[0].qsize())}")
+        #DebugLogModule(f"Port: {q[1]}({q[3]}) -> {q[2]}({q[4]}) Size:{str(q[0].qsize())}")
+
+
 class DeffeThread:
     """ 
     The RunThread() method will run in the background forever until the StopThread() method is called
@@ -80,13 +88,20 @@ class DeffeThread:
         for name in name_list:
             source_out_name = name
             dest_out_name = name
+            queue_size = 2
+            init_packets = 0
             if re.search(r'::', name):
                 name_split = name.split(r'::')
                 source_out_name = name_split[0]
                 dest_out_name = name_split[1]
+                if len(name_split) > 2:
+                    queue_size = int(name_split[2])
+                    if queue_size < 0:
+                        queue_size = queue_size * -1
+                        init_packets = queue_size-1
             source_th_name = source.method.__name__
             for dest in dest_list:
-                queue = Queue(maxsize=2)
+                queue = Queue(maxsize=queue_size)
                 if source_out_name not in source.out_ports:
                     source.out_ports[source_out_name] = []
                 source.out_ports[source_out_name].append(queue)
@@ -98,7 +113,34 @@ class DeffeThread:
         for k, v in data_hash.items():
             self.Put(k, v)
 
+    def IsFull(self, port):
+        if port not in self.out_ports:
+            return False
+        return self.out_ports[port][0].full()
+
+    def GetInQSize(self, port):
+        if port not in self.in_ports:
+            return -1
+        return self.in_ports[port].qsize()
+
+    def GetOutQSize(self, port):
+        if port not in self.out_ports:
+            return -1
+        return self.out_ports[port][0].qsize()
+
+    def GetInMaxSize(self, port):
+        if port not in self.in_ports:
+            return -1
+        return self.in_ports[port].maxsize
+
+    def GetOutMaxSize(self, port):
+        if port not in self.out_ports:
+            return -1
+        return self.out_ports[port][0].maxsize
+
     def IsEmpty(self, port):
+        if port not in self.in_ports:
+            return True
         return self.in_ports[port].empty()
 
     def GetAll(self, block_flag=True):
@@ -117,6 +159,8 @@ class DeffeThread:
 
     def Put(self, port_name, data, block_flag=True):
         caller_name = sys._getframe().f_back.f_code.co_name
+        if port_name not in self.out_ports or len(self.out_ports[port_name]) == 0:
+            return
         for port in self.out_ports[port_name]:
             print(caller_name+f":{self.tag}: ********* Placing data:{port_name} Size:{port.qsize()}/{port.maxsize}; Full:{port.full()} Empty:{port.empty()}")
             port.put(data, block_flag)
