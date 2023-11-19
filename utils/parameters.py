@@ -403,7 +403,7 @@ class Parameters:
             index = index + 1
         param_val_with_escapechar_hash = GetHashCopy(param_val_hash, True)
         bash_param_val_with_escapechar_hash = GetHashCopy(bash_param_val_hash, True)
-        param_pattern = re.compile(r'\$[{]?\b[a-zA-Z0-9_]+\b[}]?')
+        param_pattern = re.compile(r'\${\b[a-zA-Z0-9_]+\b}|\$\b[a-zA-Z0-9_]+\b')
         return (param_pattern, 
                 param_val_hash, param_val_with_escapechar_hash, 
                 bash_param_val_hash, bash_param_val_with_escapechar_hash)
