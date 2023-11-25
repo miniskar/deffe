@@ -111,13 +111,14 @@ def ReshapeCosts(cost_data):
 def ErrorLogModule(message, caller_name=None):
     #called_name = sys._getframe().f_code.co_name
     caller_class = ''
+    caller_lineno = ''
     if caller_name == None:
         stack = inspect.stack()
         caller_class = stack[1][0].f_locals["self"].__class__.__name__+"."
         caller_name = sys._getframe().f_back.f_code.co_name
-        caller_lineno = sys._getframe().f_back.f_lineno
+        caller_lineno = f":{sys._getframe().f_back.f_lineno}"
     message = GetFmtMsg(message)
-    print(f"[Error] ({caller_class}{caller_name}:{caller_lineno} {message}")
+    print(f"[Error] ({caller_class}{caller_name}{caller_lineno} {message}")
     sys.stdout.flush()
     
 def DebugLogModule(message, caller_name=None):
@@ -125,11 +126,12 @@ def DebugLogModule(message, caller_name=None):
     if not debug_flag:
         return
     caller_class = ''
+    caller_lineno = ''
     if caller_name == None:
         stack = inspect.stack()
         caller_class = stack[1][0].f_locals["self"].__class__.__name__+"."
         caller_name = sys._getframe().f_back.f_code.co_name
-        caller_lineno = sys._getframe().f_back.f_lineno
+        caller_lineno = f":{sys._getframe().f_back.f_lineno}"
     message = GetFmtMsg(message)
     print(f"[Debug] ({caller_class}{caller_name}:{caller_lineno} {message}")
     sys.stdout.flush()
