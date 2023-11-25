@@ -740,12 +740,12 @@ def GetParetoData(xydata, anndata, deviation=0.0):
                 pareto_point[0].append(best_point[0])
                 pareto_point[1].append(best_point[1])
                 if len(anndata):
-                    pareto_point[2].append(anndata[index])
+                    pareto_point[2].append(anndata[best_point[2]])
             else:
                 non_pareto_point[0].append(best_point[0])
                 non_pareto_point[1].append(best_point[1])
                 if len(anndata):
-                    non_pareto_point[2].append(anndata[index])
+                    non_pareto_point[2].append(anndata[best_point[2]])
             if is_best:
                 prev_best_point = best_point
             best_point = [xdata[index], ydata[index], index]
@@ -766,7 +766,7 @@ def GetParetoData(xydata, anndata, deviation=0.0):
         non_pareto_point[0].append(best_point[0])
         non_pareto_point[1].append(best_point[1])
         if len(anndata):
-            non_pareto_point[2].append(anndata[index])
+            non_pareto_point[2].append(anndata[best_point[2]])
     print("Total pareto points: " + str(len(pareto_point[0])))
     return [pareto_point[0], pareto_point[1]], pareto_point[2], [non_pareto_point[0], non_pareto_point[1]], non_pareto_point[2]
 
