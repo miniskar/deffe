@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deffe"
+version = "0.0.0"
+authors = [
+  { name="Narasinga Rao Miniskar", email="miniskarnr@ornl.gov" },
+  { name="Aaron Young", email="youngar@ornl.gov" },
+]
+description = "Deffe Design space exploration framework."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "keras",
+  "tensorflow",
+  "torch",
+  "doepy",
+  "scikit-learn ",
+  "xlsxwriter",
+  "matplotlib",
+  "pandas",
+  "pathlib",
+  "pydot",
+  "tqdm",
+  "torchsummary",
+  "jsoncomment",
+  "commentjson",
+  "sphinx_rtd_theme",
+  "myst_parser",
+]
+
+[project.urls]
+Homepage = "https://code.ornl.gov/miniskarnr/deffe"
+Issues = "https://code.ornl.gov/miniskarnr/deffe/-/issues"
+
+[project.scripts]
+run_deffe = "deffe.run_deffe:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["framework"]
+
