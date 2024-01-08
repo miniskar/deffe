@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 LABEL maintainer="Narasinga Rao Miniskar"
 
 
@@ -21,30 +21,14 @@ RUN apt-get install -y \
   scons \
   build-essential \
   python3-dev \
-  python-dev \
   m4 \
   libprotobuf-dev \
-  python-protobuf \
+  python3-protobuf \
   protobuf-compiler \
   libgoogle-perftools-dev \
   graphviz 
 
-# Install a supported version of pyparsing for Xenon.
-RUN pip3 install keras \
-        tensorflow \
-        tensorflow-gpu \
-        torch \
-        doepy \
-        scikit-learn \
-        xlsxwriter \
-        matplotlib \
-        pandas \
-        pathlib \
-        pydot \
-        tqdm \
-        json \
-        jsoncomment \
-        torchsummary
+  RUN pip3 install --upgrade pip
 
 # Environment variables for gem5-aladdin
 ENV SHELL /bin/bash
@@ -52,9 +36,9 @@ RUN mkdir -p /home
 
 COPY . /home/deffe/
 WORKDIR /home/deffe
-ENV DEFFE_DIR /home/deffe
+RUN pip3 install -e /home/deffe
 WORKDIR /home/deffe/example
-RUN python3 $DEFFE_DIR/framework/run_deffe.py -h 
+RUN run_deffe -h 
 RUN git clone https://gem5.googlesource.com/public/gem5 /home/gem5
 RUN ls -al
 RUN pwd

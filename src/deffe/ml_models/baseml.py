@@ -13,8 +13,8 @@ import pdb
 import re
 import os
 import pandas as pd
-from deffe_thread import *
-from deffe_utils import Log, ReshapeCosts, IsNumber, IsStringNumber
+from deffe.utils.deffe_thread import *
+from deffe.utils.deffe_utils import Log, ReshapeCosts, IsNumber, IsStringNumber
 
 checkpoint_dir = "checkpoints"
 class BaseMLModel:
