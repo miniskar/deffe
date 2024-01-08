@@ -24,6 +24,9 @@ class MultiThreadBatchRun:
         self.framework = framework
         None
 
+    def __del__(self):
+        self.Close()
+
     def RunCommand(self, index, cmd, callback=None):
         # os.system(cmd)
         #print("Received command: "+str(cmd))

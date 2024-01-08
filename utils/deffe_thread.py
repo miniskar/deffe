@@ -39,6 +39,12 @@ all_queues = []
 def GetQueues():
     return all_queues
 
+def DeleteAllQueues():
+    print('[Info]: Deleting queues')
+    for i in range(len(all_queues)):
+        queue = all_queues[i]
+        del queue
+
 def PrintQueueState():
     queues = GetQueues()
     from deffe_utils import Log, DebugLogModule
@@ -78,7 +84,10 @@ class DeffeThread:
         self.thread_status = self.INIT
         if start_flag:
             self.StartThread()
-
+    
+    def Clear(self):
+        self.in_ports = {}
+        self.out_ports = {}
 
     def Connect(source, dest_list, name_list):
         if type(name_list) != list:

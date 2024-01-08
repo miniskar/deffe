@@ -22,6 +22,10 @@ def PrintQueueState():
     from deffe_thread import PrintQueueState
     PrintQueueState()
 
+def DeleteAllQueues():
+    from deffe_thread import DeleteAllQueues 
+    DeleteAllQueues()
+
 def InitializeDeffe():
     framework_path = os.getenv("DEFFE_DIR")
     #print("File:"+__file__)
