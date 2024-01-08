@@ -4,12 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "deffe"
-version = "0.0.0"
+version = "4.0.0"
 authors = [
   { name="Narasinga Rao Miniskar", email="miniskarnr@ornl.gov" },
   { name="Aaron Young", email="youngar@ornl.gov" },
+  { name="Frank Liu", email="liufy@ornl.gov" },
+  { name="Seth Hitefield", email="hitefieldsd@ornl.gov" },
+  { name="Jeffrey Vetter", email="vetter@ornl.gov" },
 ]
-description = "Deffe Design space exploration framework."
+description = "Deffe data-efficient design space exploration framework."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -29,6 +32,11 @@ dependencies = [
   "commentjson",
   "sphinx_rtd_theme",
   "myst_parser",
+]
+
+[project.optional-dependencies]
+dev-tools = [
+   "black",
 ]
 
 [project.urls]
