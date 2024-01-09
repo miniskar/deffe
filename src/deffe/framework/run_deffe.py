@@ -13,7 +13,7 @@ import socket
 import pdb
 import signal
 
-from framework import *
+from deffe.framework.framework import *
 
 # Main function
 def main():

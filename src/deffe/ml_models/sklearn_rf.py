@@ -15,7 +15,7 @@ from sklearn import metrics
 from sklearn.linear_model import LassoLars
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
-from deffe_utils import ReplaceInfiniteWithMax
+from deffe.utils.deffe_utils import ReplaceInfiniteWithMax
 import os, sys, logging
 import time
 from baseml import *

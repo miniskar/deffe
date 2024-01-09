@@ -29,7 +29,7 @@ from tensorflow.keras import layers
 tf.keras.backend.clear_session()  # For easy reset of notebook state.
 
 from baseml import *
-from deffe_utils import *
+from deffe.utils.deffe_utils import *
 
 def mean_squared_error(y_true, y_pred):
     return K.mean(K.square(y_pred - y_true), axis=-1)

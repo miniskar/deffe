@@ -1,22 +1,8 @@
 pre:
-	python3 -m pip install --upgrade pip --user
-	python3 -m pip install -I keras \
-        tensorflow \
-        torch \
-        doepy \
-        scikit-learn \
-        xlsxwriter \
-        matplotlib \
-        pandas \
-        pathlib \
-        pydot \
-        tqdm \
-        jsoncomment \
-        torchsummary  --user
+	python3 -m pip install --upgrade pip
+	python3 -m pip install -I .
 
 test-deffe: 
-	$(info echo "$(DEFFE_DIR)")
-	export DEFFE_DIR=$(PWD) ; \
 	cd test ; \
 	rm -f test*.txt ; sh run_deffe.sh ;  \
 	diff gold_test1.txt test1.txt ; \

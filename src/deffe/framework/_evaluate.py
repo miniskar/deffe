@@ -16,9 +16,9 @@ import shlex
 import argparse
 import numpy as np
 import pandas as pd
-from multi_thread_run import *
-from deffe_utils import *
-from read_config import *
+from deffe.utils.multi_thread_run import *
+from deffe.utils.deffe_utils import *
+from deffe.utils.read_config import *
 
 """ DeffeEvaluate class to evaluate the batch of samples with 
     multi-thread execution environment either with/without 

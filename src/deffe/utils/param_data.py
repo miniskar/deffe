@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import argparse
 import shlex
-from deffe_utils import *
+from deffe.utils.deffe_utils import *
 
 class ParamData:
     def __init__(self, framework):
@@ -229,7 +229,7 @@ class ParamData:
 
     # Get pre-evaluated parameters
     def GetPreEvaluatedParameters(self, samples, param_list):
-        from deffe_utils import Log, LogModule, DebugLogModule
+        from deffe.utils.deffe_utils import Log, LogModule, DebugLogModule
         out_params = []
         DebugLogModule(f"Input samples N:{len(samples)} P:{len(param_list)}")
         param_data_sample_indexes = self.param_data_sample_indexes

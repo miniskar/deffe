@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deffe"
+version = "4.0.0"
+authors = [
+  { name="Narasinga Rao Miniskar", email="miniskarnr@ornl.gov" },
+  { name="Aaron Young", email="youngar@ornl.gov" },
+  { name="Frank Liu", email="liufy@ornl.gov" },
+  { name="Seth Hitefield", email="hitefieldsd@ornl.gov" },
+  { name="Jeffrey Vetter", email="vetter@ornl.gov" },
+]
+description = "Deffe data-efficient design space exploration framework."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "commentjson",
+  "doepy",
+  "jsoncomment",
+  "keras",
+  "matplotlib",
+  "multiprocess",
+  "myst_parser",
+  "pandas",
+  "pathlib",
+  "pydot",
+  "scikit-learn ",
+  "sphinx_rtd_theme",
+  "tensorflow",
+  "torch",
+  "torchsummary",
+  "tqdm",
+  "xlsxwriter",
+]
+
+[project.optional-dependencies]
+dev-tools = [
+   "black",
+]
+
+[project.urls]
+Homepage = "https://code.ornl.gov/miniskarnr/deffe"
+Issues = "https://code.ornl.gov/miniskarnr/deffe/-/issues"
+
+[project.scripts]
+run_deffe = "deffe.framework.run_deffe:main"
