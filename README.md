@@ -364,4 +364,21 @@ An example JSON configuration file parameters are shown in short given below.
 }
 ```
 
+## DEFFE Convenience Environment Variables 
 
+These environment variables aid in the writing of evaluate scripts.
+
+| Variable         | Description                                                                                    |
+|------------------|------------------------------------------------------------------------------------------------|
+| DEFFE_EXP_DIR    | The path to the experiment directory from which `run_deffe` was called.                        |
+| DEFFE_CONFIG_DIR | The path to the configuration directory where the json file specified by `-config` is located. |
+
+To use these environment variables in `evaluate.sh` include the following snipit.
+```bash
+: "${DEFFE_EXP_DIR:=$PWD}"
+: "${DEFFE_CONFIG_DIR:=$PWD}"
+echo "*********************** Evaluate.sh *********************"
+echo "DEFFE_EXP_DIR    = $DEFFE_EXP_DIR"
+echo "DEFFE_CONFIG_DIR = $DEFFE_CONFIG_DIR"
+echo "*********************************************************"
+```
