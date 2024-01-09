@@ -383,6 +383,8 @@ class Parameters:
         bash_param_val_hash = {}
         param_val_hash = {}
         index = 0
+        AddBashKeyValue(bash_param_val_hash, "DEFFE_EXP_DIR", os.environ["DEFFE_EXP_DIR"])
+        AddBashKeyValue(bash_param_val_hash, "DEFFE_CONFIG_DIR", os.environ["DEFFE_CONFIG_DIR"])
         for (param, param_values, pindex, permutation_index) in param_list:
             if index >= len(param_val):
                 pdb.set_trace()

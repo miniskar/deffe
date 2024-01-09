@@ -141,7 +141,7 @@ class DeffeFramework:
         from deffe.utils.parameters import Parameters
         config = DeffeConfig(self.args.config, config_data)
         self.config = config
-        self.config_dir = os.path.dirname(self.config.json_file)
+        self.config_dir = os.path.dirname(os.path.abspath(self.config.json_file))
         self.init_n_train = self.args.init_batch_samples 
         if self.init_n_train == -1:
             self.init_n_train = self.args.batch_size
@@ -182,6 +182,10 @@ class DeffeFramework:
         if self.only_preloaded_data_exploration:
             if self.args.model_extract_dir != "":
                 self.train_model_evaluate_flag = True
+
+        # Export convenience environment variables.
+        os.environ["DEFFE_EXP_DIR"] = os.getcwd()
+        os.environ["DEFFE_CONFIG_DIR"] = self.config_dir
 
     # Initialize the python paths
     def InitializePythonPaths(self):
