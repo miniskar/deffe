@@ -1,1 +1,13 @@
 __pycache__/
+venv
+apt.conf
+proxy.conf
+test/deffe_eval_predict.csv
+test/deffe_evaluation.csv
+test/deffe_output.csv
+test/explore_0-minmax.json
+test/proxy.conf
+test/run
+test/test1.txt
+test/test2.txt
+test/test3.txt

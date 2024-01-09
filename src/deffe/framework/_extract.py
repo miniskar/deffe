@@ -9,13 +9,13 @@
 # **************************************************************************
 ###
 import os
-from multi_thread_run import *
-from deffe_utils import *
+from deffe.utils.multi_thread_run import *
+from deffe.utils.deffe_utils import *
 import numpy as np
 import argparse
 import shlex
 import pathlib
-from read_config import *
+from deffe.utils.read_config import *
 
 """ DeffeExtract class to extract cost metrics for the batch of samples with 
     through multi-thread execution environment either with/without 

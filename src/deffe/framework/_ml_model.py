@@ -13,7 +13,7 @@ import numpy as np
 import pdb
 import argparse
 import shlex
-from deffe_utils import *
+from deffe.utils.deffe_utils import *
 
 class DeffeMLModel:
     def __init__(self, framework):

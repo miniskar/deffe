@@ -16,7 +16,7 @@ import pdb
 import argparse
 import shlex
 import itertools
-from deffe_utils import *
+from deffe.utils.deffe_utils import *
 import pandas as pd
 
 class DeffeSampling:

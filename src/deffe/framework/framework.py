@@ -19,11 +19,11 @@ import shlex
 import pandas as pd
 
 def PrintQueueState():
-    from deffe_thread import PrintQueueState
+    from deffe.utils.deffe_thread import PrintQueueState
     PrintQueueState()
 
 def DeleteAllQueues():
-    from deffe_thread import DeleteAllQueues 
+    from deffe.utils.deffe_thread import DeleteAllQueues
     DeleteAllQueues()
 
 def InitializeDeffe():
@@ -72,7 +72,7 @@ class DeffeFramework:
             self.args.evaluate_batch_size = self.args.batch_size
             self.args.extract_batch_size = self.args.batch_size
             self.args.mlmodel_batch_size = self.args.batch_size
-        from deffe_utils import Log, EnableDebugFlag
+        from deffe.utils.deffe_utils import Log, EnableDebugFlag
         if self.args.debug:
             EnableDebugFlag()
         if self.args.no_train and self.args.no_inference:
@@ -134,14 +134,14 @@ class DeffeFramework:
 
     # Initialize the class objects with default values
     def Initialize(self, config_data=None):
-        from deffe_utils import LoadModule
-        from deffe_utils import LoadPyModule
-        from read_config import DeffeConfig
-        from workload_excel import Workload
-        from parameters import Parameters
+        from deffe.utils.deffe_utils import LoadModule
+        from deffe.utils.deffe_utils import LoadPyModule
+        from deffe.utils.read_config import DeffeConfig
+        from deffe.utils.workload_excel import Workload
+        from deffe.utils.parameters import Parameters
         config = DeffeConfig(self.args.config, config_data)
         self.config = config
-        self.config_dir = os.path.dirname(self.config.json_file)
+        self.config_dir = os.path.dirname(os.path.abspath(self.config.json_file))
         self.init_n_train = self.args.init_batch_samples 
         if self.init_n_train == -1:
             self.init_n_train = self.args.batch_size
@@ -183,6 +183,10 @@ class DeffeFramework:
             if self.args.model_extract_dir != "":
                 self.train_model_evaluate_flag = True
 
+        # Export convenience environment variables.
+        os.environ["DEFFE_EXP_DIR"] = os.getcwd()
+        os.environ["DEFFE_CONFIG_DIR"] = self.config_dir
+
     # Initialize the python paths
     def InitializePythonPaths(self):
         python_paths = self.config.GetPythonPaths()
@@ -195,8 +199,8 @@ class DeffeFramework:
 
     # Log exploration output into file
     def WriteExplorationOutput(self, parameter_values, batch_output):
-        from deffe_utils import Log, LogModule, DebugLogModule
-        from deffe_utils import GetScriptExecutionTime
+        from deffe.utils.deffe_utils import Log, LogModule, DebugLogModule
+        from deffe.utils.deffe_utils import GetScriptExecutionTime
         for index, (valid_flag, eval_type, cost_metrics, run_dir) in enumerate(batch_output):
             #DebugLogModule(f"Writing output to parameters {index}")
             param_val = parameter_values[index]
@@ -323,7 +327,7 @@ class DeffeFramework:
         return pruned_headers, param_list, pruned_param_list
 
     def GetBatchSamples(self, exp_index):
-        from deffe_utils import Log
+        from deffe.utils.deffe_utils import Log
         samples = self.sampling.GetNewBatch()
         step = self.sampling.GetCurrentStep()
         Log("***** Exploration:{}/{} Step {} Current "
@@ -342,7 +346,7 @@ class DeffeFramework:
         return cost_data
 
     def ExtractParameterValues(self, samples, param_list, pruned_param_list):
-        from deffe_utils import Log, LogModule, DebugLogModule
+        from deffe.utils.deffe_utils import Log, LogModule, DebugLogModule, ErrorLogModule
         parameter_values = None
         pruned_parameter_values = None
         parameters_normalize = None
@@ -386,7 +390,7 @@ class DeffeFramework:
         return samples, parameter_values, pruned_parameter_values, parameters_normalize
 
     def WritePredictionsToFile(self, model, headers, cost_names, params, cost_data, predictions, outfile):
-        from deffe_utils import Log
+        from deffe.utils.deffe_utils import Log
         Log("Writing output file:" + outfile)
         out_data_hash = {}
         params_tr = params.transpose()
@@ -504,7 +508,7 @@ class DeffeFramework:
     def Train(self, samples, 
             pruned_headers, cost_names, parameters_normalize, 
             batch_output, step, threading_model=False):
-        from deffe_utils import Log
+        from deffe.utils.deffe_utils import Log
         self.train_model.InitializeSamples(
             samples,
             pruned_headers,
@@ -603,8 +607,8 @@ class DeffeFramework:
 
     # Run the framework
     def RunParallel(self):
-        from deffe_thread import DeffeThread, DeffeThreadData
-        from deffe_utils import Log, DebugLogModule
+        from deffe.utils.deffe_thread import DeffeThread, DeffeThreadData
+        from deffe.utils.deffe_utils import Log, DebugLogModule
         threading_model = not self.args.disable_threading
         if not os.path.exists(self.fr_config.run_directory):
             os.makedirs(self.fr_config.run_directory)

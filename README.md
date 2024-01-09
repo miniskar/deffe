@@ -74,14 +74,14 @@ $ make -f Makefile.docker run ;
 ## How to run DEFFE?
 An example DEFFE configuration for RISCV design space exploration along with their associated files are placed in <b>example</b> directory. 
 ```bash
-$ source setup.source
+$ pip install -e .
 $ cd example ; 
-$ python3 ../framework/run_deffe.py -config config_small.json
+$ run_deffe -config config_small.json
 $ cd .. ;
 ```
 A bare minimal simple two parameters and one application test case is available in test directory. 
 ```bash
-$ source setup.source
+$ pip install -e .
 $ cd test; 
 $ sh run_deffe.sh
 $ cd .. ;
@@ -89,23 +89,24 @@ $ cd .. ;
 
 An example DEFFE configuration for RISCV design space exploration (without slurm) along with their associated files are placed in <b>example</b> directory. 
 ```bash
-$ source setup.source
+$ pip install -e .
 $ cd example ; 
-$ python3 ../framework/run_deffe.py -config config_small.json -no-slurm
+$ run_deffe -config config_small.json -no-slurm
 $ cd .. ;
 ```
 
 The run_deffe.py file can show all command line options with the below command.
 ```bash
-$ cd example ;
-$ python3 ../framework/run_deffe.py -h
+$ pip install -e .
+$ run_deffe -h
 $ cd .. ;
 ```
 
 To run the exploration on the preloaded data
 ```bash
+$ pip install -e .
 $ cd example ;
-$ python3 ../framework/run_deffe.py -config config_small.json \
+$ run_deffe -config config_small.json \
    -only-preloaded-data-exploration -step-start 0 -step-end 1 \
    -epochs 100 -batch-size 256 
 $ cd .. ;
@@ -113,11 +114,17 @@ $ cd .. ;
 
 To run full exploration (all samples at once training, means no transfer learning across samples) on the pre-evaluated/pre-loaded data
 ```bash
+$ pip install -e .
 $ cd example ;
-$ python3 ../framework/run_deffe.py -config config_small.json \
+$ run_deffe -config config_small.json \
   -only-preloaded-data-exploration -full-exploration -train-test-split 0.7 \
   -validation-split 0.23 -step-start 0 -step-end 1 -epochs 100 -batch-size 256 
 $ cd .. ;
+```
+
+Installation with pip
+```bash
+pip install git+ssh://git@code.ornl.gov/miniskarnr/deffe.git
 ```
 
 ## How to run experiments?
@@ -130,16 +137,16 @@ $ cd .. ;
 * Run directory: example/experiments/full_explore/log/kmeans   (For log loss function)
                  example/experiments/full_explore/exp/kmeans   (For exponential loss function)
 * Command to run: 
-    $ source setup.source
+    $ pip install -e .
     $ cd example/experiments/full_explore/log/kmeans 
-    $ python3 $DEFFE_DIR/framework/run_deffe.py \
+    $ run_deffe \
     -config $DEFFE_DIR/example/config_kmeans.json \
     -only-preloaded-data-exploration -epochs 20000 -batch-size 4096 \
     -full-exploration \
     -train-test-split 0.7 -validation-split 0.23 -loss custom_mean_abs_log_loss
 
 * Command to generate stats. It will load the same training and testing indices used for ML model 
-    $ python3 $DEFFE_DIR/framework/run_deffe.py \
+    $ run_deffe \
     -model-extract-dir checkpoints -config $DEFFE_DIR/example/config_kmeans.json \
     -only-preloaded-data-exploration -train-test-split 0.7 \
     -validation-split 0.23 -load-train-test -loss custom_mean_abs_exp_loss \
@@ -154,13 +161,13 @@ $ cd .. ;
 * Try sample parameters:
     ** Input test-input.csv
     ** Command given below
-       $ python3 $DEFFE_DIR/framework/run_deffe.py \
+       $ run_deffe \
        -config $DEFFE_DIR/example/config_kmeans.json \
        -input test-model.csv -icp kmeans.hdf5 -output output-prediction.csv -inference-only
     ** Output test-output.csv
     ** Input ../../../../output_kmeans_deffe.csv 
     ** Command given below
-       $ python3 $DEFFE_DIR/framework/run_deffe.py \
+       $ run_deffe \
        -config $DEFFE_DIR/example/config_kmeans.json \
        -icp kmeans.hdf5  -input ../../../../output_kmeans_deffe.csv  \
        -output test-output-full.csv \ -inference-only
@@ -176,22 +183,22 @@ $ cd .. ;
 * Run directory: example/experiments/transfer_learning_samples/log/kmeans   (For log loss function)
                  example/experiments/transfer_learning_samples/exp/kmeans   (For exponential loss function)
 * Command to run: 
-    $ source setup.source
+    $ pip install -e .
     $ cd example/experiments/transfer_learning_samples/log/kmeans 
-    $ python3 $DEFFE_DIR/framework/run_deffe.py \
+    $ run_deffe \
     -config $DEFFE_DIR/example/config_kmeans_tl_samples.json \
     -only-preloaded-data-exploration -epochs 1000 -batch-size 256 \
     -train-test-split 1.0 -validation-split 0.23 
 
 * Command to generate stats. It will load the same training and testing indices used for ML model 
-    $ python3 $DEFFE_DIR/framework/run_deffe.py \
+    $ run_deffe \
     -model-extract-dir checkpoints \
     -config $DEFFE_DIR/example/config_kmeans.json  \
     -only-preloaded-data-exploration \
     -train-test-split 1.0 -validation-split 0.23 \
     -load-train-test -loss custom_mean_abs_exp_loss \
     -model-stats-output test-output-exploss.csv
-    $ python3 $DEFFE_DIR/framework/run_deffe.py \
+    $ run_deffe \
     -model-extract-dir checkpoints \
     -config $DEFFE_DIR/example/config_kmeans.json  \
     -only-preloaded-data-exploration \
@@ -209,14 +216,14 @@ $ cd .. ;
 * Try sample parameters:
     ** Input test-input.csv
     ** Command given below
-       $ python3 $DEFFE_DIR/framework/run_deffe.py \
+       $ run_deffe \
        -config $DEFFE_DIR/example/config_kmeans_tl_samples.json \
        -input test-model.csv \
        -icp kmeans.hdf5 -output output-prediction.csv -inference-only
     ** Output test-output.csv
     ** Input ../../../../output_kmeans_deffe.csv 
     ** Command given below
-       $ python3 $DEFFE_DIR/framework/run_deffe.py \
+       $ run_deffe \
        -config $DEFFE_DIR/example/config_kmeans_tl_samples.json -icp kmeans.hdf5  \
        -input ../../../../output_kmeans_deffe.csv  -output test-output-full.csv \
        -inference-only
@@ -235,22 +242,22 @@ $ cd .. ;
 *                example/experiments/transfer_learning_samples_across_kernels/exp/matmul  
 *                               (For exponential loss function)
 * Command to run: 
-    $ source setup.source
+    $ pip install -e .
     $ cd example/experiments/transfer_learning_samples_across_kernels/log/matmul 
-    $ python3 $DEFFE_DIR/framework/run_deffe.py \
+    $ run_deffe \
     -config $DEFFE_DIR/example/config_matmul_tl_samples.json -icp ../../kmeans.hdf5 \
     -only-preloaded-data-exploration -epochs 1000 -batch-size 256 -train-test-split 1.0 \
     -validation-split 0.23 
 
 * Command to generate stats. It will load the same training and testing indices used for ML model 
-    $ python3 $DEFFE_DIR/framework/run_deffe.py \
+    $ run_deffe \
     -model-extract-dir checkpoints \
     -config $DEFFE_DIR/example/config_matmul.json  \
     -only-preloaded-data-exploration \
     -train-test-split 1.0 -validation-split 0.23 -load-train-test \
     -loss custom_mean_abs_exp_loss -model-stats-output test-output-exploss.csv
 
-    $ python3 $DEFFE_DIR/framework/run_deffe.py -model-extract-dir checkpoints \
+    $ run_deffe \
     -config $DEFFE_DIR/example/config_matmul.json  -only-preloaded-data-exploration \
     -train-test-split 1.0 -validation-split 0.23 -load-train-test \
     -loss custom_mean_abs_log_loss -model-stats-output test-output-logloss.csv
@@ -265,13 +272,13 @@ $ cd .. ;
 * Try sample parameters:
     ** Input test-input.csv
     ** Command given below
-       $ python3 $DEFFE_DIR/framework/run_deffe.py \
+       $ run_deffe \
        -config $DEFFE_DIR/example/config_matmul_tl_samples.json -icp matmul.hdf5 \
        -input test-input.csv -output test-output.csv -inference-only
     ** Output test-output.csv
     ** Input ../../../../output_matmul_deffe.csv 
     ** Command given below
-       $ python3 $DEFFE_DIR/framework/run_deffe.py \
+       $ run_deffe \
        -config $DEFFE_DIR/example/config_matmul_tl_samples.json -icp matmul.hdf5  \
        -input ../../../../output_matmul_deffe.csv  -output test-output-full.csv \
        -inference-only
@@ -357,4 +364,21 @@ An example JSON configuration file parameters are shown in short given below.
 }
 ```
 
+## DEFFE Convenience Environment Variables 
 
+These environment variables aid in the writing of evaluate scripts.
+
+| Variable         | Description                                                                                    |
+|------------------|------------------------------------------------------------------------------------------------|
+| DEFFE_EXP_DIR    | The path to the experiment directory from which `run_deffe` was called.                        |
+| DEFFE_CONFIG_DIR | The path to the configuration directory where the json file specified by `-config` is located. |
+
+To use these environment variables in `evaluate.sh` include the following snipit.
+```bash
+: "${DEFFE_EXP_DIR:=$PWD}"
+: "${DEFFE_CONFIG_DIR:=$PWD}"
+echo "*********************** Evaluate.sh *********************"
+echo "DEFFE_EXP_DIR    = $DEFFE_EXP_DIR"
+echo "DEFFE_CONFIG_DIR = $DEFFE_CONFIG_DIR"
+echo "*********************************************************"
+```

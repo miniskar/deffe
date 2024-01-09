@@ -14,8 +14,8 @@ import numpy as np
 import re
 import sys
 import pathlib
-from read_config import *
-from deffe_utils import *
+from deffe.utils.read_config import *
+from deffe.utils.deffe_utils import *
 
 
 def IsFloat(x):
@@ -383,6 +383,8 @@ class Parameters:
         bash_param_val_hash = {}
         param_val_hash = {}
         index = 0
+        AddBashKeyValue(bash_param_val_hash, "DEFFE_EXP_DIR", os.environ["DEFFE_EXP_DIR"])
+        AddBashKeyValue(bash_param_val_hash, "DEFFE_CONFIG_DIR", os.environ["DEFFE_CONFIG_DIR"])
         for (param, param_values, pindex, permutation_index) in param_list:
             if index >= len(param_val):
                 pdb.set_trace()
@@ -417,7 +419,7 @@ if __name__ == "__main__":
     sys.path.insert(0, os.getenv("DEFFE_DIR"))
     sys.path.insert(0, os.path.join(framework_path, "framework"))
     sys.path.insert(0, os.path.join(framework_path, "utils"))
-    from read_config import *
+    from deffe.utils.read_config import *
     config = DeffeConfig("config_small_sampling.json")
     explore_groups = config.GetExploration().exploration_list[0].groups
     params = Parameters(config, None)
