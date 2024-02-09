@@ -35,6 +35,6 @@
      },
      "framework" : {
         "output_log" : "framework_output.log",
-        "run_directory" : "sd_exploration"
+        "run_directory" : "explore"
      }
 }

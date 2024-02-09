@@ -401,7 +401,7 @@ class DeffeConfigFramework:
         self.output_log = "framework.log"
         if data != None and "output_log" in data:
             self.output_log = os.path.expandvars(data["output_log"])
-        self.run_directory = "run"
+        self.run_directory = "explore"
         if data != None and "run_directory" in data:
             self.run_directory = os.path.expandvars(data["run_directory"])
 

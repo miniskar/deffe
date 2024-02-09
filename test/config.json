@@ -82,7 +82,7 @@
     },
     "framework" : {
         "output_log" : "framework_output.log",
-        "run_directory" : "rundir"
+        "run_directory" : "explore"
     },
     "slurm" : {
         "nodes" : 1,
