@@ -34,10 +34,10 @@ def InitializeDeffe():
         os.environ["DEFFE_DIR"] = framework_path
     print("Deffe framework is found in path: "+os.getenv("DEFFE_DIR"))
     sys.path.insert(0, os.getenv("DEFFE_DIR"))
-    sys.path.insert(0, os.path.join(framework_path, "utils"))
-    sys.path.insert(0, os.path.join(framework_path, "cost_optimizers"))
-    sys.path.insert(0, os.path.join(framework_path, "ml_models"))
-    sys.path.insert(0, os.path.join(framework_path, "framework"))
+    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "utils"))
+    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "cost_optimizers"))
+    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "ml_models"))
+    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "framework"))
     None
 
 # Requirements
