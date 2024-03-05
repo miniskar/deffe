@@ -30,7 +30,7 @@ def InitializeDeffe():
     framework_path = os.getenv("DEFFE_DIR")
     #print("File:"+__file__)
     if framework_path == None:
-        framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        framework_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
         os.environ["DEFFE_DIR"] = framework_path
     print("Deffe framework is found in path: "+os.getenv("DEFFE_DIR"))
     sys.path.insert(0, os.getenv("DEFFE_DIR"))
