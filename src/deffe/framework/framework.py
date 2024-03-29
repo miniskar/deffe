@@ -31,13 +31,23 @@ def InitializeDeffe():
     #print("File:"+__file__)
     if framework_path == None:
         framework_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-        os.environ["DEFFE_DIR"] = framework_path
+        local_fw = os.path.join(framework_path, "src", "deffe")
+        if os.path.exists(local_fw):
+            os.environ["DEFFE_DIR"] = framework_path
+        else:
+            framework_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+            local_fw = framework_path
+            os.environ["DEFFE_DIR"] = framework_path
+    else:
+         local_fw = os.path.join(framework_path, "src", "deffe")
+         if not os.path.exists(local_fw):
+             local_fw = framework_path
     print("Deffe framework is found in path: "+os.getenv("DEFFE_DIR"))
     sys.path.insert(0, os.getenv("DEFFE_DIR"))
-    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "utils"))
-    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "cost_optimizers"))
-    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "ml_models"))
-    sys.path.insert(0, os.path.join(framework_path, "src", "deffe", "framework"))
+    sys.path.insert(0, os.path.join(local_fw, "utils"))
+    sys.path.insert(0, os.path.join(local_fw, "cost_optimizers"))
+    sys.path.insert(0, os.path.join(local_fw, "ml_models"))
+    sys.path.insert(0, os.path.join(local_fw, "framework"))
     None
 
 # Requirements
