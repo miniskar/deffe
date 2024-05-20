@@ -46,3 +46,10 @@ Issues = "https://code.ornl.gov/miniskarnr/deffe/-/issues"
 
 [project.scripts]
 run_deffe = "deffe.framework.run_deffe:main"
+
+[tool.hatch.build.targets.wheel.sources]
+"templates" = "deffe/templates"
+"src" = ""
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src/deffe", "templates"]
