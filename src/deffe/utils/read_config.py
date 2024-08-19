@@ -19,7 +19,7 @@ import tempfile
 import argparse
 import time
 import json
-import jsoncomment 
+import jsoncomment
 
 # Values: Scalar / List
 #   List: String with values seperated with ','        : Example: "1,2,3,4"
@@ -27,10 +27,10 @@ import jsoncomment
 #         represented as a list itself                 : Example: [1,2,3,4]
 #         combination of all above        Example: [1, 2, "10-20", "30-40"]
 # Note:
-#         One can use different delimiter (instead of comma ',') in string 
+#         One can use different delimiter (instead of comma ',') in string
 #         This feature is useful to use it as list of list in a string itself
 #                   Example: groups: "riscv, app_size::12;15;20-22, mode"
-#                            In the above example, the second list is provided 
+#                            In the above example, the second list is provided
 #                            app_size with list of values [12, 15, 20, 21, 22]
 class DeffeConfigValues:
     def __init__(self, values, delim=','):
@@ -93,7 +93,7 @@ def MergeTwoJsons(json1, json2):
         if len(l1) > 0:
             if isinstance(l1[0], dict):
                 is_dict_list = True
-        if len(l2) > 0: 
+        if len(l2) > 0:
             if isinstance(l2[0], dict):
                 is_dict_list = True
         if not is_dict_list:
@@ -418,6 +418,9 @@ class DeffeConfigSlurm:
         self.exclude = ""
         if data != None and "exclude" in data:
             self.exclude = data["exclude"]
+        self.nodelist = ""
+        if data != None and "nodelist" in data:
+            self.nodelist = data["nodelist"]
         self.mem = ""
         if data != None and "mem" in data:
             self.mem= data["mem"]
@@ -453,7 +456,7 @@ class DeffeConfigSlurm:
 
 class DeffeConfig:
     def __init__(self, file_name=None, data=None):
-        self.data = data 
+        self.data = data
         self.json_file = file_name
         if file_name != None:
             self.data = self.ReadFile(file_name)
