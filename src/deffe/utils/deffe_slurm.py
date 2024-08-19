@@ -26,6 +26,7 @@ class DeffeSlurm:
         self.account = self.config.account
         self.time = self.config.time
         self.exclude = self.config.exclude
+        self.nodelist = self.config.nodelist
         self.constraint = self.config.constraint
         self.partition = self.config.partition
         self.source_scripts = self.config.source_scripts
@@ -39,6 +40,8 @@ class DeffeSlurm:
                 fh.write("#SBATCH --cpus-per-task=" + self.cpus_per_task + "\n")
             if self.exclude != '':
                 fh.write("#SBATCH --exclude='" + self.exclude+ "'\n")
+            if self.nodelist != '':
+                fh.write("#SBATCH --nodelist='" + self.nodelist+ "'\n")
             if self.constraint != '':
                 fh.write('#SBATCH --constraint="' + self.constraint + '"\n')
             if self.partition != '':
@@ -57,7 +60,7 @@ class DeffeSlurm:
             fh.write('echo "Running on host: `hostname`"\n')
             fh.write('echo "SLURM_JOB_ID: $SLURM_JOB_ID"\n')
             fh.write('echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"\n')
-            for sc in self.source_scripts: 
+            for sc in self.source_scripts:
                 fh.write("source "+sc+"\n")
             fh.write("cd " + os.path.dirname(os.path.abspath(slurm_filename)) + " ; \n")
             #fh.write('echo "' + cmd + '"\n')
